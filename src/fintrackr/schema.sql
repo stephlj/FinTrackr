@@ -1,3 +1,10 @@
+/* Naming conventions:
+
+tables: plural, lower case, words separated by underscores
+primary key: always "id"
+foreign keys: x_id, using singular for x
+
+*/
 
 /* using an enum to enforce correctness */
 CREATE TYPE category_label AS ENUM(
@@ -14,12 +21,11 @@ CREATE TABLE expenses (
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount float NOT NULL,
-    expense_category text REFERENCES categories(id)
+    category_id integer REFERENCES categories(id)
 );
 
 CREATE TABLE categories(
     id SERIAL PRIMARY KEY,
-    category text NOT NULL REFERENCES categories(id),
     label category_label,
     recurrance frequency,
     source text
@@ -29,5 +35,5 @@ CREATE TABLE incomes(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount float NOT NULL,
-    income_category text REFERENCES categories(id)
+    category_id integer REFERENCES categories(id)
 );
