@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/fintrackr/__init__.py
+src/fintrackr.egg-info/PKG-INFO
+src/fintrackr.egg-info/SOURCES.txt
+src/fintrackr.egg-info/dependency_links.txt
+src/fintrackr.egg-info/entry_points.txt
+src/fintrackr.egg-info/requires.txt
+src/fintrackr.egg-info/top_level.txt
