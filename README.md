@@ -1,5 +1,9 @@
 # FinTrackr: Personal finances and budgeting app
 
+![Schema diagram](img/schema.png)
+
+WIP - schema is aspirational, no guarantee yet it matches the code!
+
 ## Inputs
 
 Users can either provide a csv of data (e.g. credit card statements downloaded from a bank), or enter line items manually.
