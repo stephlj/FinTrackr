@@ -28,7 +28,7 @@ CREATE TABLE categories(
     id SERIAL PRIMARY KEY,
     label category_label,
     recurrance frequency,
-    source text
+    source text /* e.g., main credit card, checking */
 );
 
 CREATE TABLE incomes(
