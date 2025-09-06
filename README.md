@@ -2,6 +2,8 @@
 
 ![Schema diagram](img/schema.png)
 
+*Schema diagram made at app.quickdatabasediagrams.com*
+
 WIP - schema is aspirational, no guarantee yet it matches the code!
 
 ## Inputs
