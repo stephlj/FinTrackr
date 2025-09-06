@@ -6,6 +6,11 @@ foreign keys: x_id, using singular for x
 
 */
 
+CREATE TYPE frequency AS ENUM(
+    "irregular", "monthly", "annual"
+)
+
+
 CREATE TABLE expenses (
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
@@ -16,26 +21,20 @@ CREATE TABLE expenses (
 CREATE TABLE incomes(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
-    amount float NOT NULL,
+    amount money NOT NULL,
     source text /* e.g. "gift", "cap gains" */
 );
 
 CREATE TABLE categories(
     id SERIAL PRIMARY KEY,
-    category_id integer REFERENCES category_labels(id),
-    recurrance_id integer REFERENCES recurrance_labels(id),
+    category_label_id integer REFERENCES category_labels(id),
+    recurrance frequency DEFAULT 1
 );
 
 CREATE TABLE category_labels(
     id SERIAL PRIMARY KEY,
     username text NOT NULL,
     label text NOT NULL /* e.g. "groceries" */
-);
-
-CREATE TABLE recurrance_labels(
-    id SERIAL PRIMARY KEY,
-    username text NOT NULL,
-    frequency text DEFAULT "irregular" /* e.g. "annual", "monthly" */
 );
 
 CREATE TABLE expenses_categories_xref(
