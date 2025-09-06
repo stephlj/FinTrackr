@@ -6,34 +6,46 @@ foreign keys: x_id, using singular for x
 
 */
 
-/* using an enum to enforce correctness */
-CREATE TYPE category_label AS ENUM(
-    "groceries_and_household", "eating_out", "Amazon", 
-    "gas_and_fastrack", "always_unexpected", 
-    "house_maintenance", "car_maintenance",
-    "clothes_etc", "splurges", "pets", "travel"
-);
-CREATE TYPE frequency AS ENUM(
-    "monthly", "annual"
-);
-
 CREATE TABLE expenses (
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
-    amount float NOT NULL,
-    category_id integer REFERENCES categories(id)
-);
-
-CREATE TABLE categories(
-    id SERIAL PRIMARY KEY,
-    label category_label,
-    recurrance frequency,
-    source text /* e.g., main credit card, checking */
+    amount money NOT NULL,
+    source text /* e.g., "main card", "primary checking" */
 );
 
 CREATE TABLE incomes(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount float NOT NULL,
-    category_id integer REFERENCES categories(id)
+    source text /* e.g. "gift", "cap gains" */
+);
+
+CREATE TABLE categories(
+    id SERIAL PRIMARY KEY,
+    category_id integer REFERENCES category_labels(id),
+    recurrance_id integer REFERENCES recurrance_labels(id),
+);
+
+CREATE TABLE category_labels(
+    id SERIAL PRIMARY KEY,
+    username text NOT NULL,
+    label text NOT NULL /* e.g. "groceries" */
+);
+
+CREATE TABLE recurrance_labels(
+    id SERIAL PRIMARY KEY,
+    username text NOT NULL,
+    frequency text DEFAULT "irregular" /* e.g. "annual", "monthly" */
+);
+
+CREATE TABLE expenses_categories_xref(
+    id SERIAL PRIMARY KEY,
+    expense_id integer NOT NULL REFERENCES expenses(id),
+    category_id integer NOT NULL REFERENCES categories(id),
+);
+
+CREATE TABLE incomes_categories_xref(
+    id SERIAL PRIMARY KEY,
+    income_id integer NOT NULL REFERENCES incomes(id),
+    category_id integer NOT NULL REFERENCES categories(id),
 );
