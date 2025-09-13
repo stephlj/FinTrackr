@@ -7,7 +7,7 @@ foreign keys: x_id, using singular for x
 */
 
 CREATE TYPE recurrance AS ENUM(
-    "irregular", "monthly", "annual"
+    'irregular', 'monthly', 'annual'
 );
 
 CREATE TABLE transactions(
@@ -26,7 +26,7 @@ CREATE TABLE categorization(
 CREATE TABLE categories(
     id SERIAL PRIMARY KEY,
     label text NOT NULL, /* e.g. "groceries" */
-    recurrance frequency DEFAULT 1,
+    frequency recurrance DEFAULT 'irregular',
     categorization_id integer NOT NULL REFERENCES categorization(id),
     other text /* optional additional super-category (e.g. "discretionary") */
 );
@@ -34,5 +34,5 @@ CREATE TABLE categories(
 CREATE TABLE transactions_categories_xref(
     id SERIAL PRIMARY KEY,
     transaction_id integer NOT NULL REFERENCES transactions(id),
-    category_id integer NOT NULL REFERENCES categories(id),
+    category_id integer NOT NULL REFERENCES categories(id)
 );
