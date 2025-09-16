@@ -14,7 +14,8 @@ CREATE TABLE transactions(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount money NOT NULL,
-    source text /* e.g., "main card", "primary checking" */
+    source text, /* e.g., "main card", "primary checking" */
+    metadatum_id integer NOT NULL REFERENCES data_load_metadata(id)
 );
 
 CREATE TABLE categorization(
@@ -35,4 +36,11 @@ CREATE TABLE transactions_categories_xref(
     id SERIAL PRIMARY KEY,
     transaction_id integer NOT NULL REFERENCES transactions(id),
     category_id integer NOT NULL REFERENCES categories(id)
+);
+
+CREATE TABLE data_load_metadata(
+    id SERIAL PRIMARY KEY,
+    date_added date NOT NULL,
+    username text NOT NULL,
+    source text NOT NULL /* csv upload, etc */
 );
