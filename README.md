@@ -6,6 +6,10 @@
 
 WIP - schema is aspirational, no guarantee yet it matches the code! *TODO write code to convert SQL to EDL*
 
+Schema pulled from database:
+
+![Schema from db](img/schema_from_db.png)
+
 ## Inputs
 
 Users can either provide a csv of data (e.g. credit card statements downloaded from a bank), or enter transactions manually.
