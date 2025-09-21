@@ -10,11 +10,12 @@ CREATE TYPE recurrance AS ENUM(
     'irregular', 'monthly', 'annual'
 );
 
+/* this table preserves the original data */
 CREATE TABLE transactions(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount money NOT NULL,
-    source text, /* e.g., "main card", "primary checking" */
+    description text, /* e.g merchant name on cc transaction */
     metadatum_id integer NOT NULL REFERENCES data_load_metadata(id)
 );
 
@@ -42,5 +43,11 @@ CREATE TABLE data_load_metadata(
     id SERIAL PRIMARY KEY,
     date_added date NOT NULL,
     username text NOT NULL,
-    source text NOT NULL /* csv upload, etc */
+    source text UNIQUE NOT NULL, /* filename */
+    source_alias integer REFERENCES data_sources(id)
 );
+
+CREATE TABLE data_sources(
+    id SERIAL PRIMARY KEY,
+    source_name text NOT NULL /* e.g., "main card", "primary checking" */
+)
