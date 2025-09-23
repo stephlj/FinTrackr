@@ -19,17 +19,17 @@ CREATE TABLE transactions(
     metadatum_id integer NOT NULL REFERENCES data_load_metadata(id)
 );
 
-CREATE TABLE categorization(
+CREATE TABLE categorizations(
     id SERIAL PRIMARY KEY,
     username text NOT NULL,
-    categorization_name text /* if a user wants more than one categorization scheme */ 
+    name text /* if a user wants more than one categorization scheme */ 
 );
 
 CREATE TABLE categories(
     id SERIAL PRIMARY KEY,
     label text NOT NULL, /* e.g. "groceries" */
     frequency recurrance DEFAULT 'irregular',
-    categorization_id integer NOT NULL REFERENCES categorization(id),
+    categorization_id integer NOT NULL REFERENCES categorizations(id),
     other text /* optional additional super-category (e.g. "discretionary") */
 );
 
@@ -49,5 +49,5 @@ CREATE TABLE data_load_metadata(
 
 CREATE TABLE data_sources(
     id SERIAL PRIMARY KEY,
-    source_name text NOT NULL /* e.g., "main card", "primary checking" */
+    name text NOT NULL /* e.g., "main card", "primary checking" */
 )
