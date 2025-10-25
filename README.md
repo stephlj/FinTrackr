@@ -28,8 +28,14 @@ Create the environment with `uv venv .venv` and then run `uv sync --all-extras` 
 
 Activate with `source .venv/bin/activate`.
 
-Add dependencies with `uv add <package1> <package2>`.
+Add dependencies with `uv add <package1> <package2>`. If you get an error that looks like:
 
+```
+No solution found when resolving dependencies:
+  ╰─▶ Because there are no versions of unittest and your project depends on unittest, we can conclude that your project's requirements are
+      unsatisfiable.
+```
+you already have the package (e.g. it's a package that comes with all python installs). I love `uv` but its error messages can be quite unhelpful.
 
 
 ## TODO 
