@@ -15,7 +15,6 @@ class TestDBSetup(unittest.TestCase):
 
         path_to_initscript = os.path.join(os.getcwd(),"src","fintrackr","Init_New_db.sh")
         
-        ch_perms = subprocess.run(["chmod","+x",path_to_initscript],capture_output=True)
         exit_code = subprocess.call([path_to_initscript,"test"], shell=True)
         assertNotEqual(exit_code,0, "Failed to create testing db")
 
