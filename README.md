@@ -20,6 +20,16 @@ FinTrackr will then classify each transaction (expense or income) by category (g
 
 The (eventual) interface will include visualizations of money on hand over time, monthly budgets calculated from both anticipated recurring expenses and extrapolations from past irregular expenditures, etc.
 
+## Getting started
+
+Run 
+
+```
+python ./src/fintrackr/init_db.py
+```
+
+from the command line. A bunch of `CREATE` statements should print.
+
 ## Dev
 
 This package uses `uv` for package and virtual environment management, based on the very helpful tutorials at [Sebastia Agramunt Puig's blog](https://agramunt.me/posts/python-virtual-environments-with-uv/).
