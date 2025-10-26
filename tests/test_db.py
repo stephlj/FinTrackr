@@ -15,8 +15,8 @@ class TestDBSetup(unittest.TestCase):
 
         path_to_initscript = os.path.join(os.getcwd(),"src","fintrackr","Init_New_db.sh")
         
-        exit_code = subprocess.call([path_to_initscript,"test"], shell=True)
-        assertNotEqual(exit_code,0, "Failed to create testing db")
+        exit_code = subprocess.run([path_to_initscript,"test"], shell=True)
+        self.assertNotEqual(exit_code,0, "Failed to create testing db")
 
         self.conn = psycopg.connect("dbname = test user=test_user")
 

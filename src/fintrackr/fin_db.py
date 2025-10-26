@@ -8,6 +8,8 @@ Class that connects to the database and manages interactions with it
 Copyright (c) 2025 Stephanie Johnson
 """
 
+import psycopg
+
 class FinDB:
     def __init__(self, user, name="fin_db"):
         conn = psycopg.connect(f"dbname={name} user={user}")
