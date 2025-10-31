@@ -17,7 +17,7 @@ class TestDBSetup(unittest.TestCase):
         
         self.test_db_name = "test"
         self.test_owner = "test_admin"
-        self.owner_pw = "test_admin"
+        self.owner_pw = "test_pw"
 
         init_db(db_name=self.test_db_name,owner=self.test_owner, pw=self.owner_pw)
 

@@ -9,5 +9,7 @@
 
 psql -d postgres -c "CREATE ROLE $2 WITH LOGIN PASSWORD '$3' CREATEDB CREATEROLE;"
 createdb $1 -O $2
+psql -d postgres -c "REVOKE CONNECT ON DATABASE $1 FROM PUBLIC;"
+psql -d postgres -c "GRANT CONNECT ON DATABASE $1 TO $2;"
 psql $1 < src/fintrackr/schema.sql
   
