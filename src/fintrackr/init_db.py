@@ -16,7 +16,7 @@ DEFAULT_LOGGING_FORMAT = (
 
 def init_db(
         db_name: str = "fin_db",
-        owner: str = "admin"
+        owner: str = "admin",
     ) -> None:
     """
     One-time setup for initializing the database.
