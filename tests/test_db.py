@@ -15,7 +15,9 @@ class TestDBSetup(unittest.TestCase):
         # Make a test db, in the process also tests init_db.
         # TODO later use mocking instead of a real db
         
-        init_db(db_name="test")
+        self.test_db_name = "test"
+
+        init_db(db_name=self.test_db_name)
 
         #self.conn = psycopg.connect("dbname=test user=test_user")
         self.conn = psycopg.connect("dbname=test")
@@ -24,14 +26,15 @@ class TestDBSetup(unittest.TestCase):
     def tearDownClass(self):
         # close connection and delete testing db
         self.conn.close()
-        exit_code = subprocess.run(["dropdb","test"])
+        exit_code = subprocess.run(["dropdb",self.test_db_name])
         assert exit_code.returncode==0, "Failed to remove testing db"
 
-    def test_schema_match(self):
-        # Check that the schema of the real db matches this test db 
-        # we just made from the schema file
-        pass
+    def test_execute(self):
+         # Test that we can insert into the db using the fin_db.execute()
+         # convenience method
+         pass
 
-    # def test_add_transactions(self):
+
+    def test_add_transactions(self):
     #     # Will test add_transactions method TODO
-    #     pass
+         pass

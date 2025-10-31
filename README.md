@@ -47,7 +47,7 @@ No solution found when resolving dependencies:
 ```
 you already have the package (e.g. it's a package that comes with all python installs). I love `uv` but its error messages can be quite unhelpful.
 
-Use `pytest` to run the tests. Add `-s` to print print statements to console.
+Use `pytest` to run the tests. (For quick debugging: Add `-s` or `--capture=no` to print print statements to console.)
 
 
 ## TODO 
