@@ -12,6 +12,11 @@ dependencies = [
     "psycopg>=3.2.9",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.2",
+]
+
 [project.scripts]
 fintrackr = "fintrackr:main"
 

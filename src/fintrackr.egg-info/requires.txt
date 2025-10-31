@@ -1,2 +1,5 @@
 numpy>=2.3.2
 psycopg>=3.2.9
+
+[dev]
+pytest>=8.4.2

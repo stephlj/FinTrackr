@@ -10,6 +10,19 @@ CREATE TYPE recurrance AS ENUM(
     'irregular', 'monthly', 'annual'
 );
 
+CREATE TABLE data_sources(
+    id SERIAL PRIMARY KEY,
+    name text NOT NULL /* e.g., "main card", "primary checking" */
+);
+
+CREATE TABLE data_load_metadata(
+    id SERIAL PRIMARY KEY,
+    date_added date NOT NULL,
+    username text NOT NULL,
+    source text UNIQUE NOT NULL, /* filename */
+    data_source_id integer REFERENCES data_sources(id)
+);
+
 /* this table preserves the original data */
 CREATE TABLE transactions(
     id SERIAL PRIMARY KEY,
@@ -38,16 +51,3 @@ CREATE TABLE transactions_categories_xref(
     transaction_id integer NOT NULL REFERENCES transactions(id),
     category_id integer NOT NULL REFERENCES categories(id)
 );
-
-CREATE TABLE data_load_metadata(
-    id SERIAL PRIMARY KEY,
-    date_added date NOT NULL,
-    username text NOT NULL,
-    source text UNIQUE NOT NULL, /* filename */
-    source_alias integer REFERENCES data_sources(id)
-);
-
-CREATE TABLE data_sources(
-    id SERIAL PRIMARY KEY,
-    name text NOT NULL /* e.g., "main card", "primary checking" */
-)
