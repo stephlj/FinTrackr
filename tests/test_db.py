@@ -28,8 +28,7 @@ class TestDBSetup(unittest.TestCase):
     def tearDownClass(self):
         # close connection and delete testing db
         self.conn.close()
-        # TODO drop as the owner not as superuser
-        exit_code = subprocess.run(["dropdb", "-U", self.test_owner, self.test_db_name])
+        exit_code = subprocess.run(["dropdb", self.test_db_name])
         assert exit_code.returncode==0, "Failed to remove testing db"
 
         exit_code2 = subprocess.run(["dropuser",self.test_owner])
