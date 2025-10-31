@@ -3,7 +3,7 @@ name: Run Python Tests
 on:
   push:
     branches: [ main]
-  pull_rquest:
+  pull_request:
     branches: [ main]
   workflow_dispatch: # Allow manual triggering
 
