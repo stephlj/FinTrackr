@@ -22,7 +22,7 @@ class TestDBSetup(unittest.TestCase):
         init_db(db_name=self.test_db_name,owner=self.test_owner, pw=self.owner_pw)
 
         # TODO connect as something other than owner
-        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.test_owner} password={self.owner_pw}")
+        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.test_owner} password={self.owner_pw} host='localhost'")
 
     @classmethod
     def tearDownClass(self):
