@@ -20,14 +20,14 @@ class TestDBSetup(unittest.TestCase):
 
         init_db(db_name=self.test_db_name,owner=self.test_owner)
 
-        #self.conn = psycopg.connect("dbname=test user=test_user")
-        self.conn = psycopg.connect("dbname=test")
+        # TODO connect as something other than owner
+        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.test_owner}")
 
     @classmethod
     def tearDownClass(self):
         # close connection and delete testing db
         self.conn.close()
-        exit_code = subprocess.run(["dropdb",self.test_db_name])
+        exit_code = subprocess.run(["dropdb", "-U", self.test_owner ,self.test_db_name])
         assert exit_code.returncode==0, "Failed to remove testing db"
 
         exit_code2 = subprocess.run(["dropuser",self.test_owner])
