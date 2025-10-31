@@ -7,6 +7,8 @@ Requires-Python: >=3.13
 Description-Content-Type: text/markdown
 Requires-Dist: numpy>=2.3.2
 Requires-Dist: psycopg>=3.2.9
+Provides-Extra: dev
+Requires-Dist: pytest>=8.4.2; extra == "dev"
 
 # FinTrackr: Personal finances and budgeting app
 
@@ -30,6 +32,16 @@ FinTrackr will then classify each transaction (expense or income) by category (g
 
 The (eventual) interface will include visualizations of money on hand over time, monthly budgets calculated from both anticipated recurring expenses and extrapolations from past irregular expenditures, etc.
 
+## Getting started
+
+Run 
+
+```
+python ./src/fintrackr/init_db.py
+```
+
+from the command line. A bunch of `CREATE` statements should print.
+
 ## Dev
 
 This package uses `uv` for package and virtual environment management, based on the very helpful tutorials at [Sebastia Agramunt Puig's blog](https://agramunt.me/posts/python-virtual-environments-with-uv/).
@@ -38,8 +50,14 @@ Create the environment with `uv venv .venv` and then run `uv sync --all-extras` 
 
 Activate with `source .venv/bin/activate`.
 
-Add dependencies with `uv add <package1> <package2>`.
+Add dependencies with `uv add <package1> <package2>`. If you get an error that looks like:
 
+```
+No solution found when resolving dependencies:
+  ╰─▶ Because there are no versions of unittest and your project depends on unittest, we can conclude that your project's requirements are
+      unsatisfiable.
+```
+you already have the package (e.g. it's a package that comes with all python installs). I love `uv` but its error messages can be quite unhelpful.
 
 
 ## TODO 

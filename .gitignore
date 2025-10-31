@@ -1,3 +1,5 @@
+src/fintrackr/__pycache__/
+tests/__pycache__/
 postgres_out.txt
 .DS_Store
 src/.DS_Store

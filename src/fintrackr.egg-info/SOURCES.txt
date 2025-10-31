@@ -2,6 +2,7 @@ README.md
 pyproject.toml
 src/fintrackr/__init__.py
 src/fintrackr/fin_db.py
+src/fintrackr/init_db.py
 src/fintrackr/io.py
 src/fintrackr.egg-info/PKG-INFO
 src/fintrackr.egg-info/SOURCES.txt
