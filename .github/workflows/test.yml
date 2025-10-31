@@ -12,11 +12,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest] # The postgres that comes with Github Actions is ubuntu only
         python-version: [3.13]
     runs-on: ${{ matrix.os }}
 
     steps:
+    - name: Start postgresql
+      run: |
+        sudo systemctl start postgresql.service
+        pg_isready
+        sudo -u postgres createuser -s -d -r -w runner
+    
     - name: Checkout code
       uses: actions/checkout@v4
 
