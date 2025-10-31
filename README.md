@@ -22,6 +22,8 @@ The (eventual) interface will include visualizations of money on hand over time,
 
 ## Getting started
 
+Install PostgreSQL.
+
 Run 
 
 ```

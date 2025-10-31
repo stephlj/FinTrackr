@@ -15,7 +15,8 @@ DEFAULT_LOGGING_FORMAT = (
 )
 
 def init_db(
-        db_name: str = "fin_db"
+        db_name: str = "fin_db",
+        owner: str = "admin"
     ) -> None:
     """
     One-time setup for initializing the database.
@@ -27,7 +28,7 @@ def init_db(
 
     subprocess.run(["chmod", "+x", path_to_initscript])
 
-    exit_code = subprocess.run([path_to_initscript, db_name])
+    exit_code = subprocess.run([path_to_initscript, db_name, owner])
     logger.debug(f"Init script ran with exit code: {exit_code.returncode}, \
                  stdout: {exit_code.stdout}, \
                     stderr: {exit_code.stderr}")
