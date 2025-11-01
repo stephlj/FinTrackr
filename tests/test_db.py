@@ -8,11 +8,12 @@
 import psycopg, unittest, subprocess
 
 from fintrackr.init_db import init_db
+from fintrackr.add_user import add_user
 
 class TestDBSetup(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        # Make a test db, in the process also tests init_db.
+        # Make a test db, in the process also tests init_db and add_user.
         # TODO later use mocking instead of a real db
         
         self.test_db_name = "test"
@@ -21,8 +22,12 @@ class TestDBSetup(unittest.TestCase):
 
         init_db(db_name=self.test_db_name,owner=self.test_owner, pw=self.owner_pw)
 
-        # TODO connect as something other than owner
-        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.test_owner} password={self.owner_pw} host='localhost'")
+        self.user = "test_user"
+        self.user_pw = "pw"
+        add_user(name=self.user, pw=self.user_pw)
+
+        # TODO do I need a pw in CI?
+        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.user} password={self.user_pw} host='localhost'")
 
     @classmethod
     def tearDownClass(self):
@@ -31,8 +36,11 @@ class TestDBSetup(unittest.TestCase):
         exit_code = subprocess.run(["dropdb", self.test_db_name])
         assert exit_code.returncode==0, "Failed to remove testing db"
 
-        exit_code2 = subprocess.run(["dropuser",self.test_owner])
-        assert exit_code2.returncode==0, "Failed to remove testing db owner"
+        exit_code2 = subprocess.run(["dropuser",self.user])
+        assert exit_code2.returncode==0, "Failed to remove testing user"
+
+        exit_code3 = subprocess.run(["dropuser",self.test_owner])
+        assert exit_code3.returncode==0, "Failed to remove testing db owner"
 
     def test_execute(self):
          # Test that we can insert into the db using the fin_db.execute()

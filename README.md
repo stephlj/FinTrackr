@@ -16,6 +16,8 @@ Users can either provide a csv of data (e.g. credit card statements downloaded f
 
 FinTrackr will then classify each transaction (expense or income) by category (groceries, eating out, etc) and whether the expense is recurring, and on what frequency. Initially classification will be manual, but v2 will use an LLM agent.
 
+Security: the database runs locally, nothing leaves your machine.
+
 ## Use cases
 
 The (eventual) interface will include visualizations of money on hand over time, monthly budgets calculated from both anticipated recurring expenses and extrapolations from past irregular expenditures, etc.
@@ -31,6 +33,14 @@ python ./src/fintrackr/init_db.py
 ```
 
 from the command line. A bunch of `CREATE` statements should print.
+
+Add new users with:
+
+```
+python ./src/fintrackr/add_user.py --name=<user_name> --pw=<password>
+```
+
+Users are associated with data they add to the database.
 
 ## Dev
 
