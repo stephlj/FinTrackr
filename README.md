@@ -29,10 +29,10 @@ Install PostgreSQL.
 Run 
 
 ```
-python ./src/fintrackr/init_db.py
+python ./src/fintrackr/init_db.py --pw=<database admin password>
 ```
 
-from the command line. A bunch of `CREATE` statements should print.
+from the command line. A bunch of `CREATE` statements should print. This creates the Fintrackr database with owner `admin` and the login password for `admin` that you specify. `admin` can create the database and create users.
 
 Add new users with:
 
@@ -40,7 +40,7 @@ Add new users with:
 python ./src/fintrackr/add_user.py --name=<user_name> --pw=<password>
 ```
 
-Users are associated with data they add to the database.
+Users are associated with data they add to the database. They can modify all tables but can't create users/roles.
 
 ## Dev
 

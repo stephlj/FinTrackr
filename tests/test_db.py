@@ -20,24 +20,24 @@ class TestDBSetup(unittest.TestCase):
         self.test_owner = "test_admin"
         self.owner_pw = "test_pw"
 
-        init_db(db_name=self.test_db_name,owner=self.test_owner, pw=self.owner_pw)
+        init_db(pw=self.owner_pw, db_name=self.test_db_name, owner=self.test_owner)
 
         self.user = "test_user"
         self.user_pw = "pw"
-        add_user(name=self.user, pw=self.user_pw)
+       # add_user(name=self.user, pw=self.user_pw)
 
         # TODO do I need a pw in CI?
-        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.user} password={self.user_pw} host='localhost'")
+        #self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.user} password={self.user_pw} host='localhost'")
 
     @classmethod
     def tearDownClass(self):
         # close connection and delete testing db
-        self.conn.close()
+        #self.conn.close()
         exit_code = subprocess.run(["dropdb", self.test_db_name])
         assert exit_code.returncode==0, "Failed to remove testing db"
 
-        exit_code2 = subprocess.run(["dropuser",self.user])
-        assert exit_code2.returncode==0, "Failed to remove testing user"
+        #exit_code2 = subprocess.run(["dropuser",self.user])
+        #assert exit_code2.returncode==0, "Failed to remove testing user"
 
         exit_code3 = subprocess.run(["dropuser",self.test_owner])
         assert exit_code3.returncode==0, "Failed to remove testing db owner"

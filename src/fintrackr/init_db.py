@@ -5,7 +5,7 @@ Initial setup of the database.
 Copyright (c) 2025 Stephanie Johnson
 """
 
-import os, subprocess
+import os, sys, subprocess
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,9 +15,9 @@ DEFAULT_LOGGING_FORMAT = (
 )
 
 def init_db(
+        pw: str,
         db_name: str = "fin_db",
         owner: str = "admin",
-        pw: str = "admin"
     ) -> None:
     """
     One-time setup for initializing the database.
@@ -42,4 +42,4 @@ def init_db(
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
-    init_db()
+    init_db(sys.argv[1])
