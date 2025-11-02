@@ -24,15 +24,15 @@ The (eventual) interface will include visualizations of money on hand over time,
 
 ## Getting started
 
-Install PostgreSQL.
+Install PostgreSQL (TODO add more install instructions).
 
-Run 
+Run (TODO add testing coverage for CLI version of init_db)
 
 ```
-python ./src/fintrackr/init_db.py --pw=<database admin password>
+python ./src/fintrackr/init_db.py <database admin password>
 ```
 
-from the command line. A bunch of `CREATE` statements should print. This creates the Fintrackr database with owner `admin` and the login password for `admin` that you specify. `admin` can create the database and create users.
+from the command line. A bunch of `CREATE` statements should print. This creates the Fintrackr database with owner name `fintrackr_admin` and the login password for `fintrackr_admin` that you specify. `fintrackr_admin` can create the database and create users. Admin name and db name are specified in the `config.yml` file.
 
 Add new users with:
 

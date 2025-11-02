@@ -7,6 +7,7 @@ Copyright (c) 2025 Stephanie Johnson
 
 import os, sys, subprocess
 import logging
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,8 @@ DEFAULT_LOGGING_FORMAT = (
 
 def init_db(
         pw: str,
-        db_name: str = "fin_db",
-        owner: str = "admin",
+        db_name: str,
+        owner: str,
     ) -> None:
     """
     One-time setup for initializing the database.
@@ -42,4 +43,18 @@ def init_db(
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
-    init_db(sys.argv[1])
+
+    if len(sys.argv) == 2:
+        # Use defaults in config file
+        with open(os.path.join(os.getcwd(), "src", "fintrackr", "config.yml"), "r") as config_file:
+            config = yaml.safe_load(config_file)
+            db_name = config["db"]["db_name"]
+            db_owner = config["db"]["admin_name"]
+    else:
+        # TODO I could make it so additional args passed overwrite the config file
+        if len(sys.argv) < 2:
+            raise TypeError("Too few inputs (missing db owner password)")
+        else:
+            raise TypeError("Too many input args (only accepts db owner password)")
+
+    init_db(pw=sys.argv[1],db_name=db_name,owner=db_owner)

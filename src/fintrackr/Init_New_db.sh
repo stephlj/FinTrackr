@@ -1,9 +1,8 @@
 #!/bin/bash
 
+# ./Init_New_db.sh [db name] [username who will be set to owner] [pw for owner]
 # Initialize FinTrackr db
-# Admin should do this once, users never; can also be called by tests
-# First arg is db name, second is username who will be set to owner,
-# third arg is pw for owner.
+# Admin should do this once, users never; can also be called by tests.
 # createdb will fail if db already exists
 # TODO pass the error out if creation fails
 
