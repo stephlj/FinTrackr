@@ -1,0 +1,5 @@
+# Fintrackr configuration
+
+db:
+  db_name: fin_db
+  admin_name: fintrackr_admin

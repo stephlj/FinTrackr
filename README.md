@@ -37,10 +37,10 @@ from the command line. A bunch of `CREATE` statements should print. This creates
 Add new users with:
 
 ```
-python ./src/fintrackr/add_user.py --name=<user_name> --pw=<password>
+python ./src/fintrackr/add_user.py <new user name> <new user password> <db admin password>
 ```
 
-Users are associated with data they add to the database. They can modify all tables but can't create users/roles.
+Users are associated with data they add to the database. They can modify all tables but can't create users/roles; therefore the db owner's password must be passed so the admin can create the new user.
 
 ## Dev
 
