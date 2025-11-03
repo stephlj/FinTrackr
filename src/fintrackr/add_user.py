@@ -13,8 +13,7 @@ def add_user(
         name: str,
         pw: str,
         admin_pw: str,
-        db_name: str,
-        db_admin: str,
+        path_to_config: str
 ) -> None:
     """Add a new user.
 
@@ -26,12 +25,8 @@ def add_user(
         Password for new user.
     admin_pw : str 
         The password for the db owner, set when init_db was run.
-    db_name: str
-        Name of database to create user for. This makes testing easier;
-        if run from command line, this is inferred from the config file.
-    db_admin: str
-        Name of admin account (db owner). This makes testing easier;
-        if run from the command line, this is inferred from the config file.
+    path_to_config : str
+        Path to the config file to use, to get db_name, db_admin.
 
     Returns
     -------
@@ -39,6 +34,11 @@ def add_user(
 
     TODO later: add separate dev role if users can't write to all tables
     """
+
+    with open(path_to_config, "r") as config_file:
+        config = yaml.safe_load(config_file)
+        db_name = config["db"]["db_name"]
+        db_admin = config["db"]["admin_name"]
 
     # Connect to the db as admin who has permissions to create role
     conn = psycopg.connect(f"dbname={db_name} user={db_admin} password={admin_pw} host='localhost'")
@@ -55,9 +55,6 @@ def add_user(
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
     if len(sys.argv) != 4:
-        raise TypeError("add_user accepts exactly 3 args")
-    with open(os.path.join(os.getcwd(), "src", "fintrackr", "config.yml"), "r") as config_file:
-        config = yaml.safe_load(config_file)
-        db_name = config["db"]["db_name"]
-        db_owner = config["db"]["admin_name"]
-    add_user(name=sys.argv[1], pw=sys.argv[2], admin_pw=sys.argv[3],db_name=db_name, db_admin=db_owner)
+        raise TypeError("add_user.py accepts exactly 3 args")
+    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
+    add_user(name=sys.argv[1], pw=sys.argv[2], admin_pw=sys.argv[3],path_to_config=path_to_config)

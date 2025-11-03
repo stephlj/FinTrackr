@@ -17,13 +17,27 @@ DEFAULT_LOGGING_FORMAT = (
 
 def init_db(
         pw: str,
-        db_name: str,
-        owner: str,
+        path_to_config: str
     ) -> None:
     """
     One-time setup for initializing the database.
     This will error out if already created.
+
+    Parameters
+    ----------
+    pw : str
+        Admin account pw for db
+
+    Returns
+    -------
+    None
+
     """
+
+    with open(path_to_config, "r") as config_file:
+        config = yaml.safe_load(config_file)
+        db_name = config["db"]["db_name"]
+        owner = config["db"]["admin_name"]
 
     path_to_initscript = os.path.join(os.getcwd(),"src","fintrackr","Init_New_db.sh")  
     logger.debug(f"Attempting to run init script at {path_to_initscript}")
@@ -44,17 +58,9 @@ def init_db(
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
-    if len(sys.argv) == 2:
-        # Use defaults in config file
-        with open(os.path.join(os.getcwd(), "src", "fintrackr", "config.yml"), "r") as config_file:
-            config = yaml.safe_load(config_file)
-            db_name = config["db"]["db_name"]
-            db_owner = config["db"]["admin_name"]
-    else:
-        # TODO I could make it so additional args passed overwrite the config file
-        if len(sys.argv) < 2:
-            raise TypeError("Too few inputs (missing db owner password)")
-        else:
-            raise TypeError("Too many input args (only accepts db owner password)")
+    if len(sys.argv) != 2:
+        raise TypeError("init_db takes exactly one input arg (db owner pw to set)")
 
-    init_db(pw=sys.argv[1],db_name=db_name,owner=db_owner)
+    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
+
+    init_db(pw=sys.argv[1],path_to_config=path_to_config)
