@@ -1,0 +1,5 @@
+# Fintrackr test configuration
+
+db:
+  db_name: test_fin_db
+  admin_name: test_admin
