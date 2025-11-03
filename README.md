@@ -16,21 +16,31 @@ Users can either provide a csv of data (e.g. credit card statements downloaded f
 
 FinTrackr will then classify each transaction (expense or income) by category (groceries, eating out, etc) and whether the expense is recurring, and on what frequency. Initially classification will be manual, but v2 will use an LLM agent.
 
+Security: the database runs locally, nothing leaves your machine.
+
 ## Use cases
 
 The (eventual) interface will include visualizations of money on hand over time, monthly budgets calculated from both anticipated recurring expenses and extrapolations from past irregular expenditures, etc.
 
 ## Getting started
 
-Install PostgreSQL.
+Install PostgreSQL (TODO add more install instructions).
 
-Run 
+Run (TODO add testing coverage for CLI version of init_db)
 
 ```
-python ./src/fintrackr/init_db.py
+python ./src/fintrackr/init_db.py <database admin password>
 ```
 
-from the command line. A bunch of `CREATE` statements should print.
+from the command line. A bunch of `CREATE` statements should print. This creates the Fintrackr database with owner name `fintrackr_admin` and the login password for `fintrackr_admin` that you specify. `fintrackr_admin` can create the database and create users. Admin name and db name are specified in the `config.yml` file.
+
+Add new users with:
+
+```
+python ./src/fintrackr/add_user.py <new user name> <new user password> <db admin password>
+```
+
+Users are associated with data they add to the database. They can modify all tables but can't create users/roles; therefore the db owner's password must be passed so the admin can create the new user.
 
 ## Dev
 

@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 src/fintrackr/__init__.py
+src/fintrackr/add_user.py
 src/fintrackr/fin_db.py
 src/fintrackr/init_db.py
 src/fintrackr/io.py

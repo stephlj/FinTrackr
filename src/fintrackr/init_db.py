@@ -5,8 +5,9 @@ Initial setup of the database.
 Copyright (c) 2025 Stephanie Johnson
 """
 
-import os, subprocess
+import os, sys, subprocess
 import logging
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -15,20 +16,35 @@ DEFAULT_LOGGING_FORMAT = (
 )
 
 def init_db(
-        db_name: str = "fin_db",
-        owner: str = "admin",
+        pw: str,
+        path_to_config: str
     ) -> None:
     """
     One-time setup for initializing the database.
     This will error out if already created.
+
+    Parameters
+    ----------
+    pw : str
+        Admin account pw for db
+
+    Returns
+    -------
+    None
+
     """
+
+    with open(path_to_config, "r") as config_file:
+        config = yaml.safe_load(config_file)
+        db_name = config["db"]["db_name"]
+        owner = config["db"]["admin_name"]
 
     path_to_initscript = os.path.join(os.getcwd(),"src","fintrackr","Init_New_db.sh")  
     logger.debug(f"Attempting to run init script at {path_to_initscript}")
 
     subprocess.run(["chmod", "+x", path_to_initscript])
 
-    exit_code = subprocess.run([path_to_initscript, db_name, owner])
+    exit_code = subprocess.run([path_to_initscript, db_name, owner, pw])
     logger.debug(f"Init script ran with exit code: {exit_code.returncode}, \
                  stdout: {exit_code.stdout}, \
                     stderr: {exit_code.stderr}")
@@ -41,4 +57,10 @@ def init_db(
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
-    init_db()
+
+    if len(sys.argv) != 2:
+        raise TypeError("init_db takes exactly one input arg (db owner pw to set)")
+
+    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
+
+    init_db(pw=sys.argv[1],path_to_config=path_to_config)
