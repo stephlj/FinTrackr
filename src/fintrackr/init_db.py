@@ -59,7 +59,7 @@ if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
     if len(sys.argv) != 2:
-        raise TypeError("init_db takes exactly one input arg (db owner pw to set)")
+        raise TypeError("init_db.py takes exactly one input arg (db owner pw to set)")
 
     path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
 
