@@ -1,4 +1,6 @@
 # Fintrackr configuration
+#
+# Copyright (c) 2025 Stephanie Johnson
 
 db:
   db_name: fin_db

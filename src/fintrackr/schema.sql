@@ -4,6 +4,8 @@ tables: plural, lower case, words separated by underscores
 primary key: always "id"
 foreign keys: x_id, using singular for x
 
+Copyright (c) 2025 Stephanie Johnson
+
 */
 
 CREATE TYPE recurrance AS ENUM(

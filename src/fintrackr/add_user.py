@@ -1,3 +1,7 @@
+# add_user.py
+#
+# Copyright (c) 2025 Stephanie Johnson
+
 import os, sys
 import logging
 import psycopg

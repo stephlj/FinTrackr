@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # fin_db.py
+#
+# Copyright (c) 2025 Stephanie Johnson
 """
 Class that connects to the database and manages interactions with it
 (adding transasctions, etc).

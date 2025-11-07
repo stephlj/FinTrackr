@@ -5,6 +5,8 @@
 # Admin should do this once, users never; can also be called by tests.
 # createdb will fail if db already exists
 # TODO pass the error out if creation fails
+#
+# Copyright (c) 2025 Stephanie Johnson
 
 psql -d postgres -c "CREATE ROLE $2 WITH LOGIN PASSWORD '$3' CREATEDB CREATEROLE;"
 createdb $1 -O $2
