@@ -30,6 +30,7 @@ CREATE TABLE transactions(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount money NOT NULL,
+    balance money NOT NULL,
     description text, /* e.g merchant name on cc transaction */
     metadatum_id integer NOT NULL REFERENCES data_load_metadata(id)
 );
