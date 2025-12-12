@@ -13,15 +13,16 @@ Copyright (c) 2025 Stephanie Johnson
 import psycopg
 import logging
 import os
+import re
 
 logger = logging.getLogger(__name__)
 
 class FinDB:
     def __init__(self, user: str, name: str = "fin_db"):
         self._conn = psycopg.connect(f"dbname={name} user={user}")
-        self._cur = self._conn.cursor()
+        self._conn.autocommit = True
 
-    def _execute_query(self, query: str) -> list:
+    def _execute_query(self, query: str) -> str:
         """
         Convenience function.
 
@@ -40,10 +41,10 @@ class FinDB:
 
         """
         # The with statement automatically closes cursor after execution
-        with self._cur as curs: 
+        with self._conn.cursor() as curs: 
             logger.info(f"Executing query {query}")
             curs.execute(query)
-            response = curs.fetchall()
+            response = curs.statusmessage
             logger.info(f"Completed with response {response}")
             return response
 
@@ -59,29 +60,36 @@ class FinDB:
 
         Returns
         -------
-        None, though it should probably return the query response
+        None
 
         """
         assert os.path.isfile(path_to_transactions), "FinDB._load_transactions: path_to_transactions not a path to a file"
         assert os.path.splitext(path_to_transactions)[1] == ".csv", "FinDB._load_transactions: path_to_transactions not a csv"
 
         create_staging = " CREATE TABLE IF NOT EXISTS staging( " \
-            " Date date, Amount money, Description text) "
+            " Date date, Amount money, Description text); "
         
-        response1 = self._execute_query(create_staging)
-        response2 = self._execute_query(f"COPY staging FROM '{path_to_transactions}' DELIMITERS ',' CSV ")
+        r1 = self._execute_query(create_staging)
+        assert r1 == "CREATE TABLE", "Failed to create staging table"
+        r2 = self._execute_query(f"COPY staging FROM '{path_to_transactions}' DELIMITERS ',' CSV;")
+        r2_re = re.match("COPY "+r"\d+", r2)
+        assert r2_re is not None
 
-    def _add_metadata(self, ...)
-        meta_query = "INSERT INTO data_load_metadata (date_added, username, source) VALUES () RETURNING id"
-        meta_id = self.cur.execute(meta_query, ("data_load_metadata",))
+        self._conn.close()
 
-    def add_transactions(self, path_to_transactions: str) -> None:
+    # def _add_metadata(self, ...)
+    #     meta_query = "INSERT INTO data_load_metadata (date_added, username, source) VALUES () RETURNING id;"
+    #     meta_id = self._execute_query(meta_query, ("data_load_metadata",))
 
-        self._load_transactions(path_to_transactions=path_to_transactions)
+    # def add_transactions(self, path_to_transactions: str) -> None:
 
-        self._add_metadata() # get FK
+    #     self._load_transactions(path_to_transactions=path_to_transactions)
 
-        trans_query = "INSERT INTO transactions (poasted_date, amount, description, metadatum_id) VALUES ()"
-        success = self.cur.execute(trans_query, ("transactions",))
+    #     self._add_metadata() # get FK
+
+    #     trans_query = "INSERT INTO transactions (poasted_date, amount, description, metadatum_id) VALUES ()"
+    #     success = self.cur.execute(trans_query, ("transactions",))
     
-        # Remove all rows from staging table or drop table
+    #     # Remove all rows from staging table or drop table;
+
+    # Add close down function that closes cursor

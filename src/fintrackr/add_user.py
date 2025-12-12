@@ -52,6 +52,7 @@ def add_user(
     # TODO add to an existing user role
     cur.execute(f"CREATE ROLE {name} WITH LOGIN PASSWORD '{pw}' NOCREATEDB NOCREATEROLE")
     cur.execute(f"GRANT CONNECT ON DATABASE {db_name} TO {name}")
+    cur.execute(f"GRANT pg_read_server_files TO {name}")
 
     cur.close()
     conn.close()
