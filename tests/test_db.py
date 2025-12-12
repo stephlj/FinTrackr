@@ -44,17 +44,20 @@ class TestDBSetup(unittest.TestCase):
         # close connection and delete testing db
         self.conn.close()
         exit_code = subprocess.run(["dropdb", self.test_db_name])
-        assert exit_code.returncode==0, "Failed to remove testing db"
-
         exit_code2 = subprocess.run(["dropuser",self.user])
-        assert exit_code2.returncode==0, "Failed to remove testing user"
-
         exit_code3 = subprocess.run(["dropuser",self.test_owner])
+
+        # We put these at the end to ensure teardown completes even if one of these fails
+        # self.assertEqual fails here for some reason TODO figure out why
+        assert exit_code.returncode==0, "Failed to remove testing db"
+        assert exit_code2.returncode==0, "Failed to remove testing user"
         assert exit_code3.returncode==0, "Failed to remove testing db owner"
 
     def test_execute(self):
          # Test that we can insert into the db using the fin_db.execute()
          # convenience method
+
+         # use self.assertEqual and similar here, even though that isn't working in teardown ... 
          pass
 
 
