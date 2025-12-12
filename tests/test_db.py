@@ -15,49 +15,50 @@ from fintrackr.add_user import add_user
 
 class TestDBSetup(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         # Make a test db, in the process also tests init_db and add_user.
         # TODO later use mocking instead of a real db
         
         path_to_config = os.path.join(os.getcwd(),"tests","data","test_config.yml")
         with open(path_to_config, "r") as config_file:
             config = yaml.safe_load(config_file)
-            self.test_db_name = config["db"]["db_name"]
-            self.test_owner = config["db"]["admin_name"]
+            cls.test_db_name = config["db"]["db_name"]
+            cls.test_owner = config["db"]["admin_name"]
 
-        self.owner_pw = "test_pw"
+        cls.owner_pw = "test_pw"
 
-        init_db(pw=self.owner_pw, path_to_config=path_to_config)
+        init_db(pw=cls.owner_pw, path_to_config=path_to_config)
 
-        self.user = "test_user"
-        self.user_pw = "pw"
-        add_user(name=self.user, 
-                 pw=self.user_pw, 
-                 admin_pw = self.owner_pw, 
+        cls.user = "test_user"
+        cls.user_pw = "pw"
+        add_user(name=cls.user, 
+                 pw=cls.user_pw, 
+                 admin_pw = cls.owner_pw, 
                  path_to_config=path_to_config
         )
 
-        self.conn = psycopg.connect(f"dbname={self.test_db_name} user={self.user} password={self.user_pw} host='localhost'")
+        cls.conn = psycopg.connect(f"dbname={cls.test_db_name} user={cls.user} password={cls.user_pw} host='localhost'")
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # close connection and delete testing db
-        self.conn.close()
-        exit_code = subprocess.run(["dropdb", self.test_db_name])
-        exit_code2 = subprocess.run(["dropuser",self.user])
-        exit_code3 = subprocess.run(["dropuser",self.test_owner])
+        cls.conn.close()
+        exit_code = subprocess.run(["dropdb", cls.test_db_name])
+        exit_code2 = subprocess.run(["dropuser",cls.user])
+        exit_code3 = subprocess.run(["dropuser",cls.test_owner])
 
-        # We put these at the end to ensure teardown completes even if one of these fails
-        # self.assertEqual fails here for some reason TODO figure out why
-        assert exit_code.returncode==0, "Failed to remove testing db"
-        assert exit_code2.returncode==0, "Failed to remove testing user"
-        assert exit_code3.returncode==0, "Failed to remove testing db owner"
+        # We put these at the end to ensure teardown completes even if one of these fails.
+        # Note that the @classmethod decorator changes the first arg to the class not
+        # an instance of the class, so self.assertEqual fails.
+        assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
+        assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
+        assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
 
     def test_execute(self):
          # Test that we can insert into the db using the fin_db.execute()
          # convenience method
 
-         # use self.assertEqual and similar here, even though that isn't working in teardown ... 
+         # use self.assertEqual and similar here
          pass
 
 

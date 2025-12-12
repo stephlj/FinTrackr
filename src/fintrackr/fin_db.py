@@ -5,6 +5,8 @@
 Class that connects to the database and manages interactions with it
 (adding transasctions, etc).
 
+This is the database access layer; business logic should be elsewhere.
+
 Copyright (c) 2025 Stephanie Johnson
 """
 
