@@ -18,8 +18,11 @@ import re
 logger = logging.getLogger(__name__)
 
 class FinDB:
-    def __init__(self, user: str, name: str = "fin_db"):
-        self._conn = psycopg.connect(f"dbname={name} user={user}")
+    def __init__(self, user: str, pw: str, db_name: str = "fin_db"):
+        self.user = user
+        self.pw = pw
+        self.db_name = db_name
+        self._conn = psycopg.connect(f"dbname={self.db_name} user={self.user} password={self.pw} host='localhost'")
         self._conn.autocommit = True
 
     def _execute_query(self, query: str) -> str:

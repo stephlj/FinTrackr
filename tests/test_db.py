@@ -5,7 +5,7 @@
 #
 # Copyright (c) 2025 Stephanie Johnson
 
-import psycopg
+# import psycopg
 import unittest
 import subprocess, os
 import yaml
@@ -38,12 +38,15 @@ class TestDBSetup(unittest.TestCase):
                  path_to_config=path_to_config
         )
 
-        cls.conn = psycopg.connect(f"dbname={cls.test_db_name} user={cls.user} password={cls.user_pw} host='localhost'")
+        # cls.conn = psycopg.connect(f"dbname={cls.test_db_name} user={cls.user} password={cls.user_pw} host='localhost'")
+        cls.FinDB = FinDB(user=cls.user, pw=cls.user_pw, db_name=cls.test_db_name)
 
     @classmethod
     def tearDownClass(cls):
         # close connection and delete testing db
-        cls.conn.close()
+        # cls.conn.close()
+
+        # Delete testing db
         exit_code = subprocess.run(["dropdb", cls.test_db_name])
         exit_code2 = subprocess.run(["dropuser",cls.user])
         exit_code3 = subprocess.run(["dropuser",cls.test_owner])
@@ -57,6 +60,8 @@ class TestDBSetup(unittest.TestCase):
 
     def test_load_transactions(self):
         path_to_test_transactions = os.path.join(os.getcwd(),"tests","data","test_data_cc.csv")
+
+        self.FinDB.load_transactions(path_to_transactions=path_to_test_transactions)
 
         #TODO test the other test cases
     
