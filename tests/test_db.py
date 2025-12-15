@@ -12,6 +12,7 @@ import yaml
 
 from fintrackr.init_db import init_db
 from fintrackr.add_user import add_user
+from fintrackr.fin_db import FinDB
 
 class TestDBSetup(unittest.TestCase):
     @classmethod
@@ -54,14 +55,11 @@ class TestDBSetup(unittest.TestCase):
         assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
 
-    def test_execute(self):
-         # Test that we can insert into the db using the fin_db.execute()
-         # convenience method
+    def test_load_transactions(self):
+        path_to_test_transactions = os.path.join(os.getcwd(),"tests","data","test_data_cc.csv")
 
-         # use self.assertEqual and similar here
-         pass
-
-
+        #TODO test the other test cases
+    
     def test_add_transactions(self):
     #     # Will test add_transactions method TODO
          pass

@@ -48,7 +48,7 @@ class FinDB:
             logger.info(f"Completed with response {response}")
             return response
 
-    def _load_transactions(self, path_to_transactions: str) -> None:
+    def load_transactions(self, path_to_transactions: str) -> None:
         """ 
         FinTracker currently accepts csv inputs.
         Load csv from disk into a staging table, which we create if it doesn't already exist
@@ -75,17 +75,18 @@ class FinDB:
         r2_re = re.match("COPY "+r"\d+", r2)
         assert r2_re is not None
 
+        # temporary
         self._conn.close()
 
-    # def _add_metadata(self, ...)
+    # def add_metadata(self, ...)
     #     meta_query = "INSERT INTO data_load_metadata (date_added, username, source) VALUES () RETURNING id;"
     #     meta_id = self._execute_query(meta_query, ("data_load_metadata",))
 
     # def add_transactions(self, path_to_transactions: str) -> None:
 
-    #     self._load_transactions(path_to_transactions=path_to_transactions)
+    #     self._loadtransactions(path_to_transactions=path_to_transactions)
 
-    #     self._add_metadata() # get FK
+    #     self.add_metadata() # get FK
 
     #     trans_query = "INSERT INTO transactions (poasted_date, amount, description, metadatum_id) VALUES ()"
     #     success = self.cur.execute(trans_query, ("transactions",))
