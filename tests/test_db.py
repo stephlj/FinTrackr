@@ -58,6 +58,12 @@ class TestDBSetup(unittest.TestCase):
         assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
 
+    def test_execute_query(self):
+        # Test cases:
+        # - not a SELECT statement (eg, insert)
+        # - trying to query a table that doesn't exist in the db
+        pass
+    
     def test_load_transactions(self):
         path_to_test_transactions = os.path.join(os.getcwd(),"tests","data","test_data_cc.csv")
 
