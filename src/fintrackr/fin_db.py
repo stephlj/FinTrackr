@@ -16,8 +16,13 @@ import os
 import re
 
 logger = logging.getLogger(__name__)
+DEFAULT_LOGGING_FORMAT = (
+    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
+)
 
 class FinDB:
+    logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
+
     def __init__(self, user: str, pw: str, db_name: str = "fin_db"):
         self.user = user
         self.pw = pw
@@ -25,7 +30,7 @@ class FinDB:
         self._conn = psycopg.connect(f"dbname={self.db_name} user={self.user} password={self.pw} host='localhost'")
         self._conn.autocommit = True
 
-    def __del__(self):
+    def close(self):
         try:
             self._conn.close()
         except Exception as e:
@@ -63,17 +68,23 @@ class FinDB:
         # The with statement automatically closes cursor after execution
         with self._conn.cursor() as curs: 
             logger.info(f"Executing query {query}")
-            curs.execute(query)
-            response = curs.statusmessage
-            logger.info(f"Completed with response {response}")
-            return response
+            response = None
+            try:
+                curs.execute(query)
+                response = curs.statusmessage
+                logger.info(f"Completed with response {response}")
+            except Exception as e:
+                logger.error(f"Query did not complete with exception: {e}")
+            finally:
+                return response
         
     def execute_query(self, query: str) -> tuple:
         """
         Returns the result of a query to the database.
 
         This feels like not great re: security/"little Johnny Tables" situations,
-        so I'm forcing the query to be a SELECT statement only for now.
+        so I'm forcing the query to be a SELECT statement only for now. (Not that
+        that prevents Little Johnny Tables ... TODO switch to parameterized SQL)
 
         Parameters
         ----------
@@ -89,15 +100,21 @@ class FinDB:
         """
         # The with statement automatically closes cursor after execution
 
-        if query[0:5] != "SELECT":
+        response = None
+
+        if query[0:6] != "SELECT".upper(): # goofy!
             logger.error("FinDB.execute_query only accepts SELECT statements")
-            return None
+            return response
 
         with self._conn.cursor() as curs: 
             logger.info(f"Executing query {query}")
-            curs.execute(query)
-            response = curs.fetchall()
-            return response
+            try:
+                curs.execute(query)
+                response = curs.fetchall() # Returns a list of tuples (each row a tuple)
+            except Exception as e:
+                logger.debug(f"Query did not complete with exception: {e}")
+            finally:
+                return response
 
     def load_transactions(self, path_to_transactions: str) -> int:
         """ 
@@ -112,8 +129,7 @@ class FinDB:
         Returns
         -------
         int
-            Length of a query of how many rows are now in staging table
-            (should be length of rows added)
+            Length of a query of how many rows were added to the staging table
 
         """
         assert os.path.isfile(path_to_transactions), "FinDB._load_transactions: path_to_transactions not a path to a file"
@@ -123,10 +139,12 @@ class FinDB:
             " Date date, Amount money, Description text); "
         
         # In case staging wasn't cleared:
-        rows_before = self.execute_query("SELECT * FROM staging")
+        query_staging = "SELECT * FROM staging"
+        rows_before = self.execute_query(query_staging)
         if rows_before is not None:
             logger.debug(f"Before loading new transactions, staging has {len(rows_before)} rows")
         else:
+            rows_before = []
             logger.debug(f"SELECT statement on staging table before loading transactions returns None")
         
         r1 = self._execute_action(create_staging)
@@ -136,7 +154,7 @@ class FinDB:
         assert r2_re is not None
 
         # Query how many rows are now in staging table
-        rows_after = self.execute_query("SELECT * FROM staging")
+        rows_after = self.execute_query(query_staging)
         logger.info(f"After loading new transactions, staging has {len(rows_after)-len(rows_before)} rows")
 
         return len(rows_after)-len(rows_before)
@@ -155,3 +173,4 @@ class FinDB:
     #     success = self.cur.execute(trans_query, ("transactions",))
     
     #     # Remove all rows from staging table or drop table;
+    # TODO how to check that duplicates weren't added?

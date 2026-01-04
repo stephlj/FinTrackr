@@ -5,10 +5,10 @@
 #
 # Copyright (c) 2025 Stephanie Johnson
 
-# import psycopg
 import unittest
 import subprocess, os
 import yaml
+import pandas as pd
 
 from fintrackr.init_db import init_db
 from fintrackr.add_user import add_user
@@ -43,9 +43,7 @@ class TestDBSetup(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # close connection and delete testing db
-        # cls.conn.close()
-
+        cls.FinDB.close()
         # Delete testing db
         exit_code = subprocess.run(["dropdb", cls.test_db_name])
         exit_code2 = subprocess.run(["dropuser",cls.user])
@@ -66,8 +64,12 @@ class TestDBSetup(unittest.TestCase):
     
     def test_load_transactions(self):
         path_to_test_transactions = os.path.join(os.getcwd(),"tests","data","test_data_cc.csv")
+        transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
 
-        self.FinDB.load_transactions(path_to_transactions=path_to_test_transactions)
+        # load_transactions adds rows to a staging table that should be empty at start
+        num_rows_added = self.FinDB.load_transactions(path_to_transactions=path_to_test_transactions)
+        
+        assert num_rows_added == transactions_to_add.shape[0], "Rows added to staging table does not match file"
 
         #TODO test the other test cases
     
