@@ -13,5 +13,5 @@ createdb $1 -O $2
 psql -d postgres -c "REVOKE CONNECT ON DATABASE $1 FROM PUBLIC;"
 psql -d postgres -c "GRANT CONNECT ON DATABASE $1 TO $2;"
 psql -d postgres -c "GRANT pg_read_server_files TO $2 WITH ADMIN OPTION;"
-psql -h localhost -d $1 -U $2 < src/fintrackr/schema.sql
+PGPASSWORD=$3 psql -h localhost -d $1 -U $2 < src/fintrackr/schema.sql
   
