@@ -68,10 +68,13 @@ class TestDBSetup(unittest.TestCase):
 
         # load_transactions adds rows to a staging table that should be empty at start
         num_rows_added = self.FinDB.load_transactions(path_to_transactions=path_to_test_transactions)
-        
         assert num_rows_added == transactions_to_add.shape[0], "Rows added to staging table does not match file"
 
-        #TODO test the other test cases
+        path_to_too_many_columns = os.path.join(os.getcwd(),"tests","data","test_data_cc_wrongnumcols.csv")
+        num_rows_added = self.FinDB.load_transactions(path_to_transactions=path_to_too_many_columns)
+        assert num_rows_added == 0, "No rows should have been added, malformed input"
+
+        # TODO test wrongtype - but that should go in BLL test anyway
     
     def test_add_transactions(self):
     #     # Will test add_transactions method TODO

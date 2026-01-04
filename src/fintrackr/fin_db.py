@@ -15,6 +15,8 @@ import logging
 import os
 import re
 
+import pandas as pd # temporary, till I move some logic elsewhere
+
 logger = logging.getLogger(__name__)
 DEFAULT_LOGGING_FORMAT = (
     "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
@@ -138,7 +140,15 @@ class FinDB:
         create_staging = " CREATE TABLE IF NOT EXISTS staging( " \
             " Date date, Amount money, Description text); "
         
-        # In case staging wasn't cleared:
+        # TODO move this to business logic layer
+        # Check that the input conforms to expectations
+        # input = pd.read_csv(path_to_transactions, dtype=str, header=None)
+        # assert input.shape[1] >= 3 # there can be extra columns, we'll ignore those
+        # input_types = input.dtypes
+        # assert input_types[1] == float, "Second column must be a float (amount)"
+        # TODO how to check the other columns?
+        
+        # In case staging wasn't cleared: should I clear it?
         query_staging = "SELECT * FROM staging"
         rows_before = self.execute_query(query_staging)
         if rows_before is not None:
@@ -150,6 +160,9 @@ class FinDB:
         r1 = self._execute_action(create_staging)
         assert r1 == "CREATE TABLE", "Failed to create staging table"
         r2 = self._execute_action(f"COPY staging FROM '{path_to_transactions}' DELIMITERS ',' CSV;")
+        if r2 is None: # This will happen if copy fails; eg if try to insert too many columns
+            logger.info("No rows added to staging table")
+            return 0
         r2_re = re.match("COPY "+r"\d+", r2)
         assert r2_re is not None
 
