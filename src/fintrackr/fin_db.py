@@ -79,14 +79,55 @@ class FinDB:
                 logger.error(f"Query did not complete with exception: {e}")
             finally:
                 return response
+            
+    def _import_file(self, dest_table: str, path_to_file: str) -> int:
+        """
+        To avoid granting permission to read server files, I use a client-side copy
+        This function wraps that copy command.
+        
+        Parameters
+        ----------
+        dest_table: str
+            Name of table to copy into (should already exist)
+        path_to_file: str
+            Path to file whose contents are to be copied. Must be a csv.
+        
+        Returns
+        -------
+        int:
+            1 if successful copy, 0 if an exception occurred
+
+        """
+        response = 0 # assume failure :)
+
+        if not os.path.isfile(path_to_file):
+            logger.error(f"FinDB._import_file: {path_to_file} not a path to a file that exists")
+            return response
+        if not os.path.splitext(path_to_file)[1] == ".csv":
+            logger.error(f"FinDB._import_file: {path_to_file} not a csv")
+            return response
+
+        with self._conn.cursor() as curs: 
+            logger.info(f"Importing from file {path_to_file}")
+            try:
+                with open(path_to_file, "r") as f:
+                    with curs.copy(f"COPY {dest_table} FROM STDIN WITH (FORMAT csv, HEADER false)") as copy:
+                        for line in f:
+                            copy.write(line)
+                response = 1
+            except Exception as e:
+                logger.error(f"Failed to import from file {path_to_file} with exception: {e}")
+            finally:
+                return response
+
         
     def execute_query(self, query: str) -> tuple:
         """
         Returns the result of a query to the database.
 
-        This feels like not great re: security/"little Johnny Tables" situations,
+        This feels like not great re: security/"little Bobby Tables" situations,
         so I'm forcing the query to be a SELECT statement only for now. (Not that
-        that prevents Little Johnny Tables ... TODO switch to parameterized SQL)
+        that prevents Little Bobby Tables anyway ... TODO switch to parameterized SQL)
 
         Parameters
         ----------
@@ -100,7 +141,6 @@ class FinDB:
             TODO what's the return if the query fails for a reason like the table doesn't exist
 
         """
-        # The with statement automatically closes cursor after execution
 
         response = None
 
@@ -134,8 +174,6 @@ class FinDB:
             Length of a query of how many rows were added to the staging table
 
         """
-        assert os.path.isfile(path_to_transactions), "FinDB._load_transactions: path_to_transactions not a path to a file"
-        assert os.path.splitext(path_to_transactions)[1] == ".csv", "FinDB._load_transactions: path_to_transactions not a csv"
 
         create_staging = " CREATE TABLE IF NOT EXISTS staging( " \
             " Date date, Amount money, Description text); "
@@ -159,12 +197,11 @@ class FinDB:
         
         r1 = self._execute_action(create_staging)
         assert r1 == "CREATE TABLE", "Failed to create staging table"
-        r2 = self._execute_action(f"COPY staging FROM '{path_to_transactions}' DELIMITERS ',' CSV;")
-        if r2 is None: # This will happen if copy fails; eg if try to insert too many columns
+
+        r2 = self._import_file(dest_table="staging", path_to_file=path_to_transactions)
+        if r2==0: # This will happen if copy fails; eg if try to insert too many columns
             logger.info("No rows added to staging table")
             return 0
-        r2_re = re.match("COPY "+r"\d+", r2)
-        assert r2_re is not None
 
         # Query how many rows are now in staging table
         rows_after = self.execute_query(query_staging)
