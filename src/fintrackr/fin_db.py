@@ -112,8 +112,9 @@ class FinDB:
             try:
                 with open(path_to_file, "r") as f:
                     with curs.copy(f"COPY {dest_table} FROM STDIN WITH (FORMAT csv, HEADER false)") as copy:
+                        copy.set_types(["date", "float8", "text"]) # TODO I'm not sure this is working correctly, check
                         for line in f:
-                            copy.write(line)
+                            copy.write(line) # TODO figure out the difference between write and write_row
                 response = 1
             except Exception as e:
                 logger.error(f"Failed to import from file {path_to_file} with exception: {e}")
@@ -221,6 +222,19 @@ class FinDB:
 
     #     trans_query = "INSERT INTO transactions (poasted_date, amount, description, metadatum_id) VALUES ()"
     #     success = self.cur.execute(trans_query, ("transactions",))
+
+    #     The SQL for what I want to do here: 
+#     with joined as (
+# 	select	s.*
+# 	from	staging s
+# 	left join destination d on
+# 		d.colA = s.colA and
+# 		d.colB = s.colB
+# 	where	d.id is null
+# )
+# insert into destination (colA, colB)
+# select	colA, colB
+# from	joined
+# returning id;
     
     #     # Remove all rows from staging table or drop table;
-    # TODO how to check that duplicates weren't added?

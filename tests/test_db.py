@@ -68,11 +68,17 @@ class TestDBSetup(unittest.TestCase):
 
         # load_transactions adds rows to a staging table that should be empty at start
         num_rows_added = self.FinDB.load_transactions(path_to_transactions=path_to_test_transactions)
-        assert num_rows_added == transactions_to_add.shape[0], "Rows added to staging table does not match file"
+        self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
+        element_to_match = str(transactions_to_add.iloc[1,1])
+        element_to_match = element_to_match[0] + "$" + element_to_match[1:] + "0"
+        self.assertEqual(element_to_match, 
+                         self.FinDB.execute_query(f"SELECT Amount FROM staging WHERE Description='Concert tickets';")[0][0], 
+                         "Data were scrambled when copied into staging"
+                         )
 
         path_to_too_many_columns = os.path.join(os.getcwd(),"tests","data","test_data_cc_wrongnumcols.csv")
         num_rows_added = self.FinDB.load_transactions(path_to_transactions=path_to_too_many_columns)
-        assert num_rows_added == 0, "No rows should have been added, malformed input"
+        self.assertEqual(num_rows_added, 0, "No rows should have been added, malformed input")
 
         # TODO test wrongtype - but that should go in BLL test anyway
     
