@@ -162,7 +162,8 @@ class FinDB:
     def load_transactions(self, path_to_transactions: str) -> int:
         """ 
         FinTracker currently accepts csv inputs.
-        Load csv from disk into a staging table, which we create if it doesn't already exist
+        Load csv from disk into a temporary staging table, which will then go into
+        the transactions table in the db.
 
         Parameters
         ----------
@@ -176,9 +177,6 @@ class FinDB:
 
         """
 
-        create_staging = " CREATE TABLE IF NOT EXISTS staging( " \
-            " posted_date date, amount money, description text); "
-        
         # TODO move this to business logic layer
         # Check that the input conforms to expectations
         # input = pd.read_csv(path_to_transactions, dtype=str, header=None)
@@ -187,17 +185,21 @@ class FinDB:
         # assert input_types[1] == float, "Second column must be a float (amount)"
         # TODO how to check the other columns?
         
-        # In case staging wasn't cleared: should I clear it?
-        query_staging = "SELECT * FROM staging"
-        rows_before = self.execute_query(query_staging)
-        if rows_before is not None:
-            logger.debug(f"Before loading new transactions, staging has {len(rows_before)} rows")
-        else:
-            rows_before = []
-            logger.debug(f"SELECT statement on staging table before loading transactions returns None")
+        # Drop staging table if it already exists
+        clear_staging = "DROP TABLE staging;"
+        r = self._execute_action(clear_staging)
+        if r != "DROP TABLE":
+            logger.error("Unable to drop staging table")
+            raise ValueError("Unable to drop staging table before loading new file")
+        
+
+        create_staging = " CREATE TABLE staging( " \
+            " posted_date date, amount money, description text); "
         
         r1 = self._execute_action(create_staging)
-        assert r1 == "CREATE TABLE", "Failed to create staging table"
+        if r1 != "CREATE TABLE":
+            logger.error("Failed to create staging table")
+            raise ValueError("Failed to create staging table before loading new file")
 
         r2 = self._import_file(dest_table="staging", path_to_file=path_to_transactions)
         if r2==0: # This will happen if copy fails; eg if try to insert too many columns
@@ -205,10 +207,11 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
+        query_staging = "SELECT * FROM staging"
         rows_after = self.execute_query(query_staging)
-        logger.info(f"After loading new transactions, staging has {len(rows_after)-len(rows_before)} rows")
+        logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
 
-        return len(rows_after)-len(rows_before)
+        return len(rows_after)
 
     def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
         """
@@ -277,9 +280,15 @@ class FinDB:
 
         return num_new_transactions
     
+    # def get_uncategorized(self):
+    #     """
+    #     Return a csv of all transactions with no categorizations. 
+    #     """
+    
     # def update_categorizations(self, ...):
     #     """
-    #     Should probably have a separate function that gets uncategorized transactions?
+    #     Given a csv of transactions and categorizations, update.
+    #     Should this add new transactions if they're not already in db? probably yes?
     #     """
 
 
