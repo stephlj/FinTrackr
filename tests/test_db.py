@@ -59,15 +59,8 @@ class TestDBSetup(unittest.TestCase):
         assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
         assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
-
-    def test_execute_query(self):
-        # Test cases:
-        # - trying to query a table that doesn't exist in the db
-        pass
     
     def test_load_transactions(self):
-        # Also contains an implicit test for execute_query which is not ideal ... 
-
         # load_transactions adds rows to a staging table that should be empty at start
         num_rows_added = self.FinDB.load_transactions(path_to_transactions=self.path_to_test_transactions)
         self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
@@ -77,22 +70,30 @@ class TestDBSetup(unittest.TestCase):
                          self.FinDB.execute_query(f"SELECT amount FROM staging WHERE description='Concert tickets';")[0][0], 
                          "Data were scrambled when copied into staging"
                          )
+        
+        # test that staging has NOT been cleared at this point
+        self.assertEqual(len(self.FinDB.execute_query("SELECT * from staging")), self.transactions_to_add.shape[0], "Staging table didn't persist")
 
-        path_to_too_many_columns = os.path.join(os.getcwd(),"tests","data","test_data_cc_wrongnumcols.csv")
-        num_rows_added_2 = self.FinDB.load_transactions(path_to_transactions=path_to_too_many_columns)
-        self.assertEqual(num_rows_added_2, 0, "No rows should have been added, malformed input")
+        # test that it does clear if we try to add new transactions
+        num_rows_added = self.FinDB.load_transactions(path_to_transactions=self.path_to_test_transactions)
+        self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
+        self.assertEqual(len(self.FinDB.execute_query("SELECT * from staging")), self.transactions_to_add.shape[0], "Staging table wasn't cleared")
 
-        # TODO test wrongtype - but that should go in BLL test anyway
+        # This should go in the BLL test section
+        # path_to_too_many_columns = os.path.join(os.getcwd(),"tests","data","test_data_cc_wrongnumcols.csv")
+        # num_rows_added_2 = self.FinDB.load_transactions(path_to_transactions=path_to_too_many_columns)
+        # self.assertEqual(num_rows_added_2, 0, "No rows should have been added, malformed input")
+        
     
-    def test_add_transactions(self):
-        # Add_transactions calls load_transactions (which we test separately above)
+    # def test_add_transactions(self):
+    #     # Add_transactions calls load_transactions (which we test separately above)
          
-        # Staging will already contain the contents of this file:
-        # TODO what happens when I re-call load_transactions?
-        num_transactions_added = self.FinDb.add_transactions(
-            path_to_source_file = self.path_to_test_transactions, 
-            source_info = self.source_info
-            )
-        self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Not all transactions were added")
+    #     # Staging will already contain the contents of this file:
+    #     # TODO what happens when I re-call load_transactions?
+    #     num_transactions_added = self.FinDb.add_transactions(
+    #         path_to_source_file = self.path_to_test_transactions, 
+    #         source_info = self.source_info
+    #         )
+    #     self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Not all transactions were added")
 
-        # TODO additional test for what happens when duplicates are attempted to add
+    #     # TODO additional test for what happens when duplicates are attempted to add

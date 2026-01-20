@@ -156,6 +156,7 @@ class FinDB:
                 response = curs.fetchall() # Returns a list of tuples (each row a tuple)
             except Exception as e:
                 logger.debug(f"Query did not complete with exception: {e}")
+                raise ValueError(f"Query did not complete with exception: {e}")
             finally:
                 return response
 
@@ -184,15 +185,26 @@ class FinDB:
         # input_types = input.dtypes
         # assert input_types[1] == float, "Second column must be a float (amount)"
         # TODO how to check the other columns?
+
+        query_staging = "SELECT * FROM staging"
         
         # Drop staging table if it already exists
-        clear_staging = "DROP TABLE staging;"
-        r = self._execute_action(clear_staging)
-        if r != "DROP TABLE":
-            logger.error("Unable to drop staging table")
-            raise ValueError("Unable to drop staging table before loading new file")
+        # This set of logic feels goofy ... 
+        rows_before = 0
+        try:
+            rows_before = self.execute_query(query_staging)
+        except Exception as e:
+            logger.debug(f"Query {query_staging} did not execute with exception: {e}")
+        if rows_before is None:
+            rows_before = 0
+        if rows_before != 0:
+            logger.info("Staging table still exists with content before loading new file")
+            drop_staging = "DROP TABLE staging;"
+            r = self._execute_action(drop_staging)
+            if r != "DROP TABLE":
+                logger.error("Unable to drop staging table")
+                raise ValueError("Unable to drop staging table before loading new file")
         
-
         create_staging = " CREATE TABLE staging( " \
             " posted_date date, amount money, description text); "
         
@@ -207,78 +219,77 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
-        query_staging = "SELECT * FROM staging"
         rows_after = self.execute_query(query_staging)
         logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
 
         return len(rows_after)
 
-    def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
-        """
-        Load transactions from a file and log the addition of these transactions
-        in the data_load_metadata table.
+    # def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
+    #     """
+    #     Load transactions from a file and log the addition of these transactions
+    #     in the data_load_metadata table.
 
-        Only new transactions are added; duplicates (which have identity across the 3
-        input columns of Date, Amount, and Description with an existing transaction row)
-        are ignored.
+    #     Only new transactions are added; duplicates (which have identity across the 3
+    #     input columns of Date, Amount, and Description with an existing transaction row)
+    #     are ignored.
 
-        Parameters
-        ----------
-        path_to_source_file: str
-            Path to a csv where every row is a transaction.
-        source_info: str
-            Are these transactions from credit card, checking account, etc
-            This is the "name" field in the data_sources table.
-            It will be added if it doesn't already exist.
+    #     Parameters
+    #     ----------
+    #     path_to_source_file: str
+    #         Path to a csv where every row is a transaction.
+    #     source_info: str
+    #         Are these transactions from credit card, checking account, etc
+    #         This is the "name" field in the data_sources table.
+    #         It will be added if it doesn't already exist.
 
-        Returns
-        -------
-        int
-            Number of transactions added.
-        """
-        num_new_transactions = 0
+    #     Returns
+    #     -------
+    #     int
+    #         Number of transactions added.
+    #     """
+    #     num_new_transactions = 0
 
-        num_staged_transactions = self.load_transactions(path_to_transactions = path_to_source_file)
+    #     num_staged_transactions = self.load_transactions(path_to_transactions = path_to_source_file)
 
-        if num_staged_transactions == 0:
-            logger.info("No transactions loaded from source file to staging table; no transactions will be added")
-            return num_new_transactions
+    #     if num_staged_transactions == 0:
+    #         logger.info("No transactions loaded from source file to staging table; no transactions will be added")
+    #         return num_new_transactions
         
-        # Get id for this source_info, if it exists
-        # This can be done in one query but race conditions can occur
-        source_info_id = self.execute_query(f"SELECT id FROM data_sources WHERE name='{source_info}';")
-        if source_info_id is None:
-           logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
-           source_info_id = self.execute_query(f"INSERT INTO data_sources (name) VALUES ('{source_info}' RETURNING id);")
-           if source_info_id is None:
-               raise ValueError("Could not insert new data source in data_sources table")
+    #     # Get id for this source_info, if it exists
+    #     # This can be done in one query but race conditions can occur
+    #     source_info_id = self.execute_query(f"SELECT id FROM data_sources WHERE name='{source_info}';")
+    #     if source_info_id is None:
+    #        logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
+    #        source_info_id = self.execute_query(f"INSERT INTO data_sources (name) VALUES ('{source_info}' RETURNING id);")
+    #        if source_info_id is None:
+    #            raise ValueError("Could not insert new data source in data_sources table")
         
-        transactions_query = f"WITH joined AS ( " \
-            "    SELECT	s.* " \
-            "    FROM	staging s " \
-            "    LEFT JOIN transactions t ON " \
-            "        t.posted_date = s.posted_date AND " \
-            "        t.amount = s.amount AND " \
-            "        t.description = s.description " \
-            "    WEHRE	t.id IS NULL " \
-            "), " \
-            "meta AS ( " \
-            "    INSERT INTO data_load_metadata " \
-            "        (date_added, username, source, data_source_id) " \
-            "    VALUES ('{date.today}', '{self.user}', '{path_to_source_file}', '{source_info}')" \
-            "    " \
-            "    RETURNING id " \
-            ") " \
-            "INSERT INTO transactions (posted_date, amount, description, metadatam_id) " \
-            "SELECT	posted_date, amount, description, meta.id " \
-            "FROM joined, meta; " \
+    #     transactions_query = f"WITH joined AS ( " \
+    #         "    SELECT	s.* " \
+    #         "    FROM	staging s " \
+    #         "    LEFT JOIN transactions t ON " \
+    #         "        t.posted_date = s.posted_date AND " \
+    #         "        t.amount = s.amount AND " \
+    #         "        t.description = s.description " \
+    #         "    WEHRE	t.id IS NULL " \
+    #         "), " \
+    #         "meta AS ( " \
+    #         "    INSERT INTO data_load_metadata " \
+    #         "        (date_added, username, source, data_source_id) " \
+    #         "    VALUES ('{date.today}', '{self.user}', '{path_to_source_file}', '{source_info}')" \
+    #         "    " \
+    #         "    RETURNING id " \
+    #         ") " \
+    #         "INSERT INTO transactions (posted_date, amount, description, metadatam_id) " \
+    #         "SELECT	posted_date, amount, description, meta.id " \
+    #         "FROM joined, meta; " \
             
-        num_new_transactions = self.execute_query(transactions_query) # This returns the result of the final INSERT statement
+    #     num_new_transactions = self.execute_query(transactions_query) # This returns the result of the final INSERT statement
         
-        # Drop staging table
-        self._execute_action("DROP TABLE staging;")
+    #     # Drop staging table
+    #     self._execute_action("DROP TABLE staging;")
 
-        return num_new_transactions
+    #     return num_new_transactions
     
     # def get_uncategorized(self):
     #     """
