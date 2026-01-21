@@ -85,15 +85,14 @@ class TestDBSetup(unittest.TestCase):
         # self.assertEqual(num_rows_added_2, 0, "No rows should have been added, malformed input")
         
     
-    # def test_add_transactions(self):
-    #     # Add_transactions calls load_transactions (which we test separately above)
-         
-    #     # Staging will already contain the contents of this file:
-    #     # TODO what happens when I re-call load_transactions?
-    #     num_transactions_added = self.FinDb.add_transactions(
-    #         path_to_source_file = self.path_to_test_transactions, 
-    #         source_info = self.source_info
-    #         )
-    #     self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Not all transactions were added")
+    def test_add_transactions(self):
+        # Add_transactions calls load_transactions (which we test separately above)
 
-    #     # TODO additional test for what happens when duplicates are attempted to add
+        num_transactions_added = self.FinDB.add_transactions(
+            path_to_source_file = self.path_to_test_transactions, 
+            source_info = self.source_info
+            )
+        self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
+
+        # TODO additional test for what happens when duplicates are attempted to add
+        # TODO test for trying to load an empty file, or use the wrong-number-columns file so staging should be empty

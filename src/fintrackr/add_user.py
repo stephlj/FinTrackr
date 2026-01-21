@@ -55,6 +55,7 @@ def add_user(
     cur.execute(f"GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {name}") # So users can create staging tables
     cur.execute(f"GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {name}")
     cur.execute(f"GRANT ALL PRIVILEGES ON SCHEMA public TO {name}")
+    cur.execute(f"GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {name}") # this is so I can get fetchalls from RETURNING clauses, I think
     # Changed to using cur.copy_expert, so this line shouldn't be necessary anymore:
     # cur.execute(f"GRANT pg_read_server_files TO {name}")
 
