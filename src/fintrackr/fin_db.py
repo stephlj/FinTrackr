@@ -264,26 +264,31 @@ class FinDB:
            if source_info_id is None:
                logger.error(f"Could not insert new data source in data_sources table; query returned {source_info_id}")
                raise ValueError("Could not insert new data source in data_sources table")
+        source_info_id = source_info_id[0][0]
+
+        # TODO switch to parameterized sql to avoid this:
+        today_date = date.today()
+        sql_today = today_date.strftime("%Y-%m-%d")
         
         transactions_query = f"WITH joined AS ( " \
-            "    SELECT	s.* " \
-            "    FROM	staging s " \
+            "    SELECT s.* " \
+            "    FROM staging s " \
             "    LEFT JOIN transactions t ON " \
             "        t.posted_date = s.posted_date AND " \
             "        t.amount = s.amount AND " \
             "        t.description = s.description " \
-            "    WEHRE	t.id IS NULL " \
+            "    WHERE t.id IS NULL " \
             "), " \
             "meta AS ( " \
             "    INSERT INTO data_load_metadata " \
             "        (date_added, username, source, data_source_id) " \
-            "    VALUES ('{date.today}', '{self.user}', '{path_to_source_file}', '{source_info_id}')" \
+            "    VALUES ({sql_today}, '{self.user}', '{path_to_source_file}', '{source_info_id}')" \
             "    " \
             "    RETURNING id " \
             ") " \
             "INSERT INTO transactions (posted_date, amount, description, metadatam_id) " \
-            "SELECT	posted_date, amount, description, meta.id " \
-            "FROM joined, meta; " \
+            "SELECT posted_date, amount, description, meta.id " \
+            "FROM joined, meta; "
             
         try:
             num_new_transactions = self.execute_query(transactions_query) # This returns the result of the final INSERT statement, if successful
