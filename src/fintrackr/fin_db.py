@@ -13,9 +13,9 @@ Copyright (c) 2025 Stephanie Johnson
 import psycopg
 import logging
 import os
-from datetime import date
+from typing import List
 
-import pandas as pd # temporary, till I move some logic elsewhere
+from datetime import date
 
 logger = logging.getLogger(__name__)
 DEFAULT_LOGGING_FORMAT = (
@@ -112,7 +112,7 @@ class FinDB:
             try:
                 with open(path_to_file, "r") as f:
                     with curs.copy(f"COPY {dest_table} FROM STDIN WITH (FORMAT csv, HEADER false)") as copy:
-                        copy.set_types(["date", "float8", "text"]) # TODO I'm not sure this is working correctly, check
+                        copy.set_types(["date", "float8", "text"]) # TODO should this not be hardcoded, if I'm not hard-coding dest_table?
                         for line in f:
                             copy.write(line) # TODO figure out the difference between write and write_row
                 response = 1
@@ -122,15 +122,9 @@ class FinDB:
                 return response
 
         
-    def execute_query(self, query: str) -> tuple:
+    def _execute_query(self, query: str, args: tuple = ()) -> tuple:
         """
-        Returns the result of a query to the database.
-
-        This is not great re: security/"little Bobby Tables" situations.
-        TODO use parameterized SQL to fix.
-
-        TODO Should I have different methods for SELECT (doesn't alter db data)
-        vs INSERT (does alter db data)? And make INSERT an internal method perhaps?
+        Returns the result of a fetch to the database, after query execution.
 
         Parameters
         ----------
@@ -138,33 +132,66 @@ class FinDB:
             SELECT or INSERT statement to execute
             (something where the return should be the result of a fetchall, rather 
             than a status message)
+            Args need to be passed in separately using %s in the query string
+        args: Tuple
+            Values, in order, for all %s's in the query string
 
         Returns
         -------
-        tuple
-            result of fetchall, or None if the query is malformed
-            TODO what's the return if the query fails for a reason like the table doesn't exist
+        List of tuples, or None
+            result of fetchall, or None if the query is malformed/table doesn't exist
 
         """
 
         response = None
 
         with self._conn.cursor() as curs: 
-            logger.info(f"Executing query {query}")
+            logger.info(f"Executing query: {query}, with args: {args}")
             try:
-                curs.execute(query)
+                curs.execute(query, args)
                 response = curs.fetchall() # Returns a list of tuples (each row a tuple)
             except Exception as e:
                 logger.debug(f"Query did not complete with exception: {e}")
                 raise ValueError(f"Query did not complete with exception: {e}")
             finally:
                 return response
+            
+    def select_from_table(self, table_name: str, col_names: List[str], subset_col: str="", subset_val: str="") -> tuple:
+        """
+        Return the result of a SELECT statment.
+        
+        For example, select_from_table(table_name = data_sources, col_names="id", subset_col="name", subset_val="cc")
+        will execute the SQL query: SELECT id FROM data_sources WHERE name="cc"
+
+        Parameters
+        ----------
+        table_name: str
+            Table to select from
+        col_names: List[str]
+            Columns whose values should be returned
+        subset_col: str, optional
+            The first part of a WHERE clause
+        subsetl_val: str, optional
+            Value to find (identically) in subset_col
+            TODO This won't always be a str ... fix
+
+        """
+
+        query_return = None
+
+        if subset_col == "":
+            query_return = self._execute_query("SELECT %s FROM %s", (col_names, table_name))
+        else:
+            query_return = self._execute_query("SELECT %s FROM %s WHERE %s=%s", (col_names, table_name, subset_col, subset_val))
+
+        return query_return
+
 
     def load_transactions(self, path_to_transactions: str) -> int:
         """ 
         FinTracker currently accepts csv inputs.
         Load csv from disk into a temporary staging table, which will then go into
-        the transactions table in the db.
+        the transactions table in the db (executed in a separate function).
 
         Parameters
         ----------
@@ -185,29 +212,25 @@ class FinDB:
         # input_types = input.dtypes
         # assert input_types[1] == float, "Second column must be a float (amount)"
         # TODO how to check the other columns?
-
-        query_staging = "SELECT * FROM staging"
         
         # Drop staging table if it already exists
         # This set of logic feels goofy ... 
         rows_before = 0
         try:
-            rows_before = self.execute_query(query_staging)
+            rows_before = self.select_from_table(table_name="staging", col_names=["posted_date, amount, description"])
         except Exception as e:
-            logger.debug(f"Query {query_staging} did not execute with exception: {e}")
+            logger.debug(f"Query of staging table did not execute with exception: {e}")
         if rows_before is None:
             rows_before = 0
         if rows_before != 0:
             logger.info("Staging table still exists with content before loading new file")
-            drop_staging = "DROP TABLE staging;"
-            r = self._execute_action(drop_staging)
+            r = self._execute_action("DROP TABLE staging;")
             if r != "DROP TABLE":
                 logger.error("Unable to drop staging table")
                 raise ValueError("Unable to drop staging table before loading new file")
         
         create_staging = " CREATE TABLE staging( " \
             " posted_date date, amount money, description text); "
-        
         r1 = self._execute_action(create_staging)
         if r1 != "CREATE TABLE":
             logger.error("Failed to create staging table")
@@ -219,7 +242,7 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
-        rows_after = self.execute_query(query_staging)
+        rows_after = self.select_from_table(table_name="staging", col_names=["posted_date, amount, description"])
         logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
 
         return len(rows_after)
@@ -257,10 +280,10 @@ class FinDB:
         
         # Get id for this source_info, if it exists
         # This can be done in one query but race conditions can occur
-        source_info_id = self.execute_query(f"SELECT id FROM data_sources WHERE name='{source_info}';")
+        source_info_id = self.select_from_table(table_name="data_sources", col_names=["id"], subset_col="name", subset_val=source_info)
         if len(source_info_id)==0:
            logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
-           source_info_id = self.execute_query(f"INSERT INTO data_sources (name) VALUES ('{source_info}') RETURNING id;")
+           source_info_id = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info))
            if source_info_id is None:
                logger.error(f"Could not insert new data source in data_sources table; query returned {source_info_id}")
                raise ValueError("Could not insert new data source in data_sources table")
@@ -270,7 +293,7 @@ class FinDB:
         today_date = date.today()
         sql_today = today_date.strftime("%Y-%m-%d")
         
-        transactions_query = f"WITH joined AS ( " \
+        transactions_query = "WITH joined AS ( " \
             "    SELECT s.* " \
             "    FROM staging s " \
             "    LEFT JOIN transactions t ON " \
@@ -282,7 +305,7 @@ class FinDB:
             "meta AS ( " \
             "    INSERT INTO data_load_metadata " \
             "        (date_added, username, source, data_source_id) " \
-            "    VALUES ({sql_today}, '{self.user}', '{path_to_source_file}', '{source_info_id}')" \
+            "    VALUES (%s, %s, %s, %s)" \
             "    " \
             "    RETURNING id " \
             ") " \
@@ -291,7 +314,7 @@ class FinDB:
             "FROM joined, meta; "
             
         try:
-            num_new_transactions = self.execute_query(transactions_query) # This returns the result of the final INSERT statement, if successful
+            num_new_transactions = self._execute_query(transactions_query, (sql_today, self.user, path_to_source_file, source_info_id)) # This returns the result of the final INSERT statement, if successful
         except Exception as e:
             logger.error(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
             raise ValueError(f"Insertion into transactions table failed with exception: {e}")
