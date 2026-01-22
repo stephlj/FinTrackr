@@ -122,7 +122,7 @@ class FinDB:
                 return response
 
         
-    def _execute_query(self, query: str, args: tuple = ()) -> tuple:
+    def _execute_query(self, query: str, vals: tuple = ()) -> tuple:
         """
         Returns the result of a fetch to the database, after query execution.
 
@@ -133,7 +133,7 @@ class FinDB:
             (something where the return should be the result of a fetchall, rather 
             than a status message)
             Args need to be passed in separately using %s in the query string
-        args: Tuple
+        vals: Tuple
             Values, in order, for all %s's in the query string
 
         Returns
@@ -146,9 +146,9 @@ class FinDB:
         response = None
 
         with self._conn.cursor() as curs: 
-            logger.info(f"Executing query: {query}, with args: {args}")
+            logger.info(f"Executing query: {query}, with vals: {vals}")
             try:
-                curs.execute(query, args)
+                curs.execute(query, vals)
                 response = curs.fetchall() # Returns a list of tuples (each row a tuple)
             except Exception as e:
                 logger.debug(f"Query did not complete with exception: {e}")
@@ -156,18 +156,18 @@ class FinDB:
             finally:
                 return response
             
-    def select_from_table(self, table_name: str, col_names: List[str], subset_col: str="", subset_val: str="") -> tuple:
+    def select_from_table(self, table_name: str, col_names: tuple[str], subset_col: str="", subset_val: str | int | float = 0) -> tuple:
         """
         Return the result of a SELECT statment.
         
-        For example, select_from_table(table_name = data_sources, col_names="id", subset_col="name", subset_val="cc")
+        For example, select_from_table(table_name = data_sources, col_names=("id"), subset_col="name", subset_val="cc")
         will execute the SQL query: SELECT id FROM data_sources WHERE name="cc"
 
         Parameters
         ----------
         table_name: str
             Table to select from
-        col_names: List[str]
+        col_names: tuple[str]
             Columns whose values should be returned
         subset_col: str, optional
             The first part of a WHERE clause
@@ -180,9 +180,9 @@ class FinDB:
         query_return = None
 
         if subset_col == "":
-            query_return = self._execute_query("SELECT %s FROM %s", (col_names, table_name))
+            query_return = self._execute_query(f"SELECT {col_names} FROM {table_name};")
         else:
-            query_return = self._execute_query("SELECT %s FROM %s WHERE %s=%s", (col_names, table_name, subset_col, subset_val))
+            query_return = self._execute_query(f"SELECT {col_names} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
 
         return query_return
 
@@ -217,7 +217,7 @@ class FinDB:
         # This set of logic feels goofy ... 
         rows_before = 0
         try:
-            rows_before = self.select_from_table(table_name="staging", col_names=["posted_date, amount, description"])
+            rows_before = self.select_from_table(table_name="staging", col_names=("posted_date", "amount", "description"))
         except Exception as e:
             logger.debug(f"Query of staging table did not execute with exception: {e}")
         if rows_before is None:
@@ -242,7 +242,7 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
-        rows_after = self.select_from_table(table_name="staging", col_names=["posted_date, amount, description"])
+        rows_after = self.select_from_table(table_name="staging", col_names=("posted_date", "amount", "description"))
         logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
 
         return len(rows_after)
@@ -280,7 +280,7 @@ class FinDB:
         
         # Get id for this source_info, if it exists
         # This can be done in one query but race conditions can occur
-        source_info_id = self.select_from_table(table_name="data_sources", col_names=["id"], subset_col="name", subset_val=source_info)
+        source_info_id = self.select_from_table(table_name="data_sources", col_names=("id"), subset_col="name", subset_val=source_info)
         if len(source_info_id)==0:
            logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
            source_info_id = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info))
