@@ -69,7 +69,7 @@ class TestDBSetup(unittest.TestCase):
         num_rows_added = self.FinDB.load_transactions(path_to_transactions=self.path_to_test_transactions)
         self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(self.element_to_match, 
-                         self.FinDB.select_from_table(table_name="staging", col_names=("amount"), subset_col="description", subset_val='Concert tickets')[0][0], 
+                         self.FinDB.select_from_table(table_name="staging", col_names=("amount",), subset_col="description", subset_val='Concert tickets')[0][0], 
                          "Data were scrambled when copied into staging"
                          )
         
@@ -87,15 +87,15 @@ class TestDBSetup(unittest.TestCase):
         # self.assertEqual(num_rows_added_2, 0, "No rows should have been added, malformed input")
         
     
-    # def test_add_transactions(self):
-    #     # Add_transactions calls load_transactions (which we test separately above)
+    def test_add_transactions(self):
+        # Add_transactions calls load_transactions (which we test separately above)
 
-    #     num_transactions_added = self.FinDB.add_transactions(
-    #         path_to_source_file = self.path_to_test_transactions, 
-    #         source_info = self.source_info
-    #         )
-    #     self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
-    #     # TODO spot check some values in the transactions table. Maybe move logic picking a transaction to setup since it's used here and in test_load_transactions
+        num_transactions_added = self.FinDB.add_transactions(
+            path_to_source_file = self.path_to_test_transactions, 
+            source_info = self.source_info
+            )
+        self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
+        # TODO spot check some values in the transactions table. Maybe move logic picking a transaction to setup since it's used here and in test_load_transactions
 
-    #     # TODO additional test for what happens when duplicates are attempted to add
-    #     # TODO test for trying to load an empty file, or use the wrong-number-columns file so staging should be empty
+        # TODO additional test for what happens when duplicates are attempted to add
+        # TODO test for trying to load an empty file, or use the wrong-number-columns file so staging should be empty

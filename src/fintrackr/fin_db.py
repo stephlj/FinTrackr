@@ -122,7 +122,7 @@ class FinDB:
                 return response
 
         
-    def _execute_query(self, query: str, vals: tuple = ()) -> tuple:
+    def _execute_query(self, query: str, vals: tuple = ()) -> List[tuple] | None:
         """
         Returns the result of a fetch to the database, after query execution.
 
@@ -139,7 +139,8 @@ class FinDB:
         Returns
         -------
         List of tuples, or None
-            result of fetchall, or None if the query is malformed/table doesn't exist
+            result of fetchall if the SQL has a RETURNING clause, 
+            or None if the query is malformed/table doesn't exist/no RETURNING
 
         """
 
@@ -171,18 +172,19 @@ class FinDB:
             Columns whose values should be returned
         subset_col: str, optional
             The first part of a WHERE clause
-        subsetl_val: str, optional
+        subsetl_val: str or int or float, optional
             Value to find (identically) in subset_col
-            TODO This won't always be a str ... fix
 
         """
 
         query_return = None
 
+        cols = ", ".join(col_names)
+
         if subset_col == "":
-            query_return = self._execute_query(f"SELECT {col_names} FROM {table_name};")
+            query_return = self._execute_query(f"SELECT {cols} FROM {table_name};")
         else:
-            query_return = self._execute_query(f"SELECT {col_names} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
+            query_return = self._execute_query(f"SELECT {cols} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
 
         return query_return
 
@@ -280,18 +282,16 @@ class FinDB:
         
         # Get id for this source_info, if it exists
         # This can be done in one query but race conditions can occur
-        source_info_id = self.select_from_table(table_name="data_sources", col_names=("id"), subset_col="name", subset_val=source_info)
+        source_info_id = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_info)
         if len(source_info_id)==0:
            logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
-           source_info_id = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info))
+           source_info_id = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info,))
            if source_info_id is None:
                logger.error(f"Could not insert new data source in data_sources table; query returned {source_info_id}")
                raise ValueError("Could not insert new data source in data_sources table")
         source_info_id = source_info_id[0][0]
 
-        # TODO switch to parameterized sql to avoid this:
         today_date = date.today()
-        sql_today = today_date.strftime("%Y-%m-%d")
         
         transactions_query = "WITH joined AS ( " \
             "    SELECT s.* " \
@@ -309,19 +309,20 @@ class FinDB:
             "    " \
             "    RETURNING id " \
             ") " \
-            "INSERT INTO transactions (posted_date, amount, description, metadatam_id) " \
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) " \
             "SELECT posted_date, amount, description, meta.id " \
             "FROM joined, meta; "
             
         try:
-            num_new_transactions = self._execute_query(transactions_query, (sql_today, self.user, path_to_source_file, source_info_id)) # This returns the result of the final INSERT statement, if successful
+            self._execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
         except Exception as e:
             logger.error(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
             raise ValueError(f"Insertion into transactions table failed with exception: {e}")
         
-        if num_new_transactions is None:
-            logger.error("Insert into transactions table returned None")
-            raise ValueError("Insert into transactions table returned None")
+        num_new_transactions = len(self.select_from_table(table_name="transactions", col_names=("posted_date",)))
+        if num_new_transactions ==0:
+            logger.error("No transactions inserted")
+            raise ValueError("No transactions inserted")
 
         # Drop staging table
         self._execute_action("DROP TABLE staging;")
