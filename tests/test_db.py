@@ -95,7 +95,30 @@ class TestDBSetup(unittest.TestCase):
             source_info = self.source_info
             )
         self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
-        # TODO spot check some values in the transactions table. Maybe move logic picking a transaction to setup since it's used here and in test_load_transactions
+        self.assertEqual(self.element_to_match, 
+                         self.FinDB.select_from_table(table_name="transactions", col_names=("amount",), subset_col="description", subset_val='Concert tickets')[0][0], 
+                         "Data were scrambled when loaded into transactions"
+                         )
+        
+        # Test that trying to upload the same file again fails
+        # (it actually errors out with a silent error, unfortunately: raises "Key (source)=(/Users/steph/Documents/Code/FinTrackr/tests/data/test_data_cc.csv) already exists)")
+        num_transactions_added = self.FinDB.add_transactions(
+            path_to_source_file = self.path_to_test_transactions, 
+            source_info = self.source_info
+            )
+        self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
 
-        # TODO additional test for what happens when duplicates are attempted to add
-        # TODO test for trying to load an empty file, or use the wrong-number-columns file so staging should be empty
+        # Test what happens when partial duplicates are added
+        additional_transactions_path = os.path.join(os.getcwd(),"tests","data","test_data_checking.csv")
+        addtl_trans = pd.read_csv(additional_transactions_path, header=None)
+        num_new_trans = len(addtl_trans)
+        dup_trans = self.transactions_to_add.loc[self.transactions_to_add.iloc[:,2]=="Safeway"]
+        addtl_trans = pd.concat([addtl_trans, dup_trans])
+
+        num_transactions_added = self.FinDB.add_transactions(
+            path_to_source_file = additional_transactions_path, 
+            source_info = self.source_info
+            )
+        self.assertEqual(num_transactions_added, num_new_trans, "Duplicates should not have been successfully loaded")
+
+

@@ -311,18 +311,32 @@ class FinDB:
             ") " \
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) " \
             "SELECT posted_date, amount, description, meta.id " \
-            "FROM joined, meta; "
+            "FROM joined, meta " \
+            "RETURNING *;"
             
         try:
-            self._execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
+            all_new_transactions = self._execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
         except Exception as e:
             logger.error(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
             raise ValueError(f"Insertion into transactions table failed with exception: {e}")
         
-        num_new_transactions = len(self.select_from_table(table_name="transactions", col_names=("posted_date",)))
-        if num_new_transactions ==0:
+        if all_new_transactions is None:
             logger.error("No transactions inserted")
-            raise ValueError("No transactions inserted")
+            # Check if all new transactions to load are already in db and that's why it failed:
+            check_dups = "SELECT s.* " \
+                "    FROM staging s " \
+                "    LEFT JOIN transactions t ON " \
+                "        t.posted_date = s.posted_date AND " \
+                "        t.amount = s.amount AND " \
+                "        t.description = s.description " \
+                "    WHERE t.id IS NULL;"
+            if len(self._execute_query(check_dups)) == 0:
+                logger.error("All staged transactions are already in transactions table")
+                return 0
+            else:
+                raise ValueError("No transactions inserted, but not because all new transactions were in db already")
+        
+        num_new_transactions = len(all_new_transactions)
 
         # Drop staging table
         self._execute_action("DROP TABLE staging;")
