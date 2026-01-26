@@ -1,0 +1,17 @@
+customer
+-
+CustomerID PK int
+name string
+address string
+
+order
+-
+OrderID PK int
+customer_id int FK >- customer.CustomerID
+total_amount money
+order_status_id int FK >- OrderStatus.OrderStatusID
+
+OrderStatus
+-
+OrderStatusID PK int
+status string
