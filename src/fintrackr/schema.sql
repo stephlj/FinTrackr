@@ -14,7 +14,7 @@ CREATE TYPE recurrance AS ENUM(
 
 CREATE TABLE data_sources(
     id SERIAL PRIMARY KEY,
-    name text NOT NULL /* e.g., "main card", "primary checking" */
+    name text NOT NULL /* e.g., "credit card", "primary checking" */
 );
 
 CREATE TABLE data_load_metadata(
