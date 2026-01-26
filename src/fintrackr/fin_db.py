@@ -76,7 +76,7 @@ class FinDB:
                 response = curs.statusmessage
                 logger.info(f"Completed with response {response}")
             except Exception as e:
-                logger.error(f"Query did not complete with exception: {e}")
+                logger.exception(f"Query did not complete with exception: {e}")
             finally:
                 return response
             
@@ -189,7 +189,7 @@ class FinDB:
         return query_return
 
 
-    def load_transactions(self, path_to_transactions: str) -> int:
+    def stage_transactions(self, path_to_transactions: str) -> int:
         """ 
         FinTracker currently accepts csv inputs.
         Load csv from disk into a temporary staging table, which will then go into
@@ -274,7 +274,7 @@ class FinDB:
         """
         num_new_transactions = 0
 
-        num_staged_transactions = self.load_transactions(path_to_transactions = path_to_source_file)
+        num_staged_transactions = self.stage_transactions(path_to_transactions = path_to_source_file)
 
         if num_staged_transactions == 0:
             logger.info("No transactions loaded from source file to staging table; no transactions will be added")
@@ -282,14 +282,14 @@ class FinDB:
         
         # Get id for this source_info, if it exists
         # This can be done in one query but race conditions can occur
-        source_info_id = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_info)
-        if len(source_info_id)==0:
+        src_info_id_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_info)
+        if len(src_info_id_tuple)==0:
            logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
-           source_info_id = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info,))
-           if source_info_id is None:
-               logger.error(f"Could not insert new data source in data_sources table; query returned {source_info_id}")
+           src_info_id_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info,))
+           if src_info_id_tuple is None:
+               logger.error(f"Could not insert new data source in data_sources table; query returned {src_info_id_tuple}")
                raise ValueError("Could not insert new data source in data_sources table")
-        source_info_id = source_info_id[0][0]
+        source_info_id = src_info_id_tuple[0][0]
 
         today_date = date.today()
         
@@ -317,7 +317,7 @@ class FinDB:
         try:
             all_new_transactions = self._execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
         except Exception as e:
-            logger.error(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
+            logger.exception(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
             raise ValueError(f"Insertion into transactions table failed with exception: {e}")
         
         if all_new_transactions is None:
