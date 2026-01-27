@@ -11,11 +11,11 @@ CREATE TABLE order(
 
 CREATE TABLE customer(
     id SERIAL PRIMARY KEY,
-    name text,
-    address text
+    name text NOT NULL,
+    address text UNIQUE NOT NULL
 );
 
 CREATE TABLE orderstatus(
     id SERIAL PRIMARY KEY,
     status string
-)
+);

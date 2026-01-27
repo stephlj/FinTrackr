@@ -11,7 +11,7 @@ def convert_to_EDL(schema_file_path: str) -> str:
     CREATE TABLE order(
         id SERIAL PRIMARY KEY,
         customer_id integer REFERENCES customer(id),
-        total_amount money,
+        total_amount money NOT NULL,
         order_status_id integer REFERENCES orderstatus(id)
     );
 
@@ -54,23 +54,24 @@ def convert_to_EDL(schema_file_path: str) -> str:
     
     edl_lines = []
 
-    # take only the CREATE TABLEs
-    curr_line_idx = 0
-    while curr_line_idx < len(sql_lines):
-        if sql_lines[curr_line_idx][:11] == "CREATE TABLE":
-            table_name = sql_lines[curr_line_idx][13].upper()+ sql_lines[curr_line_idx][14:-2]
-            edl_lines.append(table_name)
-            edl_lines.append("-")
-            edl_lines.append(table_name+"ID PK int")
-            curr_line_idx = curr_line_idx+2
-        elif sql_lines[curr_line_idx][-2]=="\n":
-            # Skip this line
-            curr_line_idx = curr_line_idx+1
-        else:
-            next_elements = sql_lines[curr_line_idx].split()
+    # take only the CREATE TABLEs - EDL can't do CREATE TYPE or such
+    create_start_idxs = [s for s in range(0,len(sql_lines)) if sql_lines[s][:12] == "CREATE TABLE"]
+    statement_ends_idxs = [e for e in range(0,len(sql_lines)) if re.search(r"\);", sql_lines[e]) is not None]
+
+    for s in create_start_idxs:
+        # Replace the CREATE TABLE statement and ID line with EDL equivalents:
+        table_name = sql_lines[s][13].upper()+ sql_lines[s][14:-2]
+        edl_lines.append(table_name)
+        edl_lines.append("-")
+        edl_lines.append(table_name+"ID PK int")
+
+        # Convert the rest of the lines in this create table statement
+        end_idx = [k for k in statement_ends_idxs if k>s][0]
+        for e in range(s+2,end_idx):
+            next_elements = sql_lines[e].split()
             # strip underscores, capitalize next letter
             col_name = next_elements[0]
-            new_col_name = re.sub("_",lambda x: col_name[x.start()+1].upper(),col_name)
+            new_col_name = re.sub(r"_\w",lambda x: col_name[x.start()+1].upper(),col_name)
             # capitalize first letter
             new_col_name = new_col_name[0].upper() + new_col_name[1:]
 
@@ -80,17 +81,15 @@ def convert_to_EDL(schema_file_path: str) -> str:
 
             new_line = col_name + " " + col_type
 
-            if len(next_elements) > 2:
-                if next_elements[2] != "REFERENCES":
-                    raise ValueError(f"Expected REFENCES next, got {next_elements[2]}")
-                ref_table_name = next_elements[3].split("(")[0]
-                ref_table_name = ref_table_name[0].upper() + ref_table_name[1:]
-                ref_piece = " FK >- " + ref_table_name + "." + ref_table_name + "ID"
-                new_line = new_line + ref_piece
+            if len(next_elements) > 1:
+                if next_elements[2] == "REFERENCES":
+                    ref_table_name = next_elements[2].split("(")[0]
+                    ref_table_name = ref_table_name[0].upper() + ref_table_name[1:]
+                    ref_piece = " FK >- " + ref_table_name + "." + ref_table_name + "ID"
+                    new_line = new_line + ref_piece
+                # else: EDL won't take things like "UNIQUE", "NOT NULL" so just ignore those (drop them)
 
             edl_lines.append(new_line)
-
-            curr_line_idx = curr_line_idx+1
     
     edl_out = "\n".join(edl_lines)
 
@@ -103,6 +102,6 @@ def convert_to_EDL(schema_file_path: str) -> str:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise TypeError("SQL_to_EDL.py takes exactly one input arg (path to SQL file)")
+        raise ValueError("SQL_to_EDL.py takes exactly one input arg (path to SQL file)")
     
     output_file_path = convert_to_EDL(schema_file_path=sys.argv[1])
