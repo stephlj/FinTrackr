@@ -1,6 +1,29 @@
 import os, sys
 import re
 
+def convert_name(name_sql: str) -> str:
+    """
+    Convert SQL schema table or column name in my convention (all lower case, underscores between words)
+    to EDL (capitalize each word, no underscores)
+
+    Parameters
+    ----------
+    name_sql: str
+        SQL equivalent
+    
+    Returns
+    -------
+    str
+        EDL equivalent
+        
+    """
+    # Capitalize first letter
+    name_edl = name_sql[0].upper()+ name_sql[1:]
+    name_edl = re.sub(r"_\w",lambda x: name_edl[x.start()+1].upper(),name_edl)
+
+    return name_edl
+
+
 def convert_to_EDL(schema_file_path: str) -> str:
     """
     Convert the SQL in a schema file to the EDL used for generating schema diagram
@@ -12,10 +35,10 @@ def convert_to_EDL(schema_file_path: str) -> str:
         id SERIAL PRIMARY KEY,
         customer_id integer REFERENCES customer(id),
         total_amount money NOT NULL,
-        order_status_id integer REFERENCES orderstatus(id)
+        order_status_id integer REFERENCES order_status(id)
     );
 
-    this is the equivalent EDL (probably caps don't matter?):
+    this is the equivalent EDL (probably caps don't matter but they're easier to read with no underscores):
 
     Order
     -
@@ -60,7 +83,8 @@ def convert_to_EDL(schema_file_path: str) -> str:
 
     for s in create_start_idxs:
         # Replace the CREATE TABLE statement and ID line with EDL equivalents:
-        table_name = sql_lines[s][13].upper()+ sql_lines[s][14:-2]
+        table_name = sql_lines[s][13:-2]
+        table_name = convert_name(table_name)
         edl_lines.append(table_name)
         edl_lines.append("-")
         edl_lines.append(table_name+"ID PK int")
@@ -69,27 +93,31 @@ def convert_to_EDL(schema_file_path: str) -> str:
         end_idx = [k for k in statement_ends_idxs if k>s][0]
         for e in range(s+2,end_idx):
             next_elements = sql_lines[e].split()
-            # strip underscores, capitalize next letter
             col_name = next_elements[0]
-            new_col_name = re.sub(r"_\w",lambda x: col_name[x.start()+1].upper(),col_name)
-            # capitalize first letter
-            new_col_name = new_col_name[0].upper() + new_col_name[1:]
+            col_name = convert_name(col_name)
 
             col_type = next_elements[1]
             if col_type in type_conversions:
-                col_type = type_conversions["col_type"]
+                col_type = type_conversions[col_type]
 
             new_line = col_name + " " + col_type
 
-            if len(next_elements) > 1:
+            if len(next_elements) > 2:
                 if next_elements[2] == "REFERENCES":
-                    ref_table_name = next_elements[2].split("(")[0]
-                    ref_table_name = ref_table_name[0].upper() + ref_table_name[1:]
+                    # Unfortunate special case: this means the end of col_name is now Id, needs to be ID
+                    col_name = col_name[:-1] + col_name[-1].upper()
+                    new_line = col_name + " " + col_type
+                    ref_table_name = next_elements[3].split("(")[0]
+                    ref_table_name = convert_name(ref_table_name)
                     ref_piece = " FK >- " + ref_table_name + "." + ref_table_name + "ID"
                     new_line = new_line + ref_piece
                 # else: EDL won't take things like "UNIQUE", "NOT NULL" so just ignore those (drop them)
+            else:
+                # Strip a trailing comma, if present
+                new_line = re.sub(",","",new_line)
 
             edl_lines.append(new_line)
+        edl_lines.append("\n")
     
     edl_out = "\n".join(edl_lines)
 

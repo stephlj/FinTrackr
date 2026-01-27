@@ -6,7 +6,7 @@ CREATE TABLE order(
         id SERIAL PRIMARY KEY,
         customer_id integer REFERENCES customer(id),
         total_amount money,
-        order_status_id integer REFERENCES orderstatus(id)
+        order_status_id integer REFERENCES order_status(id)
 );
 
 CREATE TABLE customer(
@@ -15,7 +15,7 @@ CREATE TABLE customer(
     address text UNIQUE NOT NULL
 );
 
-CREATE TABLE orderstatus(
+CREATE TABLE order_status(
     id SERIAL PRIMARY KEY,
     status string
 );

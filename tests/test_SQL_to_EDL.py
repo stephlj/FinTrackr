@@ -21,11 +21,12 @@ class TestEDLConverter(unittest.TestCase):
         converted_path = convert_to_EDL(self.sql_file_path)
 
         with open(converted_path, "r") as f1:
-            converted_lines = list(f1)
+            converted_lines = [line.strip() for line in f1.read().splitlines() if line.strip() and line!="-"]
 
         with open(self.correct_output_path, "r") as f2:
-            correct_lines = list(f2)
+            correct_lines = [line.strip() for line in f2.read().splitlines() if line.strip()and line!="-"]
 
-        combined = set(converted_lines) | set(correct_lines)
+        combined = set(converted_lines) & set(correct_lines) # Keep all lines that are in both test and ground truth
+        print(combined)
 
-        self.AssertEqual(len(combined), 0, "Converted SQL and ground truth EDL do not match")
+        self.assertEqual(len(combined), len(correct_lines), "Converted SQL and ground truth EDL do not match")
