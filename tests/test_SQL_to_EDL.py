@@ -5,5 +5,18 @@ from fintrackr.SQL_to_EDL import convert_to_EDL
 
 class TestEDLConverter(unittest.TestCase):
 
-    def test_SQL_to_EDL():
-        pass
+    def test_SQL_to_EDL(self):
+        sql_file_path = os.path.join(os.getcwd(),"tests","data","test_SQL_schema.sql")
+        correct_output_path = os.path.join(os.getcwd(),"tests","data","test_EDL.txt")
+
+        converted_path = convert_to_EDL(sql_file_path)
+
+        with open(converted_path, "r") as f1:
+            converted_lines = list(f1)
+
+        with open(correct_output_path, "r") as f2:
+            correct_lines = list(f2)
+
+        combined = set(converted_lines) | set(correct_lines)
+
+        self.AssertEqual(len(combined), 0, "Converted SQL and ground truth EDL do not match")

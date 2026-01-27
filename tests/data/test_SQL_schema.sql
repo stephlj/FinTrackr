@@ -1,3 +1,7 @@
+CREATE TYPE recurrance AS ENUM(
+    'irregular', 'monthly', 'annual'
+);
+
 CREATE TABLE order(
         id SERIAL PRIMARY KEY,
         customer_id integer REFERENCES customer(id),
@@ -11,7 +15,7 @@ CREATE TABLE customer(
     address text
 );
 
-CREATE TABLE order_status(
+CREATE TABLE orderstatus(
     id SERIAL PRIMARY KEY,
     status string
 )
