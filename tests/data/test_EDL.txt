@@ -10,6 +10,7 @@ Customer
 -
 CustomerID PK int
 Name string
+PhoneNumber string
 Address string
 
 

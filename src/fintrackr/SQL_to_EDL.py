@@ -1,3 +1,7 @@
+"""
+Copyright (c) 2026 Stephanie Johnson
+"""
+
 import os, sys
 import re
 
@@ -97,24 +101,25 @@ def convert_to_EDL(schema_file_path: str) -> str:
             col_name = convert_name(col_name)
 
             col_type = next_elements[1]
+            # Strip a trailing comma, if present
+            col_type = re.sub(",","",col_type)
             if col_type in type_conversions:
                 col_type = type_conversions[col_type]
 
             new_line = col_name + " " + col_type
 
             if len(next_elements) > 2:
-                if next_elements[2] == "REFERENCES":
-                    # Unfortunate special case: this means the end of col_name is now Id, needs to be ID
-                    col_name = col_name[:-1] + col_name[-1].upper()
-                    new_line = col_name + " " + col_type
-                    ref_table_name = next_elements[3].split("(")[0]
-                    ref_table_name = convert_name(ref_table_name)
-                    ref_piece = " FK >- " + ref_table_name + "." + ref_table_name + "ID"
-                    new_line = new_line + ref_piece
-                # else: EDL won't take things like "UNIQUE", "NOT NULL" so just ignore those (drop them)
-            else:
-                # Strip a trailing comma, if present
-                new_line = re.sub(",","",new_line)
+                for n in range(2,len(next_elements)):
+                    if next_elements[n] == "REFERENCES":
+                        # Unfortunate special case: this means the end of col_name is now Id, needs to be ID
+                        col_name = col_name[:-1] + col_name[-1].upper()
+                        new_line = col_name + " " + col_type
+                        ref_table_name = next_elements[n+1].split("(")[0]
+                        ref_table_name = convert_name(ref_table_name)
+                        ref_piece = " FK >- " + ref_table_name + "." + ref_table_name + "ID"
+                        new_line = new_line + ref_piece
+                        break
+                    # else: EDL won't take things like "UNIQUE", "NOT NULL" so just ignore those (drop them)
 
             edl_lines.append(new_line)
         edl_lines.append("\n")
