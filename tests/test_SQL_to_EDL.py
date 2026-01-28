@@ -16,6 +16,10 @@ class TestEDLConverter(unittest.TestCase):
         if os.path.isfile(cls.new_output_path):
             os.remove(cls.new_output_path)
 
+    def test_convert_name(self):
+        # TODO implement a test for this function
+        pass
+    
     def test_SQL_to_EDL(self):
         
         converted_path = convert_to_EDL(self.sql_file_path)

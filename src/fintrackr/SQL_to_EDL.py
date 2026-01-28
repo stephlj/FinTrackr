@@ -58,9 +58,11 @@ def convert_to_EDL(schema_file_path: str) -> str:
     
     Return
     ______
-    str, path to file with EDL equivalent
+    str
+        Path to file with EDL equivalent
     """
-
+    
+    # SQL:EDL type equivalents
     type_conversions = {
         "integer":"int", 
         "text": "string"
@@ -69,10 +71,10 @@ def convert_to_EDL(schema_file_path: str) -> str:
     if not os.path.isfile(schema_file_path):
         # Laziness, not bothering with a logger for this
         print(f"convert_to_EDL: {schema_file_path} not a path to a file that exists")
-        return output_file_path
+        return None
     if not os.path.splitext(schema_file_path)[1] == ".sql":
         print(f"convert_to_EDL: {schema_file_path} not a sql file")
-        return output_file_path
+        return None
     
     output_file_path = os.path.splitext(schema_file_path)[0]+"_EDL.txt"
     
