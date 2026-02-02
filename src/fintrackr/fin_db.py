@@ -189,6 +189,50 @@ class FinDB:
         return query_return
 
 
+    def add_balance(self, accnt: str, bal_date: date, bal_amt: float) -> int:
+        """
+        Log a balance in the db.
+
+        Parameters
+        ----------
+        accnt: str
+            Must exist in data_sources table as a name.
+        bal_date : datetime.date
+            Date that this was the account's balance.
+        bal_amt : float
+            Account balance on balance_date
+        
+        Return
+        ------
+        int, success (1) or not (0)
+        """
+
+        accnt_id_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=accnt)
+        if len(accnt_id_tuple)==0:
+           logger.info(f"Account name {accnt} doesn't exist; adding to table data_sources")
+           accnt_id_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (accnt,))
+           if accnt_id_tuple is None:
+               logger.error(f"Could not insert new data source in data_sources table; query returned {accnt_id_tuple}")
+               raise ValueError("Could not insert new data source in data_sources table")
+        
+        accnt_id = accnt_id_tuple[0][0]
+
+        try:
+            rows_added = self._execute_query("INSERT INTO balances (accnt_name, date, amount) VALUES (%s, %s, %s) RETURNING *", (accnt_id, bal_date, bal_amt))
+        except Exception as e:
+            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
+            raise ValueError(f"Insertion into balances table failed with exception: {e}")
+        
+        if rows_added is not None:
+            if len(rows_added) == 1:
+                return 1
+            else:
+                logger.exception("Insertion into balances table returned something unexpected: {rows_added}")
+                raise ValueError("Insertion into balances table returned something unexpected: {rows_added}")
+        else:
+            return 0
+
+    
     def stage_transactions(self, path_to_transactions: str) -> int:
         """ 
         FinTracker currently accepts csv inputs.

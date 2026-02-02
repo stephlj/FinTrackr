@@ -10,6 +10,8 @@ import subprocess, os
 import yaml
 import pandas as pd
 
+from datetime import date
+
 from fintrackr.init_db import init_db
 from fintrackr.add_user import add_user
 from fintrackr.fin_db import FinDB
@@ -61,6 +63,14 @@ class TestDBSetup(unittest.TestCase):
         assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
         assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
+    
+    def test_add_balance(self):
+        # Try adding a balance to the db
+        accnt_name = "primary_savings"
+        balance_date = date(year=2025, month=8, day=5)
+        balance_amount = 50.00
+        
+        self.assertEqual(self.FinDB.add_balance(accnt=accnt_name,bal_date=balance_date,bal_amt=balance_amount), 1)
     
     def test_stage_transactions(self):
         # Also does an implicit test of select_from_table

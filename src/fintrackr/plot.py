@@ -51,7 +51,10 @@ def data_from_date_range(data_source: str, date_range: List) -> List[tuple]:
     List(tuple)
         All transactions (amount) with data_source_id = data_source and posted_dates
         in range(date_range)
+        #TODO also return any account balances for this data_source in date_range
     """
+
+    # Connect to db
 
 
 def plot_accnt_balance(accnt_name: str, date_range: List) -> None:
@@ -71,9 +74,8 @@ def plot_accnt_balance(accnt_name: str, date_range: List) -> None:
     Returns
     -------
     None, but a plot is displayed
-        TODO have a no-plots option for testing?
     """
     
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
-    # Connect to db here or elsewhere? probably have a main connection function?
+
