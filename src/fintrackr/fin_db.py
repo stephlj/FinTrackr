@@ -161,7 +161,7 @@ class FinDB:
         """
         Return the result of a SELECT statment.
         
-        For example, select_from_table(table_name = data_sources, col_names=("id"), subset_col="name", subset_val="cc")
+        For example, select_from_table(table_name = data_sources, col_names=("id",), subset_col="name", subset_val="cc")
         will execute the SQL query: SELECT id FROM data_sources WHERE name="cc"
 
         Parameters
@@ -218,7 +218,7 @@ class FinDB:
         accnt_id = accnt_id_tuple[0][0]
 
         try:
-            rows_added = self._execute_query("INSERT INTO balances (accnt_name, date, amount) VALUES (%s, %s, %s) RETURNING *", (accnt_id, bal_date, bal_amt))
+            rows_added = self._execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, str(bal_amt)))
         except Exception as e:
             logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
             raise ValueError(f"Insertion into balances table failed with exception: {e}")

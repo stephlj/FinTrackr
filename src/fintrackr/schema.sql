@@ -12,16 +12,16 @@ CREATE TYPE recurrance AS ENUM(
     'irregular', 'monthly', 'annual'
 );
 
-CREATE TABLE balances(
-    id SERIAL PRIMARY KEY,
-    accnt_name text NOT NULL REFERENCES data_sources(id),
-    date date NOT NULL,
-    amount money NOT NULL
-);
-
 CREATE TABLE data_sources(
     id SERIAL PRIMARY KEY,
     name text UNIQUE NOT NULL /* e.g., "credit card", "primary checking" */
+);
+
+CREATE TABLE balances(
+    id SERIAL PRIMARY KEY,
+    accnt_id integer NOT NULL REFERENCES data_sources(id),
+    date date NOT NULL,
+    amount money NOT NULL
 );
 
 CREATE TABLE data_load_metadata(
