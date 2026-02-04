@@ -73,23 +73,21 @@ class TestDBSetup(unittest.TestCase):
         self.assertEqual(self.FinDB.add_balance(accnt=accnt_name,bal_date=balance_date,bal_amt=balance_amount), 1)
     
     def test_stage_transactions(self):
-        # Also does an implicit test of select_from_table
-
         # stage_transactions adds rows to a staging table that should be empty at start
         num_rows_added = self.FinDB.stage_transactions(path_to_transactions=self.path_to_test_transactions)
         self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(self.element_to_match, 
-                         self.FinDB.select_from_table(table_name="staging", col_names=("amount",), subset_col="description", subset_val='Concert tickets')[0][0], 
+                         self.FinDB.execute_query("SELECT amount FROM staging WHERE description=%s;", ('Concert tickets',))[0][0], 
                          "Data were scrambled when copied into staging"
                          )
         
         # test that staging has NOT been cleared at this point
-        self.assertEqual(len(self.FinDB.select_from_table(table_name="staging", col_names=("posted_date", "amount", "description"))), self.transactions_to_add.shape[0], "Staging table didn't persist")
+        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), self.transactions_to_add.shape[0], "Staging table didn't persist")
 
         # test that it does clear if we try to add new transactions
         num_rows_added = self.FinDB.stage_transactions(path_to_transactions=self.path_to_test_transactions)
         self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
-        self.assertEqual(len(self.FinDB.select_from_table(table_name="staging", col_names=("posted_date", "amount", "description"))), self.transactions_to_add.shape[0], "Staging table wasn't cleared")
+        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), self.transactions_to_add.shape[0], "Staging table wasn't cleared")
 
         # This should go in the BLL test section
         # path_to_too_many_columns = os.path.join(os.getcwd(),"tests","data","test_data_cc_wrongnumcols.csv")
@@ -106,7 +104,7 @@ class TestDBSetup(unittest.TestCase):
             )
         self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
         self.assertEqual(self.element_to_match, 
-                         self.FinDB.select_from_table(table_name="transactions", col_names=("amount",), subset_col="description", subset_val='Concert tickets')[0][0], 
+                         self.FinDB.execute_query("SELECT amount FROM transactions WHERE description=%s;",('Concert tickets',))[0][0], 
                          "Data were scrambled when loaded into transactions"
                          )
         
