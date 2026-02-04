@@ -122,7 +122,7 @@ class FinDB:
                 return response
 
         
-    def _execute_query(self, query: str, vals: tuple = ()) -> List[tuple] | None:
+    def execute_query(self, query: str, vals: tuple = ()) -> List[tuple] | None:
         """
         Returns the result of a fetch to the database, after query execution.
 
@@ -182,9 +182,9 @@ class FinDB:
         cols = ", ".join(col_names)
 
         if subset_col == "":
-            query_return = self._execute_query(f"SELECT {cols} FROM {table_name};")
+            query_return = self.execute_query(f"SELECT {cols} FROM {table_name};")
         else:
-            query_return = self._execute_query(f"SELECT {cols} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
+            query_return = self.execute_query(f"SELECT {cols} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
 
         return query_return
     
@@ -204,7 +204,7 @@ class FinDB:
         source_name_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_name)
         if len(source_name_tuple)==0:
            logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
-           source_name_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+           source_name_tuple = self.execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
            if source_name_tuple is None:
                logger.error(f"Could not insert new data source in data_sources table; query returned {source_name_tuple}")
                raise ValueError("Could not insert new data source in data_sources table")
@@ -233,7 +233,7 @@ class FinDB:
         accnt_id = self.add_data_source(source_name=accnt)
 
         try:
-            rows_added = self._execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, str(bal_amt)))
+            rows_added = self.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, str(bal_amt)))
         except Exception as e:
             logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
             raise ValueError(f"Insertion into balances table failed with exception: {e}")
@@ -366,7 +366,7 @@ class FinDB:
             "RETURNING *;"
             
         try:
-            all_new_transactions = self._execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
+            all_new_transactions = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
         except Exception as e:
             logger.exception(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
             raise ValueError(f"Insertion into transactions table failed with exception: {e}")
@@ -381,7 +381,7 @@ class FinDB:
                 "        t.amount = s.amount AND " \
                 "        t.description = s.description " \
                 "    WHERE t.id IS NULL;"
-            if len(self._execute_query(check_dups)) == 0:
+            if len(self.execute_query(check_dups)) == 0:
                 logger.error("All staged transactions are already in transactions table")
                 return 0
             else:
