@@ -187,6 +187,29 @@ class FinDB:
             query_return = self._execute_query(f"SELECT {cols} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
 
         return query_return
+    
+    def add_data_source(self, source_name: str) -> int:
+        """
+        Add source to data_source table if it doesn't exist.
+
+        Parameters
+        ----------
+        source_name : str
+        
+        Returns:
+        --------
+        int, id of new data_source
+        """
+        # This can be done in one query but race conditions can occur, apparently
+        source_name_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_name)
+        if len(source_name_tuple)==0:
+           logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
+           source_name_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+           if source_name_tuple is None:
+               logger.error(f"Could not insert new data source in data_sources table; query returned {source_name_tuple}")
+               raise ValueError("Could not insert new data source in data_sources table")
+        
+        return source_name_tuple[0][0]
 
 
     def add_balance(self, accnt: str, bal_date: date, bal_amt: float) -> int:
@@ -207,15 +230,7 @@ class FinDB:
         int, success (1) or not (0)
         """
 
-        accnt_id_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=accnt)
-        if len(accnt_id_tuple)==0:
-           logger.info(f"Account name {accnt} doesn't exist; adding to table data_sources")
-           accnt_id_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (accnt,))
-           if accnt_id_tuple is None:
-               logger.error(f"Could not insert new data source in data_sources table; query returned {accnt_id_tuple}")
-               raise ValueError("Could not insert new data source in data_sources table")
-        
-        accnt_id = accnt_id_tuple[0][0]
+        accnt_id = self.add_data_source(source_name=accnt)
 
         try:
             rows_added = self._execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, str(bal_amt)))
@@ -324,16 +339,8 @@ class FinDB:
             logger.info("No transactions loaded from source file to staging table; no transactions will be added")
             return num_new_transactions
         
-        # Get id for this source_info, if it exists
-        # This can be done in one query but race conditions can occur
-        src_info_id_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_info)
-        if len(src_info_id_tuple)==0:
-           logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
-           src_info_id_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info,))
-           if src_info_id_tuple is None:
-               logger.error(f"Could not insert new data source in data_sources table; query returned {src_info_id_tuple}")
-               raise ValueError("Could not insert new data source in data_sources table")
-        source_info_id = src_info_id_tuple[0][0]
+        # Get id for this source_info or add if it doesn't exist
+        source_info_id = self.add_data_source(source_info)
 
         today_date = date.today()
         

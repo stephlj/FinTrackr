@@ -43,7 +43,7 @@ def data_from_date_range(data_source: str, date_range: List) -> List[tuple]:
     ----------
     data_source : str
         Must exist in data_sources table as a name.
-    date_range : List[datetime.date]:
+    date_range : List[datetime.date]
         List of length 2: beginning and end dates to return date for.
 
     Return
@@ -51,7 +51,7 @@ def data_from_date_range(data_source: str, date_range: List) -> List[tuple]:
     List(tuple)
         All transactions (amount) with data_source_id = data_source and posted_dates
         in range(date_range)
-        #TODO also return any account balances for this data_source in date_range
+        TODO also return any account balances for this data_source in date_range
     """
 
     # Connect to db

@@ -18,7 +18,7 @@ DEFAULT_LOGGING_FORMAT = (
 
 # TODO add click interface
 
-def log_balance(accnt_name: str, balance_date: date, balance_amt: float, username: str, pw: str, db_name: str="fin_db") -> None:
+def log_balance(accnt_name: str, balance_date: tuple[int], balance_amt: float, username: str, pw: str, db_name: str="fin_db") -> None:
     """
     Log an account balance in the database
 
@@ -27,9 +27,10 @@ def log_balance(accnt_name: str, balance_date: date, balance_amt: float, usernam
     Parameters
     ----------
     accnt_name : str
-        Must exist in data_sources table as a name.
-    balance_date : datetime.date
-        Date that this was the account's balance.
+        Equivalent to name column in data_sources (will be added if doesn't exist in that table)
+    balance_date : tuple[int]
+        Date that this was the account's balance, of form ({year}, {month}, {day}),
+        e.g. (2025,8,5).
     balance_amt : float
         Account balance on balance_date
     username : str
@@ -44,16 +45,18 @@ def log_balance(accnt_name: str, balance_date: date, balance_amt: float, usernam
     None
     """
 
+    d = date(year=balance_date[0], month=balance_date[1],day=balance_date[2])
+
     FinDB = FinDB(user=username, pw=pw, db_name=db_name)
 
-    result = FinDB.add_balance(accnt = accnt_name, bal_date = balance_date, bal_amt = balance_amt)
+    result = FinDB.add_balance(accnt = accnt_name, bal_date = d, bal_amt = balance_amt)
 
     if result == 1:
         logger.info("Successfully logged balance of {balance_amt} to account {account_name} on date {balance_date} in {db_name}")
     else:
         logger.warning("Unsuccessful attempt to log balance of {balance_amt} to account {account_name} on date {balance_date} in {db_name}")
 
-# Correct balance (in case a balance was entered wrong)
+# TODO add Correct balance (in case a balance was entered wrong)
 
-# Load transactions (check file en route)
+# TODO add Load transactions (check file en route)
 
