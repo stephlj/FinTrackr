@@ -52,10 +52,10 @@ def data_from_date_range(data_source: str, date_range: List, username: str, pw: 
 
     Return
     ------
-    List(tuple)
+    List[List[tuple]]
         All transactions (amount) with data_source_id = data_source and posted_dates
         in range(date_range)
-        TODO also return any account balances for this data_source in date_range
+        And any account balances for this data_source in date_range
     """
 
     if len(date_range) != 2:
@@ -66,13 +66,6 @@ def data_from_date_range(data_source: str, date_range: List, username: str, pw: 
 
     date_range.sort()
 
-    # For future reference, for only two tables can do:
-    # SELECT *
-    # FROM data_load_metadata
-    # WHERE data_load_metadata.data_source_id = (SELECT id
-    #     FROM data_sources
-    #     WHERE name='cc'
-    #     )
     trans_query = """
         SELECT t.posted_date, t.amount
         FROM transactions AS t
@@ -85,6 +78,21 @@ def data_from_date_range(data_source: str, date_range: List, username: str, pw: 
     transactions = FinDB.execute_query(trans_query, (date_range[0],date_range[1],data_source))
 
     # All balances in date range
+    bal_query = """
+        SELECT date, amount
+        FROM balances
+        WHERE date BETWEEN %s AND %s
+        AND balances.accnt_id = (
+            SELECT id
+            FROM data_sources
+            WHERE name=%s
+            )
+        ;
+    """
+
+    balances = FinDB.execute_query(bal_query, (date_range[0],date_range[1],data_source))
+
+    return [transactions, balances]
 
 
 def plot_accnt_balance(accnt_name: str, date_range: List) -> None:
