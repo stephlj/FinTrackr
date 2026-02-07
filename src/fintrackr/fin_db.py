@@ -141,6 +141,8 @@ class FinDB:
         List of tuples, or None
             result of fetchall if the SQL has a RETURNING clause, 
             or None if the query is malformed/table doesn't exist/no RETURNING
+            Note to self: RETURNING in SQL returns a table; psycopg fetchall
+            turns this into a tuple of rows
 
         """
 

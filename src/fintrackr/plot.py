@@ -52,10 +52,10 @@ def data_from_date_range(data_source: str, date_range: List, username: str, pw: 
 
     Return
     ------
-    List[List[tuple]]
-        All transactions (amount) with data_source_id = data_source and posted_dates
+    dict[tuple]
+        key = transactions: All transactions (amount) with data_source_id = data_source and posted_dates
         in range(date_range)
-        And any account balances for this data_source in date_range
+        key = balances: any account balances for this data_source in date_range
     """
 
     if len(date_range) != 2:
@@ -92,7 +92,7 @@ def data_from_date_range(data_source: str, date_range: List, username: str, pw: 
 
     balances = FinDB.execute_query(bal_query, (date_range[0],date_range[1],data_source))
 
-    return [transactions, balances]
+    return {"transactions": transactions, "balances": balances}
 
 
 def plot_accnt_balance(accnt_name: str, date_range: List) -> None:
