@@ -35,7 +35,7 @@ def relative_bal_by_date(rel_to: tuple[date, float], transactions: tuple[date, f
     """
 
 
-def data_from_date_range(data_source: str, date_range: List) -> List[tuple]:
+def data_from_date_range(data_source: str, date_range: List, username: str, pw: str, db_name: str="fin_db") -> List[tuple]:
     """
     Return result of SELECT statement to the db as specified below.
     
@@ -45,6 +45,10 @@ def data_from_date_range(data_source: str, date_range: List) -> List[tuple]:
         Must exist in data_sources table as a name.
     date_range : List[datetime.date]
         List of length 2: beginning and end dates to return date for.
+    username : str
+        Username to connect to db
+    pw : str
+        pw for username to connect to db
 
     Return
     ------
@@ -54,7 +58,33 @@ def data_from_date_range(data_source: str, date_range: List) -> List[tuple]:
         TODO also return any account balances for this data_source in date_range
     """
 
-    # Connect to db
+    if len(date_range) != 2:
+        logger.error(f"Date range must be list of length 2; got instead {date_range}")
+        return None
+
+    FinDB = FinDB(user=username, pw=pw, db_name=db_name)
+
+    date_range.sort()
+
+    # For future reference, for only two tables can do:
+    # SELECT *
+    # FROM data_load_metadata
+    # WHERE data_load_metadata.data_source_id = (SELECT id
+    #     FROM data_sources
+    #     WHERE name='cc'
+    #     )
+    trans_query = """
+        SELECT t.posted_date, t.amount
+        FROM transactions AS t
+        JOIN data_load_metadata AS m ON m.id = t.metadatum_id
+        JOIN data_sources AS s ON s.id = m.data_source_id
+        WHERE t.posted_date BETWEEN %s AND %s
+        AND s.name=%s;
+    """
+
+    transactions = FinDB.execute_query(trans_query, (date_range[0],date_range[1],data_source))
+
+    # All balances in date range
 
 
 def plot_accnt_balance(accnt_name: str, date_range: List) -> None:
@@ -76,6 +106,7 @@ def plot_accnt_balance(accnt_name: str, date_range: List) -> None:
     None, but a plot is displayed
     """
     
+    #This probably goes elsewhere ... 
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
 
