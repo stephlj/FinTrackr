@@ -12,9 +12,7 @@ import pandas as pd
 
 from datetime import date
 
-from fintrackr.init_db import init_db
-from fintrackr.add_user import add_user
-from fintrackr.fin_db import FinDB
+import fintrackr.testing_utils as utils
 
 class TestDBSetup(unittest.TestCase):
     @classmethod
@@ -22,28 +20,12 @@ class TestDBSetup(unittest.TestCase):
         # Make a test db, in the process also tests init_db and add_user.
         # TODO later use mocking instead of a real db
         
-        path_to_config = os.path.join(os.getcwd(),"tests","data","test_config.yml")
-        with open(path_to_config, "r") as config_file:
-            config = yaml.safe_load(config_file)
-            cls.test_db_name = config["db"]["db_name"]
-            cls.test_owner = config["db"]["admin_name"]
+        cls.params = utils.config_params()
 
-        cls.owner_pw = "test_pw"
-
-        init_db(pw=cls.owner_pw, path_to_config=path_to_config)
-
-        cls.user = "test_user"
-        cls.user_pw = "pw"
-        add_user(name=cls.user, 
-                 pw=cls.user_pw, 
-                 admin_pw = cls.owner_pw, 
-                 path_to_config=path_to_config
-        )
-
-        cls.FinDB = FinDB(user=cls.user, pw=cls.user_pw, db_name=cls.test_db_name)
+        cls.FinDB = utils.set_up_test_DB(params=cls.params)
 
         # Some test fixtures shared by multiple tests:
-        cls.path_to_test_transactions = os.path.join(os.getcwd(),"tests","data","test_data_cc.csv")
+        cls.path_to_test_transactions = utils.TEST_TRANSACTIONS_PATH
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
         cls.source_info = "cc"
         cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
@@ -53,9 +35,9 @@ class TestDBSetup(unittest.TestCase):
     def tearDownClass(cls):
         cls.FinDB.close()
         # Delete testing db
-        exit_code = subprocess.run(["dropdb", cls.test_db_name])
-        exit_code2 = subprocess.run(["dropuser",cls.user])
-        exit_code3 = subprocess.run(["dropuser",cls.test_owner])
+        exit_code = subprocess.run(["dropdb", cls.params["test_db_name"]])
+        exit_code2 = subprocess.run(["dropuser",cls.params["user"]])
+        exit_code3 = subprocess.run(["dropuser",cls.params["test_owner"]])
 
         # We put these at the end to ensure teardown completes even if one of these fails.
         # Note that the @classmethod decorator changes the first arg to the class not
