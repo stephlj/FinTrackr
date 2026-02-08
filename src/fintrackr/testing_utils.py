@@ -28,6 +28,11 @@ def config_params() -> dict:
 
 def set_up_test_DB(params: dict) -> None:
     """
+    If testing manually, run this in the terminal afterwards to clean up:
+        dropdb test_fin_db
+        dropuser test_user
+        dropuser test_admin
+
     Parameters
     ----------
     params : dict

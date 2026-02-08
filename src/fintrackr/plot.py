@@ -9,7 +9,7 @@ import logging
 from typing import List
 from datetime import date
 
-from fintrackr.fin_db import FinDB
+import fintrackr.fin_db
 
 logger = logging.getLogger(__name__)
 DEFAULT_LOGGING_FORMAT = (
@@ -35,7 +35,7 @@ def relative_bal_by_date(rel_to: tuple[date, float], transactions: tuple[date, f
     """
 
 
-def data_from_date_range(data_source: str, date_range: List, username: str, pw: str, db_name: str="fin_db") -> List[tuple]:
+def data_from_date_range(data_source: str, date_range: List, username: str, pw: str, db_name: str="fin_db") -> dict[tuple]:
     """
     Return result of SELECT statement to the db as specified below.
     
@@ -62,7 +62,7 @@ def data_from_date_range(data_source: str, date_range: List, username: str, pw: 
         logger.error(f"Date range must be list of length 2; got instead {date_range}")
         return None
 
-    FinDB = FinDB(user=username, pw=pw, db_name=db_name)
+    FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 
     date_range.sort()
 
