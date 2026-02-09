@@ -27,9 +27,12 @@ class TestDBSetup(unittest.TestCase):
         # Some test fixtures shared by multiple tests:
         cls.path_to_test_transactions = utils.TEST_TRANSACTIONS_PATH
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
-        cls.source_info = "cc"
         cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
         cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
+
+        cls.source_info = "cc"
+        cls.balance_date = date(year=2025, month=9, day=9)
+        cls.balance_amount = 5000.00
 
     @classmethod
     def tearDownClass(cls):
@@ -47,12 +50,13 @@ class TestDBSetup(unittest.TestCase):
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
     
     def test_add_balance(self):
-        # Try adding a balance to the db
-        accnt_name = "primary_savings"
-        balance_date = date(year=2025, month=8, day=5)
-        balance_amount = 50.00
-        
-        self.assertEqual(self.FinDB.add_balance(accnt=accnt_name,bal_date=balance_date,bal_amt=balance_amount), 1)
+        # does-it-run test
+        self.assertEqual(self.FinDB.add_balance(
+                            accnt=self.source_info,
+                            bal_date=self.balance_date,
+                            bal_amt=self.balance_amount
+                            ), 
+                        1)
     
     def test_stage_transactions(self):
         # stage_transactions adds rows to a staging table that should be empty at start
@@ -110,5 +114,31 @@ class TestDBSetup(unittest.TestCase):
             source_info = self.source_info
             )
         self.assertEqual(num_transactions_added, num_new_trans, "Duplicates should not have been successfully loaded")
+
+    def test_data_from_date_range(self):
+        # pytest runs each test case independently, so re-set-up the db
+        # Neither of these functions allow duplicates
+
+        self.FinDB.add_balance(
+            accnt=self.source_info,
+            bal_date=self.balance_date,
+            bal_amt=self.balance_amount
+        )
+        self.FinDB.add_transactions(
+            path_to_source_file = self.path_to_test_transactions, 
+            source_info = self.source_info
+        )
+
+        print(self.FinDB.execute_query("SELECT * FROM transactions;"))
+
+        amts = self.FinDB.data_from_date_range(
+            data_source = self.source_info, 
+            date_range = ['9/5/2025','9/10/2025']
+        )
+
+        bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
+        self.assertEqual(amts["balances"][0][1], bal_money, "data_from_date_range did not return correct balance amount")
+
+        self.assertEqual(len(amts["transactions"]), 3, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
 
 

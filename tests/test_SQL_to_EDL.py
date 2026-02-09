@@ -31,6 +31,5 @@ class TestEDLConverter(unittest.TestCase):
             correct_lines = [line.strip() for line in f2.read().splitlines() if line.strip()and line!="-"]
 
         combined = set(converted_lines) & set(correct_lines) # Keep all lines that are in both test and ground truth
-        print(combined)
 
         self.assertEqual(len(combined), len(correct_lines), "Converted SQL and ground truth EDL do not match")
