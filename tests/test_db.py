@@ -129,13 +129,11 @@ class TestDBSetup(unittest.TestCase):
             source_info = self.source_info
         )
 
-        print(self.FinDB.execute_query("SELECT * FROM transactions;"))
-
         amts = self.FinDB.data_from_date_range(
             data_source = self.source_info, 
-            date_range = ['9/5/2025','9/10/2025']
+            date_range = [date(year=2025,month=9,day=5),date(year=2025,month=9,day=10)]
         )
-
+        
         bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
         self.assertEqual(amts["balances"][0][1], bal_money, "data_from_date_range did not return correct balance amount")
 

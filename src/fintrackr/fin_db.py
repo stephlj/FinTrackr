@@ -16,6 +16,7 @@ import os
 from typing import List
 
 from datetime import date
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 DEFAULT_LOGGING_FORMAT = (
@@ -183,9 +184,9 @@ class FinDB:
         return source_name_tuple[0][0]
 
 
-    def add_balance(self, accnt: str, bal_date: date, bal_amt: float) -> int:
+    def add_balance(self, accnt: str, bal_date: date, bal_amt: str) -> int:
         """
-        Log a balance in the db.
+        Log a balance in the db. Will not allow exact duplicates to be added.
 
         Parameters
         ----------
@@ -193,7 +194,7 @@ class FinDB:
             Must exist in data_sources table as a name.
         bal_date : datetime.date
             Date that this was the account's balance.
-        bal_amt : float
+        bal_amt : str
             Account balance on balance_date
         
         Return
@@ -201,10 +202,24 @@ class FinDB:
         int, success (1) or not (0)
         """
 
+        # Make sure bal_amt is formatted so it's recognized as money
+        bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
+
         accnt_id = self.add_data_source(source_name=accnt)
 
+        check_bal_query = """
+                SELECT * FROM balances 
+                WHERE date=%s 
+                AND amount=%s 
+                AND accnt_id = %s;
+            """
+
+        if len(self.execute_query(check_bal_query,(bal_date, bal_amt, accnt_id))) != 0:
+            logger.warning(f"Balance of {bal_amt} on date {bal_date} for account name {accnt} already exists; not adding any balance.")
+            return 0
+
         try:
-            rows_added = self.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, str(bal_amt)))
+            rows_added = self.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
         except Exception as e:
             logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
             raise ValueError(f"Insertion into balances table failed with exception: {e}")
@@ -365,7 +380,7 @@ class FinDB:
 
         return num_new_transactions
     
-    def data_from_date_range(self, data_source: str, date_range: List) -> dict[List[tuple]]:
+    def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[tuple]]:
         """
         Return result of SELECT statement to the db as specified below.
         
@@ -373,8 +388,9 @@ class FinDB:
         ----------
         data_source : str
             Must exist in data_sources table as a name.
-        date_range : List[datetime.date]
+        date_range : List[date]
             List of length 2: beginning and end dates to return date for.
+            Dates in datetime.date format
 
         Return
         ------
@@ -406,7 +422,7 @@ class FinDB:
             SELECT date, amount
             FROM balances
             WHERE date BETWEEN %s AND %s
-            AND balances.accnt_id = (
+            AND accnt_id = (
                 SELECT id
                 FROM data_sources
                 WHERE name=%s
