@@ -403,7 +403,11 @@ class FinDB:
         if len(date_range) != 2:
             logger.error(f"Date range must be list of length 2; got instead {date_range}")
             return None
-
+        
+        if (type(date_range[0]) != date) or (type(date_range[1]) != date):
+            # date_range.sort() will do the wrong thing if this isn't date format
+            logger.error(f"Date range must be in datetime.date format; got instead {date_range}")
+            return None
         date_range.sort()
 
         trans_query = """
