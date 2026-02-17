@@ -16,6 +16,7 @@ import os
 from typing import List
 
 from datetime import date
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 DEFAULT_LOGGING_FORMAT = (
@@ -122,7 +123,7 @@ class FinDB:
                 return response
 
         
-    def _execute_query(self, query: str, vals: tuple = ()) -> List[tuple] | None:
+    def execute_query(self, query: str, vals: tuple = ()) -> List[tuple] | None:
         """
         Returns the result of a fetch to the database, after query execution.
 
@@ -141,6 +142,8 @@ class FinDB:
         List of tuples, or None
             result of fetchall if the SQL has a RETURNING clause, 
             or None if the query is malformed/table doesn't exist/no RETURNING
+            Note to self: RETURNING in SQL returns a table; psycopg fetchall
+            turns this into a tuple of rows
 
         """
 
@@ -156,39 +159,81 @@ class FinDB:
                 raise ValueError(f"Query did not complete with exception: {e}")
             finally:
                 return response
-            
-    def select_from_table(self, table_name: str, col_names: tuple[str], subset_col: str="", subset_val: str | int | float = 0) -> tuple:
+    
+    def add_data_source(self, source_name: str) -> int:
         """
-        Return the result of a SELECT statment.
-        
-        For example, select_from_table(table_name = data_sources, col_names=("id"), subset_col="name", subset_val="cc")
-        will execute the SQL query: SELECT id FROM data_sources WHERE name="cc"
+        Add source to data_source table if it doesn't exist.
 
         Parameters
         ----------
-        table_name: str
-            Table to select from
-        col_names: tuple[str]
-            Columns whose values should be returned
-        subset_col: str, optional
-            The first part of a WHERE clause
-        subsetl_val: str or int or float, optional
-            Value to find (identically) in subset_col
+        source_name : str
+        
+        Returns:
+        --------
+        int, id of new data_source
+        """
+        # This can be done in one query but race conditions can occur, apparently
+        source_name_tuple = self.execute_query("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
+        if len(source_name_tuple)==0:
+           logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
+           source_name_tuple = self.execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+           if source_name_tuple is None:
+               logger.error(f"Could not insert new data source in data_sources table; query returned {source_name_tuple}")
+               raise ValueError("Could not insert new data source in data_sources table")
+        
+        return source_name_tuple[0][0]
 
+
+    def add_balance(self, accnt: str, bal_date: date, bal_amt: str) -> int:
+        """
+        Log a balance in the db. Will not allow exact duplicates to be added.
+
+        Parameters
+        ----------
+        accnt: str
+            Must exist in data_sources table as a name.
+        bal_date : datetime.date
+            Date that this was the account's balance.
+        bal_amt : str
+            Account balance on balance_date
+        
+        Return
+        ------
+        int, success (1) or not (0)
         """
 
-        query_return = None
+        # Make sure bal_amt is formatted so it's recognized as money
+        bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
 
-        cols = ", ".join(col_names)
+        accnt_id = self.add_data_source(source_name=accnt)
 
-        if subset_col == "":
-            query_return = self._execute_query(f"SELECT {cols} FROM {table_name};")
+        check_bal_query = """
+                SELECT * FROM balances 
+                WHERE date=%s 
+                AND amount=%s 
+                AND accnt_id = %s;
+            """
+
+        if len(self.execute_query(check_bal_query,(bal_date, bal_amt, accnt_id))) != 0:
+            logger.warning(f"Balance of {bal_amt} on date {bal_date} for account name {accnt} already exists; not adding any balance.")
+            return 0
+
+        try:
+            rows_added = self.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
+        except Exception as e:
+            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
+            raise ValueError(f"Insertion into balances table failed with exception: {e}")
+        
+        if rows_added is not None:
+            if len(rows_added) == 1:
+                return 1
+            else:
+                logger.exception("Insertion into balances table returned something unexpected: {rows_added}")
+                raise ValueError("Insertion into balances table returned something unexpected: {rows_added}")
         else:
-            query_return = self._execute_query(f"SELECT {cols} FROM {table_name} WHERE {subset_col}=%s;", (subset_val,))
+            return 0
 
-        return query_return
-
-
+    
     def stage_transactions(self, path_to_transactions: str) -> int:
         """ 
         FinTracker currently accepts csv inputs.
@@ -219,7 +264,7 @@ class FinDB:
         # This set of logic feels goofy ... 
         rows_before = 0
         try:
-            rows_before = self.select_from_table(table_name="staging", col_names=("posted_date", "amount", "description"))
+            rows_before = self.execute_query("SELECT posted_date, amount, description FROM staging;")
         except Exception as e:
             logger.debug(f"Query of staging table did not execute with exception: {e}")
         if rows_before is None:
@@ -244,7 +289,7 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
-        rows_after = self.select_from_table(table_name="staging", col_names=("posted_date", "amount", "description"))
+        rows_after = self.execute_query("SELECT posted_date, amount, description FROM staging;")
         logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
 
         return len(rows_after)
@@ -280,16 +325,8 @@ class FinDB:
             logger.info("No transactions loaded from source file to staging table; no transactions will be added")
             return num_new_transactions
         
-        # Get id for this source_info, if it exists
-        # This can be done in one query but race conditions can occur
-        src_info_id_tuple = self.select_from_table(table_name="data_sources", col_names=("id",), subset_col="name", subset_val=source_info)
-        if len(src_info_id_tuple)==0:
-           logger.info(f"Data source {source_info} doesn't exist; adding to data_sources table")
-           src_info_id_tuple = self._execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_info,))
-           if src_info_id_tuple is None:
-               logger.error(f"Could not insert new data source in data_sources table; query returned {src_info_id_tuple}")
-               raise ValueError("Could not insert new data source in data_sources table")
-        source_info_id = src_info_id_tuple[0][0]
+        # Get id for this source_info or add if it doesn't exist
+        source_info_id = self.add_data_source(source_info)
 
         today_date = date.today()
         
@@ -315,7 +352,7 @@ class FinDB:
             "RETURNING *;"
             
         try:
-            all_new_transactions = self._execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
+            all_new_transactions = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
         except Exception as e:
             logger.exception(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
             raise ValueError(f"Insertion into transactions table failed with exception: {e}")
@@ -330,7 +367,7 @@ class FinDB:
                 "        t.amount = s.amount AND " \
                 "        t.description = s.description " \
                 "    WHERE t.id IS NULL;"
-            if len(self._execute_query(check_dups)) == 0:
+            if len(self.execute_query(check_dups)) == 0:
                 logger.error("All staged transactions are already in transactions table")
                 return 0
             else:
@@ -342,6 +379,64 @@ class FinDB:
         self._execute_action("DROP TABLE staging;")
 
         return num_new_transactions
+    
+    def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[tuple]]:
+        """
+        Return result of SELECT statement to the db as specified below.
+        
+        Parameters
+        ----------
+        data_source : str
+            Must exist in data_sources table as a name.
+        date_range : List[date]
+            List of length 2: beginning and end dates to return date for.
+            Dates in datetime.date format
+
+        Return
+        ------
+        dict[List[tuple]]
+            key = transactions: All transactions (amount) with data_source_id = data_source and posted_dates
+            in range(date_range)
+            key = balances: any account balances for this data_source in date_range
+        """
+
+        if len(date_range) != 2:
+            logger.error(f"Date range must be list of length 2; got instead {date_range}")
+            return None
+        
+        if (type(date_range[0]) != date) or (type(date_range[1]) != date):
+            # date_range.sort() will do the wrong thing if this isn't date format
+            logger.error(f"Date range must be in datetime.date format; got instead {date_range}")
+            return None
+        date_range.sort()
+
+        trans_query = """
+            SELECT t.posted_date, t.amount
+            FROM transactions AS t
+            JOIN data_load_metadata AS m ON m.id = t.metadatum_id
+            JOIN data_sources AS s ON s.id = m.data_source_id
+            WHERE t.posted_date BETWEEN %s AND %s
+            AND s.name=%s;
+        """
+
+        transactions = self.execute_query(trans_query, (date_range[0],date_range[1],data_source))
+
+        # All balances in date range
+        bal_query = """
+            SELECT date, amount
+            FROM balances
+            WHERE date BETWEEN %s AND %s
+            AND accnt_id = (
+                SELECT id
+                FROM data_sources
+                WHERE name=%s
+                )
+            ;
+        """
+
+        balances = self.execute_query(bal_query, (date_range[0],date_range[1],data_source))
+
+        return {"transactions": transactions, "balances": balances}
     
     # def get_uncategorized(self):
     #     """

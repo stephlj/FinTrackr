@@ -4,7 +4,7 @@ tables: plural, lower case, words separated by underscores
 primary key: always "id"
 foreign keys: x_id, using singular for x
 
-Copyright (c) 2025 Stephanie Johnson
+Copyright (c) 2025, 2026 Stephanie Johnson
 
 */
 
@@ -14,7 +14,14 @@ CREATE TYPE recurrance AS ENUM(
 
 CREATE TABLE data_sources(
     id SERIAL PRIMARY KEY,
-    name text NOT NULL /* e.g., "credit card", "primary checking" */
+    name text UNIQUE NOT NULL /* e.g., "credit card", "primary checking" */
+);
+
+CREATE TABLE balances(
+    id SERIAL PRIMARY KEY,
+    accnt_id integer NOT NULL REFERENCES data_sources(id),
+    date date NOT NULL,
+    amount money NOT NULL
 );
 
 CREATE TABLE data_load_metadata(
