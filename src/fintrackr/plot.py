@@ -44,7 +44,7 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     ref_bal = rel_to.sort()[:-1] # [date, amount] of chronologically most recent account balance
 
 
-def plot_accnt_balance(accnt_name: str, date_range: List, username: str, pw: str) -> None:
+def plot_accnt_balance(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:
     """
     Plot specified account data within date range.
     If no point-in-time account balance is saved in the db, 

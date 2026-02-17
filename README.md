@@ -2,7 +2,7 @@
 
 ![Schema diagram](img/schema.png)
 
-*Schema diagram made at app.quickdatabasediagrams.com, using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
+*Schema diagram made at ![QuickDataBaseDiagrams.com](app.quickdatabasediagrams.com), using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
 
 ## Inputs
 
@@ -55,6 +55,23 @@ you already have the package (e.g. it's a package that comes with all python ins
 
 Use `pytest` to run the tests. (For quick debugging: Add `-s` or `--capture=no` to print print statements to console.)
 
+Quick manual testing/debugging setup using the tools in `testing_utils.py`:
+
+```
+import fintrackr.testing_utils as utils
+params = utils.config_params()
+FinDB = utils.set_up_test_DB(params=params)
+```
+
+When done, run in the Terminal:
+
+```
+dropdb test_fin_db
+dropuser test_user
+dropuser test_admin
+```
+
+To regenerate the schema diagram, run `python src/fintrackr/SQL_to_EDL.py src/fintrackr/schema.sql`. A file `schema_EDL.txt` will appear in `src/fintrackr`.
 
 ## TODO 
 - Automatically infer transactions to ignore (e.g. credit card payments from checking account, if have both lists of transactions and can compare)?
