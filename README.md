@@ -2,7 +2,7 @@
 
 ![Schema diagram](img/schema.png)
 
-*Schema diagram made at ![QuickDataBaseDiagrams.com](<app.quickdatabasediagrams.com>), using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
+*Schema diagram made at ![QuickDataBaseDiagrams.com](//app.quickdatabasediagrams.com), using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
 
 ## Inputs
 
