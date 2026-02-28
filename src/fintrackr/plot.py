@@ -7,6 +7,7 @@ Copyright (c) 2026 Stephanie Johnson
 import logging
 import yaml
 import os
+import numpy as np
 
 from typing import List
 from datetime import date
@@ -24,6 +25,7 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     """
     Return a tuple of (date, balance) relative to the amount on date in rel_to.
     If rel_to is a List of len>1, uses the chronologically most recent account balance.
+    If rel_to is empty, the balance on the first date in transactions will be zero.
 
     Parameters
     ----------
@@ -38,10 +40,25 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     List[tuple[date, float]]
         Account balances on each date as a result of the list of dated transactions
     """
-    # CHeck whether rel_to is None (no balances in range)
+    
+    if len(rel_to) > 1:
+        ref_bal = rel_to.sort(key=lambda r: r[0])[-1:] # [date, amount] of chronologically most recent account balance
+    elif len(rel_to) == 1:
+        ref_bal = rel_to
+    else:
+        ref_bal = (sorted(transactions, key=lambda t: t[0])[0][0],0.00) # Set balance for first transaction date to zero
 
-    # TODO FIX this sort needs to be on first elements of every tuple
-    ref_bal = rel_to.sort()[:-1] # [date, amount] of chronologically most recent account balance
+    # balances have to be cumulative relative to ref_bal, by date
+    transactions.sort(key=lambda a: a[0]) # sort all transactions by date
+
+    earlier_trans = [t for t in transactions if t[0]<=ref_bal[0]] # If there are transactions for a date on which I also have an account balance,
+        # we assume those transactions were accounted for in the balance
+    earlier_bals = list(zip([a[0] for a in later_trans], reversed(np.cumsum([ref_bal[1]-a[1] for a in reversed(later_trans)]))))
+    later_trans = [t for t in transactions if t[0]>ref_bal[0]] 
+    later_bals = list(zip([a[0] for a in later_trans], np.cumsum([a[1]+ref_bal[1] for a in later_trans])))
+
+    return [earlier_bals + later_bals]
+
 
 
 def plot_accnt_balance(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:

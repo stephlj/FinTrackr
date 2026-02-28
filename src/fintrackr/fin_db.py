@@ -395,7 +395,7 @@ class FinDB:
         Return
         ------
         dict[List[tuple]]
-            key = transactions: All transactions (amount) with data_source_id = data_source and posted_dates
+            key = transactions: All transactions (date, amount) with data_source_id = data_source and posted_dates
             in range(date_range)
             key = balances: any account balances for this data_source in date_range
         """
