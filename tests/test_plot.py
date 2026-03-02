@@ -40,18 +40,18 @@ class TestPlot(unittest.TestCase):
                          )
         
         # Check relative to a single date in the middle
-        # rel_bals_2 = plot.relative_bal_by_date(rel_to = self.bals[-1:], transactions = self.trans)
+        rel_bals_2 = plot.relative_bal_by_date(rel_to = [self.bals[-1]], transactions = self.trans)
 
-        # self.assertEqual(rel_bals_2, 
-        #                 [(date(year=2023, month=10, day=5), 25000.02+200.50+250.00-50.00+550.05),
-        #                     (date(year=2023, month=10, day=5), 25000.02+250.00-50.00+550.05),
-        #                     (date(year=2024,month=1,day=1), 25000.02-50.00+550.05),
-        #                     (date(year=2024,month=1,day=1), 25000.02+550.05),
-        #                     (date(year=2024,month=10,day=1), 25000.02),
-        #                     (date(year=2025,month=9,day=10), 25000.02-250.00),
-        #                     (date(year=2025,month=9,day=10), 25000.02-250.00-250.00),
-        #                     (date(year=2025,month=11,day=10), 25000.02-250.00-250.00-500.000)]
-        #                  )
+        self.assertEqual(rel_bals_2, 
+                        [(date(year=2023, month=10, day=5), 25000.02+200.50+250.00-50.00+550.05),
+                            (date(year=2023, month=10, day=5), 25000.02+250.00-50.00+550.05),
+                            (date(year=2024,month=1,day=1), 25000.02-50.00+550.05),
+                            (date(year=2024,month=1,day=1), 25000.02+550.05),
+                            (date(year=2024,month=10,day=1), 25000.02),
+                            (date(year=2025,month=9,day=10), 25000.02-250.00),
+                            (date(year=2025,month=9,day=10), 25000.02-250.00-250.00),
+                            (date(year=2025,month=11,day=10), 25000.02-250.00-250.00-500.000)]
+                         )
 
         # Check relative to a single date at one end
         rel_bals_3 = plot.relative_bal_by_date(rel_to=[self.bals[0]], transactions=self.trans[0:-1])
