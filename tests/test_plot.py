@@ -3,11 +3,80 @@ import subprocess
 
 from datetime import date
 
-import fintrackr.plot
+import fintrackr.plot as plot
 
 class TestPlot(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # TODO probably should make these numbers make sense together (balances and transactions)
+        cls.bals = [(date(year=2025,month=9,day=10),5000.00),
+                 (date(year=2025,month=9,day=2),10000.00),
+                 (date(year=2024,month=2,day=2),2500.00),
+                 (date(year=2025,month=8,day=10),25000.02)
+                 ]
+
+        cls.trans = [(date(year=2023, month=10, day=5),-200.50),
+                 (date(year=2024,month=1,day=1), -250.00),
+                 (date(year=2024,month=1,day=1), 50.00),
+                 (date(year=2024,month=10,day=1), -550.05),
+                 (date(year=2025,month=9,day=10), -250.00),
+                 (date(year=2025,month=9,day=10), -250.00),
+                 (date(year=2025,month=11,day=10), -500.00)]
+
     def test_relative_bal_by_date(self):
-        pass
+        # Check relative to zero
+        rel_bals_1 = plot.relative_bal_by_date(rel_to=[], transactions=self.trans)
+
+        self.assertEqual(rel_bals_1, 
+                        [(date(year=2023, month=10, day=5), 200.50),
+                            (date(year=2023, month=10, day=5), 0.00),
+                            (date(year=2024,month=1,day=1), -250.00),
+                            (date(year=2024,month=1,day=1), -250.00+50.00),
+                            (date(year=2024,month=10,day=1), -250.00+50.00-550.05),
+                            (date(year=2025,month=9,day=10), -250.00+50.00-550.05-250.00),
+                            (date(year=2025,month=9,day=10), -250.00+50.00-550.05-250.00-250.00),
+                            (date(year=2025,month=11,day=10), -250.00+50.00-550.05-250.00-250.00-500.00)]
+                         )
+        
+        # Check relative to a single date in the middle
+        # rel_bals_2 = plot.relative_bal_by_date(rel_to = self.bals[-1:], transactions = self.trans)
+
+        # self.assertEqual(rel_bals_2, 
+        #                 [(date(year=2023, month=10, day=5), 25000.02+200.50+250.00-50.00+550.05),
+        #                     (date(year=2023, month=10, day=5), 25000.02+250.00-50.00+550.05),
+        #                     (date(year=2024,month=1,day=1), 25000.02-50.00+550.05),
+        #                     (date(year=2024,month=1,day=1), 25000.02+550.05),
+        #                     (date(year=2024,month=10,day=1), 25000.02),
+        #                     (date(year=2025,month=9,day=10), 25000.02-250.00),
+        #                     (date(year=2025,month=9,day=10), 25000.02-250.00-250.00),
+        #                     (date(year=2025,month=11,day=10), 25000.02-250.00-250.00-500.000)]
+        #                  )
+
+        # Check relative to a single date at one end
+        rel_bals_3 = plot.relative_bal_by_date(rel_to=[self.bals[0]], transactions=self.trans[0:-1])
+        self.assertEqual(rel_bals_3, 
+                        [(date(year=2023, month=10, day=5), 5000.00+250.00+250.00+550.05-50.00+250.00+200.50), # This is the additional element - balance at start of day 10/5/23, before first deduction
+                            (date(year=2023,month=10,day=5), 5000.00+250.00+250.00+550.05-50.00+250.00), # After the first transaction (same day as first element)
+                            (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05-50.00),
+                            (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05),
+                            (date(year=2024,month=10,day=1), 5000.00+250.00+250.00),
+                            (date(year=2025,month=9,day=10), 5000.00+250.00),
+                            (date(year=2025,month=9,day=10), 5000.00)] # This is the balance after the last transaction on 9/10, by definition
+                         )
+
+        # # Check relative to the most recent date in a list
+        # rel_bals_4 = plot.relative_bal_by_date(rel_to=self.bals,transactions=self.trans)
+        # #TODO FIX CORRECT ANSWER
+        # self.assertEqual(rel_bals_4, 
+        #                 [(date(year=2023, month=10, day=5),-200.50),
+        #                     (date(year=2024,month=1,day=1), -200.50-250.00),
+        #                     (date(year=2024,month=1,day=1), -200.50-250.00+50.00),
+        #                     (date(year=2024,month=10,day=1), -200.50-250.00+50.00-550.05),
+        #                     (date(year=2025,month=9,day=10), -200.50-250.00+50.00-550.05-250.00),
+        #                     (date(year=2025,month=9,day=10), -200.50-250.00+50.00-550.05-250.00-250.00),
+        #                     (date(year=2025,month=11,day=10), -200.50-250.00+50.00-550.05-250.00-250.00-500.00)]
+        #                  )
+        
 
     

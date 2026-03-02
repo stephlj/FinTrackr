@@ -25,7 +25,12 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     """
     Return a tuple of (date, balance) relative to the amount on date in rel_to.
     If rel_to is a List of len>1, uses the chronologically most recent account balance.
-    If rel_to is empty, the balance on the first date in transactions will be zero.
+    If rel_to is empty, the balance on the *earliest* date in transactions will be zero.
+
+    Design decision: Balances represent account balance at end of day. Therefore the returned list
+    will be one element longer than the input transactions list; the first element will be the balance
+    before the first transaction, and the second will be the balance after the first transaction in the
+    input.
 
     Parameters
     ----------
@@ -38,26 +43,29 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     Return
     ------
     List[tuple[date, float]]
-        Account balances on each date as a result of the list of dated transactions
+        Account balances as a result of the list of dated transactions.
+        If there are multiple transactions per day, there will be multiple balances - 
+        not aggregated per day.
     """
     
     if len(rel_to) > 1:
-        ref_bal = rel_to.sort(key=lambda r: r[0])[-1:] # [date, amount] of chronologically most recent account balance
+        ref_bal = sorted(rel_to, key=lambda r: r[0])[-1:][0] # [date, amount] of chronologically most recent account balance
     elif len(rel_to) == 1:
-        ref_bal = rel_to
+        ref_bal = rel_to[0]
     else:
         ref_bal = (sorted(transactions, key=lambda t: t[0])[0][0],0.00) # Set balance for first transaction date to zero
 
     # balances have to be cumulative relative to ref_bal, by date
     transactions.sort(key=lambda a: a[0]) # sort all transactions by date
 
-    earlier_trans = [t for t in transactions if t[0]<=ref_bal[0]] # If there are transactions for a date on which I also have an account balance,
-        # we assume those transactions were accounted for in the balance
-    earlier_bals = list(zip([a[0] for a in later_trans], reversed(np.cumsum([ref_bal[1]-a[1] for a in reversed(later_trans)]))))
+    earlier_trans = [t for t in transactions if t[0]<=ref_bal[0]] # Balances are for end of day
+    # Add the extra initial balance for the first day:
+    earlier_bals = list(zip([earlier_trans[0][0]]+[a[0] for a in earlier_trans[:-1]], reversed(ref_bal[1]-np.cumsum([a[1] for a in reversed(earlier_trans)]))))
+    
     later_trans = [t for t in transactions if t[0]>ref_bal[0]] 
-    later_bals = list(zip([a[0] for a in later_trans], np.cumsum([a[1]+ref_bal[1] for a in later_trans])))
+    later_bals = list(zip([a[0] for a in later_trans], np.cumsum([a[1] for a in later_trans])+ref_bal[1]))
 
-    return [earlier_bals + later_bals]
+    return earlier_bals + [ref_bal] + later_bals
 
 
 
