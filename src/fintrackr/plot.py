@@ -49,7 +49,7 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     """
     
     if len(rel_to) > 1:
-        ref_bal = sorted(rel_to, key=lambda r: r[0])[-1][0] # [date, amount] of chronologically most recent account balance
+        ref_bal = sorted(rel_to, key=lambda r: r[0])[-1] # [date, amount] of chronologically most recent account balance
     elif len(rel_to) == 1:
         ref_bal = rel_to[0]
     else:

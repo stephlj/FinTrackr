@@ -65,18 +65,19 @@ class TestPlot(unittest.TestCase):
                             (date(year=2025,month=9,day=10), 5000.00)] # This is the balance after the last transaction on 9/10, by definition
                          )
 
-        # # Check relative to the most recent date in a list
-        # rel_bals_4 = plot.relative_bal_by_date(rel_to=self.bals,transactions=self.trans)
-        # #TODO FIX CORRECT ANSWER
-        # self.assertEqual(rel_bals_4, 
-        #                 [(date(year=2023, month=10, day=5),-200.50),
-        #                     (date(year=2024,month=1,day=1), -200.50-250.00),
-        #                     (date(year=2024,month=1,day=1), -200.50-250.00+50.00),
-        #                     (date(year=2024,month=10,day=1), -200.50-250.00+50.00-550.05),
-        #                     (date(year=2025,month=9,day=10), -200.50-250.00+50.00-550.05-250.00),
-        #                     (date(year=2025,month=9,day=10), -200.50-250.00+50.00-550.05-250.00-250.00),
-        #                     (date(year=2025,month=11,day=10), -200.50-250.00+50.00-550.05-250.00-250.00-500.00)]
-        #                  )
+        # Check relative to the most recent date in a list
+        rel_bals_4 = plot.relative_bal_by_date(rel_to=self.bals,transactions=self.trans)
+
+        self.assertEqual(rel_bals_4, 
+                        [(date(year=2023, month=10, day=5), 5000.00+250.00+250.00+550.05-50.00+250.00+200.50), 
+                            (date(year=2023,month=10,day=5), 5000.00+250.00+250.00+550.05-50.00+250.00), 
+                            (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05-50.00),
+                            (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05),
+                            (date(year=2024,month=10,day=1), 5000.00+250.00+250.00),
+                            (date(year=2025,month=9,day=10), 5000.00+250.00),
+                            (date(year=2025,month=9,day=10), 5000.00),
+                            (date(year=2025,month=11,day=10), 5000.00-500.00)] 
+                         )
         
 
     
