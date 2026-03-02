@@ -6,7 +6,7 @@ Copyright (c) 2026 Stephanie Johnson
 
 import logging
 import yaml
-import os
+import os, sys
 import numpy as np
 
 from typing import List
@@ -76,7 +76,27 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     else:
         return earlier_bals + later_bals
 
+def plot_balances(all_balances: List[tuple[date, float]], calculated_balances: List[tuple[date, float]]) -> None:
+    """
+    Plot calculated account balances (from transactions) as well as any stored balances in 
+    the same range of dates. Dates are on x, balances are on y
+    
+    Parameters
+    ----------
+    all_balances : List[tuple[date, float]]
+        Any balances stored in the db. Plotted as red o's for comparison to calculated values.
+        Hopefully they match, but there's no guarantee they will (e.g. if some transactions
+        are missing from the db)
+    calculated_balances : List[tuple[date, float]]
+        Account balances calcualted from list of transactions. Plotted as blue .'s   
 
+    Returns
+    -------
+    None, but a plot is displayed
+
+    """
+
+    print("hi")
 
 def plot_accnt_balance(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:
     """
@@ -104,9 +124,6 @@ def plot_accnt_balance(accnt_name: str, date_range: List[date], username: str, p
     -------
     None, but a plot is displayed
     """
-    
-    #This probably goes elsewhere ... 
-    logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
     with open(CONFIG_PATH, "r") as config_file:
         config = yaml.safe_load(config_file)
@@ -123,6 +140,14 @@ def plot_accnt_balance(accnt_name: str, date_range: List[date], username: str, p
 
     abs_trans = relative_bal_by_date(rel_to = amts["balances"], transactions = amts["transactions"])
 
-    # plot abs_trans - put in its own fn
+    plot_balances(all_balances=amts["balances"], calculated_balances=abs_trans)
 
-    # Porbably put all this logic in if name = main and make this plot_balances only
+if __name__ == "__main__":
+    logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
+
+    if len(sys.argv) != 6:
+        raise TypeError("plot_accnt_balances.py takes exactly 5 input args: (1) account name to plot balances of; (2) earliest date; (3) latest date; (4) db username; (5) db pw")
+
+    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
+
+    plot_accnt_balance(accnt_name = sys.argv[1], date_range = [sys.argv[2], sys.argv[3]], username = sys.argv[4], pw = sys.argv[5])
