@@ -59,13 +59,22 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     transactions.sort(key=lambda a: a[0]) # sort all transactions by date
 
     earlier_trans = [t for t in transactions if t[0]<=ref_bal[0]] # Balances are for end of day
-    # Add the extra initial balance for the first day:
-    earlier_bals = list(zip([earlier_trans[0][0]]+[a[0] for a in earlier_trans[:-1]], reversed(ref_bal[1]-np.cumsum([a[1] for a in reversed(earlier_trans)]))))
+    if len(earlier_trans) > 0:
+        # Add the extra initial balance for the first day:
+        earlier_bals = list(zip([earlier_trans[0][0]]+[a[0] for a in earlier_trans[:-1]], reversed(ref_bal[1]-np.cumsum([a[1] for a in reversed(earlier_trans)]))))
+    else:
+        earlier_bals = []
     
     later_trans = [t for t in transactions if t[0]>ref_bal[0]] 
-    later_bals = list(zip([a[0] for a in later_trans], np.cumsum([a[1] for a in later_trans])+ref_bal[1]))
-
-    return earlier_bals + [(earlier_trans[-1][0], ref_bal[1])] + later_bals
+    if len(later_trans) > 0:
+        later_bals = list(zip([a[0] for a in later_trans], np.cumsum([a[1] for a in later_trans])+ref_bal[1]))
+    else:
+        later_bals = []
+    
+    if len(earlier_trans) > 0:
+        return earlier_bals + [(earlier_trans[-1][0], ref_bal[1])] + later_bals
+    else:
+        return earlier_bals + later_bals
 
 
 

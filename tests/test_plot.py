@@ -25,12 +25,12 @@ class TestPlot(unittest.TestCase):
                  (date(year=2025,month=11,day=10), -500.00)]
 
     def test_relative_bal_by_date(self):
-        # Check relative to zero
+        # Check relative to zero (which will be earlist transaction date, but EOD)
         rel_bals_1 = plot.relative_bal_by_date(rel_to=[], transactions=self.trans)
 
         self.assertEqual(rel_bals_1, 
                         [(date(year=2023, month=10, day=5), 200.50),
-                            (date(year=2023, month=10, day=5), 0.00),
+                            (date(year=2023, month=10, day=5), 0.00), # EOD first transaction date is zero
                             (date(year=2024,month=1,day=1), -250.00),
                             (date(year=2024,month=1,day=1), -250.00+50.00),
                             (date(year=2024,month=10,day=1), -250.00+50.00-550.05),
@@ -64,11 +64,23 @@ class TestPlot(unittest.TestCase):
                             (date(year=2025,month=9,day=10), 5000.00+250.00),
                             (date(year=2025,month=9,day=10), 5000.00)] # This is the balance after the last transaction on 9/10, by definition
                          )
+        
+        # Check relative to a single date at other end
+        rel_bals_4 = plot.relative_bal_by_date(rel_to=[(date(year=2023, month=10, day=4),2500.00)], transactions=self.trans)
+        self.assertEqual(rel_bals_4, 
+                        [(date(year=2023, month=10, day=5), 2500.00-200.50),
+                            (date(year=2024,month=1,day=1), 2500.00-200.50-250.00),
+                            (date(year=2024,month=1,day=1), 2500.00-200.50-250.00+50.00),
+                            (date(year=2024,month=10,day=1), 2500.00-200.50-250.00+50.00-550.05),
+                            (date(year=2025,month=9,day=10), 2500.00-200.50-250.00+50.00-550.05-250.00),
+                            (date(year=2025,month=9,day=10), 2500.00-200.50-250.00+50.00-550.05-250.00-250.00),
+                            (date(year=2025,month=11,day=10), 2500.00-200.50-250.00+50.00-550.05-250.00-250.00-500.00)]
+                         )
 
         # Check relative to the most recent date in a list
-        rel_bals_4 = plot.relative_bal_by_date(rel_to=self.bals,transactions=self.trans)
+        rel_bals_5 = plot.relative_bal_by_date(rel_to=self.bals,transactions=self.trans)
 
-        self.assertEqual(rel_bals_4, 
+        self.assertEqual(rel_bals_5, 
                         [(date(year=2023, month=10, day=5), 5000.00+250.00+250.00+550.05-50.00+250.00+200.50), 
                             (date(year=2023,month=10,day=5), 5000.00+250.00+250.00+550.05-50.00+250.00), 
                             (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05-50.00),
