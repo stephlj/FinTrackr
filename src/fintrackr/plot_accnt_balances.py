@@ -100,10 +100,12 @@ def plot_balances(all_balances: List[tuple[date, float]], calculated_balances: L
 
     """
     
-    # Rearrange inputs into a tuple of lists: there's gotta be a better way
-    # calculated = ([a for a, c in calculated_balances], [c for a, c in calculated_balances])
-    calculated = ([a[0] for a in calculated_balances], [c[1] for c in calculated_balances])
-    inputted = ([a[0] for a in all_balances], [c[1] for c in all_balances])
+    # Rearrange inputs into tuple of lists
+    calc_date, calc_amt = zip(*calculated_balances)
+    calculated = (list(calc_date), list(calc_amt))
+
+    input_date, input_amt = zip(*all_balances)
+    inputted = (list(input_date), list(input_amt))
 
     plt.plot(calculated[0], calculated[1], ".b")
     plt.plot(inputted[0], inputted[1], "or")

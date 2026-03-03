@@ -137,6 +137,6 @@ class TestPlotAccntBalances(unittest.TestCase):
 
         plot.plot_balances(all_balances=self.bals, calculated_balances=calc_bals)
 
-        plt.close()
+        plt.close() # pytest or unittest may already handle this
 
     
