@@ -8,6 +8,7 @@ import logging
 import yaml
 import os, sys
 import numpy as np
+import matplotlib.pyplot as plt
 
 from typing import List
 from datetime import date
@@ -47,6 +48,9 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
         If there are multiple transactions per day, there will be multiple balances - 
         not aggregated per day.
     """
+
+    if len(transactions) == 0:
+        return []
     
     if len(rel_to) > 1:
         ref_bal = sorted(rel_to, key=lambda r: r[0])[-1] # [date, amount] of chronologically most recent account balance
@@ -95,10 +99,20 @@ def plot_balances(all_balances: List[tuple[date, float]], calculated_balances: L
     None, but a plot is displayed
 
     """
+    
+    # Rearrange inputs into a tuple of lists: there's gotta be a better way
+    # calculated = ([a for a, c in calculated_balances], [c for a, c in calculated_balances])
+    calculated = ([a[0] for a in calculated_balances], [c[1] for c in calculated_balances])
+    inputted = ([a[0] for a in all_balances], [c[1] for c in all_balances])
 
-    print("hi")
+    plt.plot(calculated[0], calculated[1], ".b")
+    plt.plot(inputted[0], inputted[1], "or")
 
-def plot_accnt_balance(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:
+    plt.xlabel("Date")
+    plt.ylabel("Amount ($)")
+    plt.legend(["Balances calculated from transactions","Balances in db"])
+
+def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:
     """
     Plot specified account data within date range.
     If no point-in-time account balance is saved in the db, 
@@ -150,4 +164,4 @@ if __name__ == "__main__":
 
     path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
 
-    plot_accnt_balance(accnt_name = sys.argv[1], date_range = [sys.argv[2], sys.argv[3]], username = sys.argv[4], pw = sys.argv[5])
+    plot_accnt_balances(accnt_name = sys.argv[1], date_range = [sys.argv[2], sys.argv[3]], username = sys.argv[4], pw = sys.argv[5])

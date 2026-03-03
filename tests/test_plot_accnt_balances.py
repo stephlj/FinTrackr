@@ -1,11 +1,12 @@
 import unittest
-import subprocess
+import matplotlib.pyplot as plt
 
 from datetime import date
 
-import fintrackr.plot as plot
+import fintrackr.plot_accnt_balances as plot
 
-class TestPlot(unittest.TestCase):
+class TestPlotAccntBalances(unittest.TestCase):
+    # The main function in plot_accnt_balances doesn't have testing coverage because it requires db access
 
     @classmethod
     def setUpClass(cls):
@@ -117,5 +118,16 @@ class TestPlot(unittest.TestCase):
                             (date(year=2025,month=11,day=10), 5000.00-500.00)] 
                          )
         
+        # What happens if there are no transactions or balances in the date range?
+        rel_bals_8 = plot.relative_bal_by_date(rel_to=[], transactions=[])
+
+        self.assertEqual(rel_bals_8, [])
+
+    def test_plot_balances(self):
+        # Just a smoke test (does it run)
+
+        plot.plot_balances(all_balances=self.bals, calculated_balances=[(),(),()])
+
+        plt.close()
 
     

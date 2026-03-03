@@ -12,9 +12,31 @@ FinTrackr will then classify each transaction (expense or income) by category (g
 
 Security: the database runs locally, nothing leaves your machine.
 
-## Use cases
+## Example usage
 
-The (eventual) interface will include visualizations of account balance over time, monthly budgets calculated from both anticipated recurring expenses and extrapolations from past irregular expenditures, etc.
+Currently the only interface is a CLI.
+
+### Plot account balances
+
+In the terminal, run
+
+``` 
+python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_date> <username> <pw>
+```
+
+where:
+- `<account_name>` is the name of an account in the db for which transactions (and, optionally, balances)
+are recorded. In the db schema, this is the `name` field of the `data_sources` table.
+
+- Account balances will be plotted between `<start_date>` and `<end_date>`. Balances logged in the db will be plotted,
+as well as balances calculated as a result of all logged transactions on that account, between the specified dates.
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
+### Log account balances in the db
+
+TODO finish (probably change `ui.py` to a module per operation for now).
+
 
 ## Getting started
 
