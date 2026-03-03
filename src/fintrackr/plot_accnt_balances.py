@@ -108,11 +108,13 @@ def plot_balances(all_balances: List[tuple[date, float]], calculated_balances: L
     inputted = (list(input_date), list(input_amt))
 
     plt.plot(calculated[0], calculated[1], ".b")
-    plt.plot(inputted[0], inputted[1], "or")
+    plt.plot(inputted[0], inputted[1], "or", markerfacecolor='none')
 
     plt.xlabel("Date")
     plt.ylabel("Amount ($)")
     plt.legend(["Balances calculated from transactions","Balances in db"])
+
+    plt.show(block=False) # This makes CI not block
 
 def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:
     """
