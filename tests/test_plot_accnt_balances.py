@@ -126,7 +126,16 @@ class TestPlotAccntBalances(unittest.TestCase):
     def test_plot_balances(self):
         # Just a smoke test (does it run)
 
-        plot.plot_balances(all_balances=self.bals, calculated_balances=[(),(),()])
+        calc_bals = [(date(year=2023, month=10, day=5), 5000.00+250.00+250.00+550.05-50.00+250.00+200.50), 
+                            (date(year=2023,month=10,day=5), 5000.00+250.00+250.00+550.05-50.00+250.00), 
+                            (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05-50.00),
+                            (date(year=2024,month=1,day=1), 5000.00+250.00+250.00+550.05),
+                            (date(year=2024,month=10,day=1), 5000.00+250.00+250.00),
+                            (date(year=2025,month=9,day=10), 5000.00+250.00),
+                            (date(year=2025,month=9,day=10), 5000.00),
+                            (date(year=2025,month=11,day=10), 5000.00-500.00)]
+
+        plot.plot_balances(all_balances=self.bals, calculated_balances=calc_bals)
 
         plt.close()
 
