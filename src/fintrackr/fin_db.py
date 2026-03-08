@@ -18,6 +18,8 @@ from typing import List
 from datetime import date
 from decimal import Decimal
 
+from fintrackr.utils import Transaction
+
 logger = logging.getLogger(__name__)
 DEFAULT_LOGGING_FORMAT = (
     "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
@@ -380,7 +382,7 @@ class FinDB:
 
         return num_new_transactions
     
-    def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[tuple]]:
+    def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
         Return result of SELECT statement to the db as specified below.
         
@@ -394,7 +396,7 @@ class FinDB:
 
         Return
         ------
-        dict[List[tuple]]
+        dict[List[Transaction]]
             key = transactions: All transactions (date, amount) with data_source_id = data_source and posted_dates
             in range(date_range)
             key = balances: any account balances for this data_source in date_range
@@ -419,7 +421,8 @@ class FinDB:
             AND s.name=%s;
         """
 
-        transactions = self.execute_query(trans_query, (date_range[0],date_range[1],data_source))
+        trans = self.execute_query(trans_query, (date_range[0],date_range[1],data_source))
+        transactions = [Transaction(date=d, amount=a) for d, a in trans]
 
         # All balances in date range
         bal_query = """
@@ -434,7 +437,8 @@ class FinDB:
             ;
         """
 
-        balances = self.execute_query(bal_query, (date_range[0],date_range[1],data_source))
+        bals = self.execute_query(bal_query, (date_range[0],date_range[1],data_source))
+        balances = [Transaction(date=d, amount=a) for d, a in bals]
 
         return {"transactions": transactions, "balances": balances}
     

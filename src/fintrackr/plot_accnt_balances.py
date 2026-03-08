@@ -14,6 +14,7 @@ from typing import List
 from datetime import date
 
 import fintrackr.fin_db
+from fintrackr.utils import Transaction
 
 CONFIG_PATH = os.path.join(os.getcwd(),"src","fintrackr","config.yml")
 
@@ -22,28 +23,28 @@ DEFAULT_LOGGING_FORMAT = (
     "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
 )
 
-def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tuple[date, float]]) -> List[tuple[date,float]]:
-    """
-    Return a tuple of (date, balance) relative to the amount on date in rel_to.
-    If rel_to is a List of len>1, uses the chronologically most recent account balance.
-    If rel_to is empty, the balance on the *earliest* date in transactions will be zero.
 
-    Design decision: Balances represent account balance at end of day. Therefore the returned list
-    will be one element longer than the input transactions list; the first element will be the balance
-    before the first transaction, and the second will be the balance after the first transaction in the
-    input.
+def relative_bal_by_date(references: List[Transaction], transactions: List[Transaction]) -> List[Transaction]:
+    """
+    Return a list of Transactions calculated relative to the amount on date in references.
+    If references is a List of len>1, uses the chronologically *most recent* account balance.
+    If references is empty, the balance on the *earliest* date in transactions will be zero.
+
+    Design decision: Balances represent account balance at end of day. Therefore depending on the dates
+    in references vs transactions, the returned list may be one element longer than the input transactions list; 
+    the first element may be the balance before the first transaction, and the second would then be the 
+    balance after the first transaction in the input.
 
     Parameters
     ----------
-    rel_to : List[tuple[date, float]]
-        Calculate all balances relative to the amount (the float) for the most recent date
-    transactions : List[tuple[date, float]]
-        List of transactions (date, amount); calculate account balance for each date in
-        transactions as a result of each transaction.
+    references : List[Transactions]
+        Calculate all balances relative to the amount for the most recent date
+    transactions : List[Transactions]
+        List of transactions (date, amount); calculate account balance as a result of each transaction
     
     Return
     ------
-    List[tuple[date, float]]
+    List[Transaction]
         Account balances as a result of the list of dated transactions.
         If there are multiple transactions per day, there will be multiple balances - 
         not aggregated per day.
@@ -52,46 +53,47 @@ def relative_bal_by_date(rel_to: List[tuple[date, float]], transactions: List[tu
     if len(transactions) == 0:
         return []
     
-    if len(rel_to) > 1:
-        ref_bal = sorted(rel_to, key=lambda r: r[0])[-1] # [date, amount] of chronologically most recent account balance
-    elif len(rel_to) == 1:
-        ref_bal = rel_to[0]
+    # Set a single absolute account balance on a date, which all subsequent balances will be relative to
+    if len(references) > 1:
+        ref = sorted(references, key=lambda r: r.date)[-1] # [date, amount] of chronologically most recent account balance
     else:
-        ref_bal = (sorted(transactions, key=lambda t: t[0])[0][0],0.00) # Set balance for first transaction date to zero
+        ref = Transaction(date = sorted(transactions, key=lambda t: t.date)[0].amount, amount = 0.00) # Set balance for first transaction date to zero
 
     # balances have to be cumulative relative to ref_bal, by date
-    transactions.sort(key=lambda a: a[0]) # sort all transactions by date
+    transactions.sort(key=lambda a: a.date) # sort all transactions by date
 
-    earlier_trans = [t for t in transactions if t[0]<=ref_bal[0]] # Balances are for end of day
+    earlier_trans = [t for t in transactions if t.date<=ref.date] # Balances are for end of day
     if len(earlier_trans) > 0:
         # Add the extra initial balance for the first day:
-        earlier_bals = list(zip([earlier_trans[0][0]]+[a[0] for a in earlier_trans[:-1]], reversed(ref_bal[1]-np.cumsum([a[1] for a in reversed(earlier_trans)]))))
+        earlier_bals_tuple = list(zip([earlier_trans[0].date]+[a.date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)]))))
+        earlier_bals = [Transaction(date=d, amount=a) for d, a in earlier_bals_tuple]
     else:
         earlier_bals = []
     
-    later_trans = [t for t in transactions if t[0]>ref_bal[0]] 
+    later_trans = [t for t in transactions if t.date>ref.date] 
     if len(later_trans) > 0:
-        later_bals = list(zip([a[0] for a in later_trans], np.cumsum([a[1] for a in later_trans])+ref_bal[1]))
+        later_bals_tuple = list(zip([a.date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount))
+        later_bals = [Transaction(date=d, amount=a) for d, a in later_bals_tuple]
     else:
         later_bals = []
     
     if len(earlier_trans) > 0:
-        return earlier_bals + [(earlier_trans[-1][0], ref_bal[1])] + later_bals
+        return earlier_bals + [Transaction(date=earlier_trans[-1].date, amount=ref.amount)] + later_bals
     else:
         return earlier_bals + later_bals
 
-def plot_balances(all_balances: List[tuple[date, float]], calculated_balances: List[tuple[date, float]]) -> None:
+def plot_balances(all_balances: List[Transaction], calculated_balances: List[Transaction]) -> None:
     """
     Plot calculated account balances (from transactions) as well as any stored balances in 
     the same range of dates. Dates are on x, balances are on y
     
     Parameters
     ----------
-    all_balances : List[tuple[date, float]]
+    all_balances : List[Transaction]
         Any balances stored in the db. Plotted as red o's for comparison to calculated values.
         Hopefully they match, but there's no guarantee they will (e.g. if some transactions
         are missing from the db)
-    calculated_balances : List[tuple[date, float]]
+    calculated_balances : List[Transaction]
         Account balances calcualted from list of transactions. Plotted as blue .'s   
 
     Returns
@@ -122,7 +124,7 @@ def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, 
     If no point-in-time account balance is saved in the db, 
     balances will be relative to the first date in the date range.
     If there are multiple balances in date range, balances will be
-    relative to the most recent; and the rest will be plotted for reference.
+    relative to the most recent; and the rest will be plotted for references.
 
     Uses the db name in config.yml.
 
@@ -156,7 +158,7 @@ def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, 
 
     FinDB.close()
 
-    abs_trans = relative_bal_by_date(rel_to = amts["balances"], transactions = amts["transactions"])
+    abs_trans = relative_bal_by_date(references = amts["balances"], transactions = amts["transactions"])
 
     plot_balances(all_balances=amts["balances"], calculated_balances=abs_trans)
 
