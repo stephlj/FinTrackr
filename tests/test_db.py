@@ -135,7 +135,7 @@ class TestDBSetup(unittest.TestCase):
         )
         
         bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
-        self.assertEqual(amts["balances"][0][1], bal_money, "data_from_date_range did not return correct balance amount")
+        self.assertEqual(amts["balances"][0].amount, bal_money, "data_from_date_range did not return correct balance amount")
 
         self.assertEqual(len(amts["transactions"]), 3, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
 
