@@ -208,7 +208,7 @@ class FinDB:
         bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
 
         accnt_id = self.add_data_source(source_name=accnt)
-
+        
         check_bal_query = """
                 SELECT * FROM balances 
                 WHERE date=%s 
@@ -397,9 +397,9 @@ class FinDB:
         Return
         ------
         dict[List[Transaction]]
-            key = transactions: All transactions (date, amount) with data_source_id = data_source and posted_dates
+            key = "transactions": All transactions (date, amount) with data_source_id = data_source and posted_dates
             in range(date_range)
-            key = balances: any account balances for this data_source in date_range
+            key = "balances": any account balances for this data_source in date_range
         """
 
         if len(date_range) != 2:
