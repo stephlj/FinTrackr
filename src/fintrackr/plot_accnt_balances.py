@@ -54,7 +54,7 @@ def relative_bal_by_date(references: List[Transaction], transactions: List[Trans
         return []
     
     # Set a single absolute account balance on a date, which all subsequent balances will be relative to
-    if len(references) > 1:
+    if len(references) >= 1:
         ref = sorted(references, key=lambda r: r.date)[-1] # [date, amount] of chronologically most recent account balance
     else:
         ref = Transaction(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = 0.00) # Set balance for first transaction date to zero

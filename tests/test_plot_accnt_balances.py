@@ -74,14 +74,14 @@ class TestPlotAccntBalances(unittest.TestCase):
         # Check relative to a single date later than the latest transaction
         rel_bals_4 = plot.relative_bal_by_date(references=[Transaction(date=date(year=2026,month=1,day=1), amount=5000.00)], transactions=self.trans)
         self.assertEqual(rel_bals_4, 
-                        [Transaction(date=date(year=2023, month=10, day=5), amount=55000.00+500.00+250.00+250.00+550.05-50.00+250.00+200.50),
-                            Transaction(date=date(year=2023,month=10,day=5), amount=55000.00+500.00+250.00+250.00+550.05-50.00+250.00),
-                            Transaction(date=date(year=2024,month=1,day=1), amount=55000.00+500.00+250.00+250.00+550.05-50.00),
-                            Transaction(date=date(year=2024,month=1,day=1), amount=55000.00+500.00+250.00+250.00+550.05),
-                            Transaction(date=date(year=2024,month=10,day=1), amount=55000.00+500.00+250.00+250.00),
-                            Transaction(date=date(year=2025,month=9,day=10), amount=55000.00+500.00+250.00),
-                            Transaction(date=date(year=2025,month=9,day=10), amount=55000.00+500.00),
-                            Transaction(date=date(year=2025,month=11,day=10), amount=55000.00)# This is still the balance after the last transaction
+                        [Transaction(date=date(year=2023, month=10, day=5), amount=5000.00+500.00+250.00+250.00+550.05-50.00+250.00+200.50),
+                            Transaction(date=date(year=2023,month=10,day=5), amount=5000.00+500.00+250.00+250.00+550.05-50.00+250.00),
+                            Transaction(date=date(year=2024,month=1,day=1), amount=5000.00+500.00+250.00+250.00+550.05-50.00),
+                            Transaction(date=date(year=2024,month=1,day=1), amount=5000.00+500.00+250.00+250.00+550.05),
+                            Transaction(date=date(year=2024,month=10,day=1), amount=5000.00+500.00+250.00+250.00),
+                            Transaction(date=date(year=2025,month=9,day=10), amount=5000.00+500.00+250.00),
+                            Transaction(date=date(year=2025,month=9,day=10), amount=5000.00+500.00),
+                            Transaction(date=date(year=2025,month=11,day=10), amount=5000.00)# This is still the balance after the last transaction
                             ] 
                          )
         
