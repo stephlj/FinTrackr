@@ -57,6 +57,14 @@ class TestDBSetup(unittest.TestCase):
                             bal_amt=self.balance_amount
                             ), 
                         1)
+        
+        # Does it exit gracefully if an attempt to add the same balance again is made
+        self.assertEqual(self.FinDB.add_balance(
+                            accnt=self.source_info,
+                            bal_date=self.balance_date,
+                            bal_amt=self.balance_amount
+                            ),
+                         0)
     
     def test_stage_transactions(self):
         # stage_transactions adds rows to a staging table that should be empty at start

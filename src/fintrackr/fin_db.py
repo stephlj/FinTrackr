@@ -208,17 +208,6 @@ class FinDB:
         bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
 
         accnt_id = self.add_data_source(source_name=accnt)
-        
-        check_bal_query = """
-                SELECT * FROM balances 
-                WHERE date=%s 
-                AND amount=%s 
-                AND accnt_id = %s;
-            """
-
-        if len(self.execute_query(check_bal_query,(bal_date, bal_amt, accnt_id))) != 0:
-            logger.warning(f"Balance of {bal_amt} on date {bal_date} for account name {accnt} already exists; not adding any balance.")
-            return 0
 
         try:
             rows_added = self.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
@@ -233,6 +222,7 @@ class FinDB:
                 logger.exception("Insertion into balances table returned something unexpected: {rows_added}")
                 raise ValueError("Insertion into balances table returned something unexpected: {rows_added}")
         else:
+            logger.info(f"No rows added to balances table; balance of {bal_amt} on date {bal_date} for account {accnt_id} may already exist")
             return 0
 
     
