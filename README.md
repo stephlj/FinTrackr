@@ -2,7 +2,7 @@
 
 ![Schema diagram](img/schema.png)
 
-*Schema diagram made at app.quickdatabasediagrams.com, using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
+*Schema diagram made at [QuickDataBaseDiagrams.com](https://app.quickdatabasediagrams.com), using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
 
 ## Inputs
 
@@ -12,9 +12,31 @@ FinTrackr will then classify each transaction (expense or income) by category (g
 
 Security: the database runs locally, nothing leaves your machine.
 
-## Use cases
+## Example usage
 
-The (eventual) interface will include visualizations of account balance over time, monthly budgets calculated from both anticipated recurring expenses and extrapolations from past irregular expenditures, etc.
+Currently the only interface is a CLI.
+
+### Plot account balances
+
+In the terminal, run
+
+``` 
+python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_date> <username> <pw>
+```
+
+where:
+- `<account_name>` is the name of an account in the db for which transactions (and, optionally, balances)
+are recorded. In the db schema, this is the `name` field of the `data_sources` table.
+
+- Account balances will be plotted between `<start_date>` and `<end_date>`. Balances logged in the db will be plotted,
+as well as balances calculated as a result of all logged transactions on that account, between the specified dates.
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
+### Log account balances in the db
+
+TODO finish (probably change `ui.py` to a module per operation for now).
+
 
 ## Getting started
 
@@ -55,6 +77,23 @@ you already have the package (e.g. it's a package that comes with all python ins
 
 Use `pytest` to run the tests. (For quick debugging: Add `-s` or `--capture=no` to print print statements to console.)
 
+Quick manual testing/debugging setup using the tools in `testing_utils.py`:
+
+```
+import fintrackr.testing_utils as utils
+params = utils.config_params()
+FinDB = utils.set_up_test_DB(params=params)
+```
+
+When done, run in the Terminal:
+
+```
+dropdb test_fin_db
+dropuser test_user
+dropuser test_admin
+```
+
+To regenerate the schema diagram, run `python src/fintrackr/SQL_to_EDL.py src/fintrackr/schema.sql`. A file `schema_EDL.txt` will appear in `src/fintrackr`.
 
 ## TODO 
 - Automatically infer transactions to ignore (e.g. credit card payments from checking account, if have both lists of transactions and can compare)?
