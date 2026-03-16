@@ -1,5 +1,5 @@
 """
-User interface to the database. (Command line for now.)
+Utility to load a set of account balances on particular dates from a csv into the db.
 
 Copyright (c) 2026 Stephanie Johnson
 """
@@ -8,15 +8,10 @@ import logging
 
 from datetime import date
 
-from fintrackr.fin_db import FinDB
+import fintrackr.fin_db
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
-
-# TODO add click interface
 
 def log_balance(accnt_name: str, balance_date: tuple[int], balance_amt: float, username: str, pw: str, db_name: str="fin_db") -> None:
     """
@@ -47,7 +42,7 @@ def log_balance(accnt_name: str, balance_date: tuple[int], balance_amt: float, u
 
     d = date(year=balance_date[0], month=balance_date[1],day=balance_date[2])
 
-    FinDB = FinDB(user=username, pw=pw, db_name=db_name)
+    FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 
     result = FinDB.add_balance(accnt = accnt_name, bal_date = d, bal_amt = balance_amt)
 

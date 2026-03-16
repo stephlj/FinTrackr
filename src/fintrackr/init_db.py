@@ -12,11 +12,10 @@ import os, sys, subprocess
 import logging
 import yaml
 
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT
+
 logger = logging.getLogger(__name__)
 
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
 
 def init_db(
         pw: str,

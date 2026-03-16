@@ -7,11 +7,9 @@ import logging
 import psycopg
 import yaml
 
-logger = logging.getLogger(__name__)
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT
 
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
+logger = logging.getLogger(__name__)
 
 def add_user(
         name: str,

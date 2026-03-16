@@ -14,14 +14,11 @@ from typing import List
 from datetime import date
 
 import fintrackr.fin_db
-from fintrackr.utils import Transaction
+from fintrackr.utils import Transaction, DEFAULT_LOGGING_FORMAT
 
 CONFIG_PATH = os.path.join(os.getcwd(),"src","fintrackr","config.yml")
 
 logger = logging.getLogger(__name__)
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
 
 
 def relative_bal_by_date(references: List[Transaction], transactions: List[Transaction]) -> List[Transaction]:

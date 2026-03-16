@@ -18,12 +18,9 @@ from typing import List
 from datetime import date
 from decimal import Decimal
 
-from fintrackr.utils import Transaction
+from fintrackr.utils import Transaction, DEFAULT_LOGGING_FORMAT
 
 logger = logging.getLogger(__name__)
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
 
 class FinDB:
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
