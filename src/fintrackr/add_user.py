@@ -2,12 +2,12 @@
 #
 # Copyright (c) 2025 Stephanie Johnson
 
-import os, sys
+import sys
 import logging
 import psycopg
 import yaml
 
-from fintrackr.utils import DEFAULT_LOGGING_FORMAT
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -64,5 +64,5 @@ if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
     if len(sys.argv) != 4:
         raise TypeError("add_user.py accepts exactly 3 args")
-    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
-    add_user(name=sys.argv[1], pw=sys.argv[2], admin_pw=sys.argv[3],path_to_config=path_to_config)
+    
+    add_user(name=sys.argv[1], pw=sys.argv[2], admin_pw=sys.argv[3],path_to_config=CONFIG_PATH)

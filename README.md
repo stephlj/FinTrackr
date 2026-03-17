@@ -14,7 +14,27 @@ Security: the database runs locally, nothing leaves your machine.
 
 ## Example usage
 
-Currently the only interface is a CLI.
+Currently the only interface is running scripts in a terminal.
+
+### Log account balances in the db
+
+To log a list of account balances (amounts on dates) into the db from a csv:
+
+in the terminal, run
+
+``` 
+python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw>
+```
+
+where:
+- `<account_name>` is the name of an account in the db for which to record balances. 
+In the db schema, this is the `name` field of the `data_sources` table.
+
+- `<filepath>` is the full path to a csv with columns `Date` and `Balance`
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
+To log a single balance directly, use the `add_balance` method of the `FinDB` class.
 
 ### Plot account balances
 
@@ -32,10 +52,6 @@ are recorded. In the db schema, this is the `name` field of the `data_sources` t
 as well as balances calculated as a result of all logged transactions on that account, between the specified dates.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
-
-### Log account balances in the db
-
-TODO finish (probably change `ui.py` to a module per operation for now).
 
 
 ## Getting started

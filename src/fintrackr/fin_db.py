@@ -221,6 +221,53 @@ class FinDB:
         else:
             logger.info(f"No rows added to balances table; balance of {bal_amt} on date {bal_date} for account {accnt_id} may already exist")
             return 0
+        
+    def add_balances_from_csv(self, accnt: str, path_to_balances: str) -> int:
+        """
+        Load balances from csv into db.
+        Will not allow duplicates to be added.
+
+        Parameters
+        ----------
+        accnt: str
+            Must exist in data_sources table as a name.
+        path_to_balances : str
+            Filepath to csv to load.
+            Columns must be Date, Amount
+        
+        Return
+        ------
+        int, success (1) or not (0)
+        """        
+
+        # Get id for this source_info or add if it doesn't exist
+        accnt_id = self.add_data_source(source_name=accnt)
+
+        # TODO abstract the logic of stage_transactions to create a stage_balances table
+
+        r = self._import_file(dest_table="staging", path_to_file=path_to_balances)
+        if r==0: # This will happen if copy fails; eg if try to insert too many columns
+            logger.info("No rows added to staging table")
+            return 0
+        
+        # TODO check that I can do a combination of values and select statement - 
+        # won't work lik this ... 
+        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+            "SELECT date, amount " \
+            "FROM staging " \
+            "RETURNING *;"
+        
+        try:
+            rows_added = self.execute_query(balances_query, (accnt_id,))
+        except Exception as e:
+            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
+            raise ValueError(f"Insertion into balances table failed with exception: {e}")
+        
+        if rows_added is not None:
+            return 1
+        else:
+            logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
+            return 0
 
     
     def stage_transactions(self, path_to_transactions: str) -> int:
