@@ -14,7 +14,11 @@ Security: the database runs locally, nothing leaves your machine.
 
 ## Example usage
 
-Currently the only interface is running scripts in a terminal.
+Currently the only interface is running scripts in a terminal. 
+
+Because I'm not passing around a FinDB object, I can't use mocking to test these; and 
+I can't use a testing instance of the db because I'm loading the db name from a config ... 
+I may change those design decisions.
 
 ### Log account balances in the db
 
