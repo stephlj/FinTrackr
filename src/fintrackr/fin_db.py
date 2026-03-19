@@ -39,7 +39,7 @@ class FinDB:
             # Ignore any erros during shutdown
             pass
     
-    def _execute_action(self, query: str) -> str:
+    def _execute_action(self, query: str, vals: tuple = ()) -> str:
         """
         Convenience function. Execute an action for which I want the response message, not a fetch.
 
@@ -47,6 +47,8 @@ class FinDB:
         ----------
         query : str
             SQL statement to execute
+        vals: tuple
+            Values, in order, for all %s's in the query string
 
         Returns
         -------
@@ -69,10 +71,10 @@ class FinDB:
         """
         # The with statement automatically closes cursor after execution
         with self._conn.cursor() as curs: 
-            logger.info(f"Executing query {query}")
+            logger.info(f"Executing query: {query}, with vals: {vals}")
             response = None
             try:
-                curs.execute(query)
+                curs.execute(query, vals)
                 response = curs.statusmessage
                 logger.info(f"Completed with response {response}")
             except Exception as e:
@@ -133,7 +135,7 @@ class FinDB:
             (something where the return should be the result of a fetchall, rather 
             than a status message)
             Args need to be passed in separately using %s in the query string
-        vals: Tuple
+        vals: tuple
             Values, in order, for all %s's in the query string
 
         Returns
