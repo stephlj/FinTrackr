@@ -106,10 +106,15 @@ class TestDBSetup(unittest.TestCase):
         balances_to_add = pd.read_csv(input_path, header=None)
 
         num_balances_added = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
-
         self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
         
-        
+        # Check we can't add the same balances again:
+        num_balances_added2 = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
+        self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
+
+        # Check that we can assign balances to a different account
+        num_balances_added3 = self.FinDB.add_balances_from_csv(accnt = "bals_test_accnt", path_to_balances = input_path)
+        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Could not add balances to a different account")
     
     def test_add_transactions(self):
         # Add_transactions calls csv_to_staging (which we test separately above)
