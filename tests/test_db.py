@@ -100,8 +100,15 @@ class TestDBSetup(unittest.TestCase):
                          0)
     
     def test_add_balances_from_csv(self):
-        # TODO
-        pass
+        # add_balances_from_csv calls csv_to_staging (which we test separately above)
+        
+        input_path = os.path.join(os.getcwd(),"tests","data","test_balances.csv")
+        balances_to_add = pd.read_csv(input_path, header=None)
+
+        num_balances_added = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
+
+        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
+        
         
     
     def test_add_transactions(self):

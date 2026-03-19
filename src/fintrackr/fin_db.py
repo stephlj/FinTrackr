@@ -316,7 +316,7 @@ class FinDB:
             return num_new_balances
         
         balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-            "SELECT date, amount, %d " \
+            "SELECT date, amount, %s " \
             "FROM staging " \
             "RETURNING *;"
         
