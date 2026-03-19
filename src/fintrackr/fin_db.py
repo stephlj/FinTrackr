@@ -39,7 +39,7 @@ class FinDB:
             # Ignore any erros during shutdown
             pass
     
-    def _execute_action(self, query: str, vals: tuple = ()) -> str:
+    def _execute_action(self, query: str) -> str:
         """
         Convenience function. Execute an action for which I want the response message, not a fetch.
 
@@ -47,8 +47,6 @@ class FinDB:
         ----------
         query : str
             SQL statement to execute
-        vals: tuple
-            Values, in order, for all %s's in the query string
 
         Returns
         -------
@@ -71,10 +69,10 @@ class FinDB:
         """
         # The with statement automatically closes cursor after execution
         with self._conn.cursor() as curs: 
-            logger.info(f"Executing query: {query}, with vals: {vals}")
+            logger.info(f"Executing query: {query}")
             response = None
             try:
-                curs.execute(query, vals)
+                curs.execute(query)
                 response = curs.statusmessage
                 logger.info(f"Completed with response {response}")
             except Exception as e:
@@ -202,10 +200,8 @@ class FinDB:
                 logger.error("Unable to drop staging table")
                 raise ValueError("Unable to drop staging table before loading new file")
         
-        col_and_type = [f'{a} {b}' for a, b in csv_columns]
-        col_and_type_placeholders = ', '.join('%s' for _ in col_and_type)
-        create_staging = f"CREATE TABLE staging({col_and_type_placeholders}); "
-        r1 = self._execute_action(create_staging, tuple(col_and_type))
+        col_and_type = ", ".join(f'{a} {b}' for a, b in csv_columns)
+        r1 = self._execute_action(f"CREATE TABLE staging ({col_and_type}); ")
         if r1 != "CREATE TABLE":
             logger.error("Failed to create staging table")
             raise ValueError("Failed to create staging table before loading new file")
@@ -309,11 +305,11 @@ class FinDB:
         # Get id for this source_info or add if it doesn't exist
         accnt_id = self.add_data_source(source_name=accnt)
 
-        cols = [Col_Def(col_name="date", col_type="date"),
+        staging_cols = [Col_Def(col_name="date", col_type="date"),
                 Col_Def(col_name="amount", col_type="money"),
         ]
 
-        num_staged_balances = self.csv_to_staging(csv_path=path_to_balances, csv_columns=cols)
+        num_staged_balances = self.csv_to_staging(csv_path=path_to_balances, csv_columns=staging_cols)
 
         if num_staged_balances == 0:
             logger.info("No balances loaded from source file to staging table; no balances will be added to db")
@@ -338,32 +334,6 @@ class FinDB:
             logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
             return 0
 
-    
-    def stage_transactions(self, path_to_transactions: str) -> int:
-        """ 
-        FinTracker currently accepts csv inputs.
-        Load csv from disk into a temporary staging table, which will then go into
-        the transactions table in the db (executed in a separate function).
-
-        Parameters
-        ----------
-        path_to_transactions: str
-            path to csv of transactions
-
-        Returns
-        -------
-        int
-            Length of a query of how many rows were added to the staging table
-
-        """
-
-        cols = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
-                Col_Def(col_name="description", col_type="text")
-        ]
-
-        return self.csv_to_staging(csv_path=path_to_transactions, csv_columns=cols)
-
     def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
         """
         Load transactions from a file and log the addition of these transactions
@@ -387,9 +357,15 @@ class FinDB:
         int
             Number of transactions added.
         """
+
         num_new_transactions = 0
 
-        num_staged_transactions = self.stage_transactions(path_to_transactions = path_to_source_file)
+        staging_cols = [Col_Def(col_name="posted_date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="description", col_type="text")
+        ]
+
+        num_staged_transactions = self.csv_to_staging(csv_path=path_to_source_file, csv_columns=staging_cols)
 
         if num_staged_transactions == 0:
             logger.info("No transactions loaded from source file to staging table; no transactions will be added")
@@ -412,7 +388,7 @@ class FinDB:
             "meta AS ( " \
             "    INSERT INTO data_load_metadata " \
             "        (date_added, username, source, data_source_id) " \
-            "    VALUES (%s, %s, %s, %d)" \
+            "    VALUES (%s, %s, %s, %s)" \
             "    " \
             "    RETURNING id " \
             ") " \
