@@ -23,3 +23,13 @@ class Transaction:
     def __iter__(self):
         yield self.date
         yield self.amount
+
+@dataclass
+class Col_Def:
+    # db column definitions (name and type, e.g. "amount", "money")
+    col_name: str
+    col_type: str
+
+    def __iter__(self):
+        yield self.col_name
+        yield self.col_type

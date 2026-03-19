@@ -43,6 +43,13 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
         db_name = config["db"]["db_name"]
 
     # TODO add some input handling around the file? (check columns? extract into a util?)
+    # Eg
+    # Check that the input conforms to expectations
+    # input = pd.read_csv(path_to_transactions, dtype=str, header=None)
+    # assert input.shape[1] >= 3 # there can be extra columns, we'll ignore those
+    # input_types = input.dtypes
+    # assert input_types[1] == float, "Second column must be a float (amount)"
+    # TODO how to check the other columns?
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 

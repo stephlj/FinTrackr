@@ -18,7 +18,6 @@ class TestDBSetup(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Make a test db, in the process also tests init_db and add_user.
-        # TODO later use mocking instead of a real db
         
         cls.params = utils.config_params()
 
