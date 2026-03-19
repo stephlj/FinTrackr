@@ -184,7 +184,7 @@ class FinDB:
 
         """
         
-        cols_placeholders = ', '.join('%' for _ in csv_columns)
+        cols_placeholders = ', '.join('%s' for _ in csv_columns)
 
         # Drop staging table if it already exists
         # This set of logic feels goofy ... 
@@ -203,7 +203,7 @@ class FinDB:
                 raise ValueError("Unable to drop staging table before loading new file")
         
         col_and_type = [f'{a} {b}' for a, b in csv_columns]
-        col_and_type_placeholders = ', '.join('%' for _ in col_and_type)
+        col_and_type_placeholders = ', '.join('%s' for _ in col_and_type)
         create_staging = f"CREATE TABLE staging({col_and_type_placeholders}); "
         r1 = self._execute_action(create_staging, tuple(col_and_type))
         if r1 != "CREATE TABLE":
@@ -300,34 +300,40 @@ class FinDB:
         
         Return
         ------
-        int, success (1) or not (0)
+        int
+            Number of balances added
         """        
+
+        num_new_balances = 0
 
         # Get id for this source_info or add if it doesn't exist
         accnt_id = self.add_data_source(source_name=accnt)
 
-        # TODO abstract the logic of stage_transactions to create a stage_balances table
+        cols = [Col_Def(col_name="date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+        ]
 
-        r = self._import_file(dest_table="staging", path_to_file=path_to_balances)
-        if r==0: # This will happen if copy fails; eg if try to insert too many columns
-            logger.info("No rows added to staging table")
-            return 0
+        num_staged_balances = self.csv_to_staging(csv_path=path_to_balances, csv_columns=cols)
+
+        if num_staged_balances == 0:
+            logger.info("No balances loaded from source file to staging table; no balances will be added to db")
+            return num_new_balances
         
-        # TODO check that I can do a combination of values and select statement - 
-        # won't work lik this ... 
         balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-            "SELECT date, amount " \
+            "SELECT date, amount, %d " \
             "FROM staging " \
             "RETURNING *;"
         
         try:
-            rows_added = self.execute_query(balances_query, (accnt_id,))
+            all_new_balances = self.execute_query(balances_query, (accnt_id,))
         except Exception as e:
-            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
+            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {all_new_balances}")
             raise ValueError(f"Insertion into balances table failed with exception: {e}")
         
-        if rows_added is not None:
-            return 1
+        self._execute_action("DROP TABLE staging;")
+        
+        if all_new_balances is not None:
+            return len(all_new_balances)
         else:
             logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
             return 0
@@ -350,40 +356,13 @@ class FinDB:
             Length of a query of how many rows were added to the staging table
 
         """
-        
-        # Drop staging table if it already exists
-        # This set of logic feels goofy ... 
-        rows_before = 0
-        try:
-            rows_before = self.execute_query("SELECT posted_date, amount, description FROM staging;")
-        except Exception as e:
-            logger.debug(f"Query of staging table did not execute with exception: {e}")
-        if rows_before is None:
-            rows_before = 0
-        if rows_before != 0:
-            logger.info("Staging table still exists with content before loading new file")
-            r = self._execute_action("DROP TABLE staging;")
-            if r != "DROP TABLE":
-                logger.error("Unable to drop staging table")
-                raise ValueError("Unable to drop staging table before loading new file")
-        
-        create_staging = " CREATE TABLE staging( " \
-            " posted_date date, amount money, description text); "
-        r1 = self._execute_action(create_staging)
-        if r1 != "CREATE TABLE":
-            logger.error("Failed to create staging table")
-            raise ValueError("Failed to create staging table before loading new file")
 
-        r2 = self._import_file(dest_table="staging", path_to_file=path_to_transactions)
-        if r2==0: # This will happen if copy fails; eg if try to insert too many columns
-            logger.info("No rows added to staging table")
-            return 0
+        cols = [Col_Def(col_name="posted_date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="description", col_type="text")
+        ]
 
-        # Query how many rows are now in staging table
-        rows_after = self.execute_query("SELECT posted_date, amount, description FROM staging;")
-        logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
-
-        return len(rows_after)
+        return self.csv_to_staging(csv_path=path_to_transactions, csv_columns=cols)
 
     def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
         """
@@ -433,7 +412,7 @@ class FinDB:
             "meta AS ( " \
             "    INSERT INTO data_load_metadata " \
             "        (date_added, username, source, data_source_id) " \
-            "    VALUES (%s, %s, %s, %s)" \
+            "    VALUES (%s, %s, %s, %d)" \
             "    " \
             "    RETURNING id " \
             ") " \
@@ -463,13 +442,11 @@ class FinDB:
                 return 0
             else:
                 raise ValueError("No transactions inserted, but not because all new transactions were in db already")
-        
-        num_new_transactions = len(all_new_transactions)
 
         # Drop staging table
         self._execute_action("DROP TABLE staging;")
 
-        return num_new_transactions
+        return len(all_new_transactions)
     
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
