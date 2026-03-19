@@ -1,5 +1,5 @@
 """
-Utility to load a set of account balances on particular dates from a csv into the db.
+Utility to load a set of transactions from a csv into the db, via the command line.
 
 Copyright (c) 2026 Stephanie Johnson
 """
@@ -13,10 +13,10 @@ from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
 logger = logging.getLogger(__name__)
 
-def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> None:
+def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw: str) -> None:
     """
     
-    Load balances from csv file into db. Uses the db name in config file.
+    Load transactions from csv file into db. Uses the db name in config file.
 
     Parameters
     ----------
@@ -51,18 +51,21 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 
-    result = FinDB.add_balances_from_csv(accnt = accnt_name, path_to_balances=filepath)
+    result = FinDB.add_transactions(
+            path_to_source_file = filepath, 
+            source_info = accnt_name
+            )
 
     if result == 1:
-        logger.info(f"Successfully logged balances from file {filepath} in {db_name} under account {accnt_name}")
+        logger.info(f"Successfully logged transactions from file {filepath} in {db_name} under account {accnt_name}")
     else:
-        logger.info(f"Unsuccessful attempt to log balances from file {filepath} in {db_name} under account {accnt_name}")
+        logger.info(f"Unsuccessful attempt to log transactions from file {filepath} in {db_name} under account {accnt_name}")
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
     if len(sys.argv) != 6:
-        raise TypeError("load_balances.py takes exactly 4 input args: (1) account name; (2) path to csv of balances; (3) db username; (4) db pw")
+        raise TypeError("load_transactions_from_CLI.py takes exactly 4 input args: (1) account name; (2) path to csv of transactions; (3) db username; (4) db pw")
 
-    load_balances(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4])
+    load_transctions_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4])
 

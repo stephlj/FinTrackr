@@ -20,6 +20,26 @@ Because I'm not passing around a FinDB object, I can't use mocking to test these
 I can't use a testing instance of the db because I'm loading the db name from a config ... 
 I may change those design decisions.
 
+### Log transactions in the db
+
+To log a list of transactions (amounts on dates, with text description provided by bank) into the db from a csv:
+
+in the terminal, run
+
+``` 
+python ./src/fintrackr/load_transactions.py <account_name> <filepath> <username> <pw>
+```
+
+where:
+- `<account_name>` is the name of an account in the db which had these transactions. 
+In the db schema, this is the `name` field of the `data_sources` table.
+
+- `<filepath>` is the full path to a csv with columns `Date` and `Balance`
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
+*TODO this is not ideal - a lot of duplicated code between load_transactions and load_balances.*
+
 ### Log account balances in the db
 
 To log a list of account balances (amounts on dates) into the db from a csv:
@@ -62,7 +82,7 @@ as well as balances calculated as a result of all logged transactions on that ac
 
 Install PostgreSQL (TODO add more install instructions).
 
-Run (TODO add testing coverage for CLI version of init_db)
+Run (TODO add testing coverage for CLI version of init_db and other scripts)
 
 ```
 python ./src/fintrackr/init_db.py <database admin password>
