@@ -18,12 +18,9 @@ from typing import List
 from datetime import date
 from decimal import Decimal
 
-from fintrackr.utils import Transaction
+from fintrackr.utils import Transaction, Col_Def, DEFAULT_LOGGING_FORMAT
 
 logger = logging.getLogger(__name__)
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
 
 class FinDB:
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
@@ -72,7 +69,7 @@ class FinDB:
         """
         # The with statement automatically closes cursor after execution
         with self._conn.cursor() as curs: 
-            logger.info(f"Executing query {query}")
+            logger.info(f"Executing query: {query}")
             response = None
             try:
                 curs.execute(query)
@@ -136,7 +133,7 @@ class FinDB:
             (something where the return should be the result of a fetchall, rather 
             than a status message)
             Args need to be passed in separately using %s in the query string
-        vals: Tuple
+        vals: tuple
             Values, in order, for all %s's in the query string
 
         Returns
@@ -161,6 +158,65 @@ class FinDB:
                 raise ValueError(f"Query did not complete with exception: {e}")
             finally:
                 return response
+            
+    def csv_to_staging(self, csv_path: str, csv_columns: List[Col_Def]) -> int:
+        """ 
+        FinTracker accepts csv inputs.
+        Load csv from disk into a temporary staging table; caliing function loads from the
+        staging table into the relevant permanent table(s) in the db.
+
+        WILL OVERWRITE STAGING IF ALREADY EXISTS!
+
+        Parameters
+        ----------
+        csv_path : str
+            path to csv of transactions, balances, etc
+        csv_columns : List[Col_Def]
+            Columns in the csv which become columns in the staging table.
+            Each element of the list is (col_name, col_type), eg ("posted date", "date")
+
+        Returns
+        -------
+        int
+            Length of a query of how many rows were added to the staging table
+
+        """
+        
+        cols_placeholders = ', '.join('%s' for _ in csv_columns)
+
+        # Drop staging table if it already exists
+        # This set of logic feels goofy ... 
+        rows_before = 0
+        try:
+            rows_before = self.execute_query(f"SELECT {cols_placeholders} FROM staging;", tuple([a.col_name for a in csv_columns]))
+        except Exception as e:
+            logger.debug(f"Query of staging table did not execute with exception: {e}")
+        if rows_before is None:
+            rows_before = 0
+        if rows_before != 0:
+            logger.info("Staging table still exists with content before loading new file")
+            r = self._execute_action("DROP TABLE staging;")
+            if r != "DROP TABLE":
+                logger.error("Unable to drop staging table")
+                raise ValueError("Unable to drop staging table before loading new file")
+        
+        col_and_type = ", ".join(f'{a} {b}' for a, b in csv_columns)
+        r1 = self._execute_action(f"CREATE TABLE staging ({col_and_type}); ")
+        if r1 != "CREATE TABLE":
+            logger.error("Failed to create staging table")
+            raise ValueError("Failed to create staging table before loading new file")
+
+        r2 = self._import_file(dest_table="staging", path_to_file=csv_path)
+        if r2==0: # This will happen if copy fails; eg if try to insert too many columns
+            logger.info("No rows added to staging table")
+            return 0
+
+        # Query how many rows are now in staging table
+        rows_after = self.execute_query(f"SELECT {cols_placeholders} FROM staging;", tuple([a.col_name for a in csv_columns]))
+        logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
+
+        return len(rows_after)
+
     
     def add_data_source(self, source_name: str) -> int:
         """
@@ -224,67 +280,59 @@ class FinDB:
         else:
             logger.info(f"No rows added to balances table; balance of {bal_amt} on date {bal_date} for account {accnt_id} may already exist")
             return 0
-
-    
-    def stage_transactions(self, path_to_transactions: str) -> int:
-        """ 
-        FinTracker currently accepts csv inputs.
-        Load csv from disk into a temporary staging table, which will then go into
-        the transactions table in the db (executed in a separate function).
+        
+    def add_balances_from_csv(self, accnt: str, path_to_balances: str) -> int:
+        """
+        Load balances from csv into db.
+        Will not allow duplicates to be added.
 
         Parameters
         ----------
-        path_to_transactions: str
-            path to csv of transactions
-
-        Returns
-        -------
+        accnt: str
+            Must exist in data_sources table as a name.
+        path_to_balances : str
+            Filepath to csv to load.
+            Columns must be Date, Amount
+        
+        Return
+        ------
         int
-            Length of a query of how many rows were added to the staging table
+            Number of balances added
+        """        
 
-        """
+        num_new_balances = 0
 
-        # TODO move this to business logic layer
-        # Check that the input conforms to expectations
-        # input = pd.read_csv(path_to_transactions, dtype=str, header=None)
-        # assert input.shape[1] >= 3 # there can be extra columns, we'll ignore those
-        # input_types = input.dtypes
-        # assert input_types[1] == float, "Second column must be a float (amount)"
-        # TODO how to check the other columns?
+        # Get id for this source_info or add if it doesn't exist
+        accnt_id = self.add_data_source(source_name=accnt)
+
+        staging_cols = [Col_Def(col_name="date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+        ]
+
+        num_staged_balances = self.csv_to_staging(csv_path=path_to_balances, csv_columns=staging_cols)
+
+        if num_staged_balances == 0:
+            logger.info("No balances loaded from source file to staging table; no balances will be added to db")
+            return num_new_balances
         
-        # Drop staging table if it already exists
-        # This set of logic feels goofy ... 
-        rows_before = 0
+        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+            "SELECT date, amount, %s " \
+            "FROM staging " \
+            "RETURNING *;"
+        
         try:
-            rows_before = self.execute_query("SELECT posted_date, amount, description FROM staging;")
+            all_new_balances = self.execute_query(balances_query, (accnt_id,))
         except Exception as e:
-            logger.debug(f"Query of staging table did not execute with exception: {e}")
-        if rows_before is None:
-            rows_before = 0
-        if rows_before != 0:
-            logger.info("Staging table still exists with content before loading new file")
-            r = self._execute_action("DROP TABLE staging;")
-            if r != "DROP TABLE":
-                logger.error("Unable to drop staging table")
-                raise ValueError("Unable to drop staging table before loading new file")
+            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {all_new_balances}")
+            raise ValueError(f"Insertion into balances table failed with exception: {e}")
         
-        create_staging = " CREATE TABLE staging( " \
-            " posted_date date, amount money, description text); "
-        r1 = self._execute_action(create_staging)
-        if r1 != "CREATE TABLE":
-            logger.error("Failed to create staging table")
-            raise ValueError("Failed to create staging table before loading new file")
-
-        r2 = self._import_file(dest_table="staging", path_to_file=path_to_transactions)
-        if r2==0: # This will happen if copy fails; eg if try to insert too many columns
-            logger.info("No rows added to staging table")
+        self._execute_action("DROP TABLE staging;")
+        
+        if all_new_balances is not None:
+            return len(all_new_balances)
+        else:
+            logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
             return 0
-
-        # Query how many rows are now in staging table
-        rows_after = self.execute_query("SELECT posted_date, amount, description FROM staging;")
-        logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
-
-        return len(rows_after)
 
     def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
         """
@@ -309,9 +357,15 @@ class FinDB:
         int
             Number of transactions added.
         """
+
         num_new_transactions = 0
 
-        num_staged_transactions = self.stage_transactions(path_to_transactions = path_to_source_file)
+        staging_cols = [Col_Def(col_name="posted_date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="description", col_type="text")
+        ]
+
+        num_staged_transactions = self.csv_to_staging(csv_path=path_to_source_file, csv_columns=staging_cols)
 
         if num_staged_transactions == 0:
             logger.info("No transactions loaded from source file to staging table; no transactions will be added")
@@ -364,13 +418,11 @@ class FinDB:
                 return 0
             else:
                 raise ValueError("No transactions inserted, but not because all new transactions were in db already")
-        
-        num_new_transactions = len(all_new_transactions)
 
         # Drop staging table
         self._execute_action("DROP TABLE staging;")
 
-        return num_new_transactions
+        return len(all_new_transactions)
     
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """

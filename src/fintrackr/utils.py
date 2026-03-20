@@ -1,6 +1,19 @@
+"""
+Small utilities used by multiple modules.
+
+Copyright (c) 2026 Stephanie Johnson
+"""
+
+import os
+
 from dataclasses import dataclass
 from datetime import date
 
+DEFAULT_LOGGING_FORMAT = (
+    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
+)
+
+CONFIG_PATH = os.path.join(os.getcwd(),"src","fintrackr","config.yml")
 
 @dataclass
 class Transaction:
@@ -10,3 +23,13 @@ class Transaction:
     def __iter__(self):
         yield self.date
         yield self.amount
+
+@dataclass
+class Col_Def:
+    # db column definitions (name and type, e.g. "amount", "money")
+    col_name: str
+    col_type: str
+
+    def __iter__(self):
+        yield self.col_name
+        yield self.col_type

@@ -12,11 +12,10 @@ import os, sys, subprocess
 import logging
 import yaml
 
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
+
 logger = logging.getLogger(__name__)
 
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
 
 def init_db(
         pw: str,
@@ -64,6 +63,4 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise TypeError("init_db.py takes exactly one input arg (db owner pw to set)")
 
-    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
-
-    init_db(pw=sys.argv[1],path_to_config=path_to_config)
+    init_db(pw=sys.argv[1],path_to_config=CONFIG_PATH)
