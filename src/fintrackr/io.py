@@ -49,32 +49,26 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
     # this will result in all columns being loaded as dtype objects.
     # Otherwise, given the numerical data FinTrackr expects, at least one column
     # should load as a float64.
-    # ie. if there is a header all dtypes will be the same.
+    # ie. if there is a header, dtypes for all columns will be the same.
     # Extract header if it exists in case we can use it later.
-    
-    header = [(f_input.iloc[0,0], str(f_input.dtypes[0]))] # start by assuming there is one
 
-    for c in range(1,len(f_input.dtypes)):
-        if str(f_input.dtypes[c]) != header[0][1]:
-            # If we find just one mismatch, we know there's no header
-            header = []
-            f_mod = f_input.copy() # not great re: memory
-            break
-        else:
-            header.append((f_input.iloc[0,c], str(f_input.dtypes[c])))
-
-    if header != []:
+    if f_input.dtypes.nunique() == 1: 
+        # there is a header that we want to remove
+        header = f_input.loc[0,:]
         f_mod = f_input.loc[1:, :].reset_index(drop=True)
-        # We'll need a new filepath
+        # We'll need a new filepath since we'll be saving a modified version
         filename = os.path.splitext(os.path.split(filepath)[-1])[0]
         new_filepath = os.path.join(os.path.split(filepath)[0], filename+"_REFORMAT"+".csv")
-    
-    
+    else:
+        header = []
+        f_mod = f_input.copy() # not great re: memory
+
     # We can tolerate more columns than we need, but we don't expect a particular order, so iterate through
     # and try to ID by data type. Raise error if we can't.
-    # TODO
-    # For now, skip if there was a header - we won't have any actual info on datatypes?
-    # Or can try to convert at least one to a date?
+    # If there was a header, we have to re-infer new dtypes since everything will have been object
+
+    # if header != []:
+    #     f_mod.infer_objects()
 
     # Save new file
     if len(new_filepath) != 0:
