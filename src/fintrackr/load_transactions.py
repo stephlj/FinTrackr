@@ -9,7 +9,8 @@ import yaml
 import logging
 
 import fintrackr.fin_db
-from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH, Col_Def
+from fintrackr.io import check_csv_format
 
 logger = logging.getLogger(__name__)
 
@@ -36,18 +37,21 @@ def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw:
     None
     """
 
+    # Check input first
+    transactions_cols = [Col_Def(col_name="posted_date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="description", col_type="text")
+        ]
+
+    new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
+
+    if len(new_path) != 0:
+        # Switch to modified file with corrected format
+        filepath = new_path
+
     with open(CONFIG_PATH, "r") as config_file:
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
-
-    # TODO add some input handling around the file? (check columns? extract into a util?)
-    # Eg
-    # Check that the input conforms to expectations
-    # input = pd.read_csv(path_to_transactions, dtype=str, header=None)
-    # assert input.shape[1] >= 3 # there can be extra columns, we'll ignore those
-    # input_types = input.dtypes
-    # assert input_types[1] == float, "Second column must be a float (amount)"
-    # TODO how to check the other columns?
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 

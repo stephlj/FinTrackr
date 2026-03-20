@@ -25,7 +25,7 @@ class TestDBSetup(unittest.TestCase):
         cls.FinDB = utils.set_up_test_DB(params=cls.params)
 
         # Some test fixtures shared by multiple tests:
-        cls.path_to_test_transactions = utils.TEST_TRANSACTIONS_PATH
+        cls.path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
         cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
         cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
@@ -73,11 +73,6 @@ class TestDBSetup(unittest.TestCase):
         self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), self.transactions_to_add.shape[0], "Staging table wasn't cleared")
 
-        # This should go in the BLL test section
-        # path_to_too_many_columns = os.path.join(os.getcwd(),"tests","data","test_data_cc_wrongnumcols.csv")
-        # num_rows_added_2 = self.FinDB.csv_to_staging(path_to_transactions=path_to_too_many_columns)
-        # self.assertEqual(num_rows_added_2, 0, "No rows should have been added, malformed input")
-
     def test_add_data_source(self):
         # This is tested in several other places
         pass
@@ -102,7 +97,7 @@ class TestDBSetup(unittest.TestCase):
     def test_add_balances_from_csv(self):
         # add_balances_from_csv calls csv_to_staging (which we test separately above)
         
-        input_path = os.path.join(os.getcwd(),"tests","data","test_balances.csv")
+        input_path = os.path.join(utils.TEST_DATA_PATH,"test_balances.csv")
         balances_to_add = pd.read_csv(input_path, header=None)
 
         num_balances_added = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
@@ -138,7 +133,7 @@ class TestDBSetup(unittest.TestCase):
         self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
 
         # Test what happens when partial duplicates are added
-        additional_transactions_path = os.path.join(os.getcwd(),"tests","data","test_data_checking.csv")
+        additional_transactions_path = os.path.join(utils.TEST_DATA_PATH,"test_data_checking.csv")
         addtl_trans = pd.read_csv(additional_transactions_path, header=None)
         num_new_trans = len(addtl_trans)
         dup_trans = self.transactions_to_add.loc[self.transactions_to_add.iloc[:,2]=="Safeway"]
