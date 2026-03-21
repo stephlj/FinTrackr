@@ -7,7 +7,6 @@
 
 import unittest
 import subprocess, os
-import yaml
 import pandas as pd
 
 from datetime import date
