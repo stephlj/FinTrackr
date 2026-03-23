@@ -80,7 +80,8 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
         f_mod = f_mod.apply(pd.to_numeric, errors="ignore")
 
     c_keep = []
-    for c in cols: # Iterate through the columns we're looking for
+    reorder = False
+    for c in range(0,len(cols)): # Iterate through the columns we're looking for
         for c_in in range(0, f_mod.shape[1]): # Check against the columns we have
             # Special cases we've encountered from particular bank outputs:
             # We know we're looking for dates, money, or a bank-assigned descrption of a transaction;
@@ -99,24 +100,28 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
 
                 # Get info from header if we can    
                 if len(header) != 0:
-                    if header[c_in].strip().casefold() == c.col_name.casefold() and equiv_col_types(c_in_type, str(c.col_type)):
+                    if header[c_in].strip().casefold() == cols[c].col_name.casefold() and equiv_col_types(c_in_type, str(cols[c].col_type)):
                         c_keep.append(c_in)
+                        if c != c_in:
+                            reorder = True
                         logger_msg = f"Keeping column with header {header[c_in]}" \
-                                    f" from file {filepath} because name matches expected column {c.col_name}"\
-                                    f" and column dtype {c_in_type} matches expected column type {c.col_type}"
+                                    f" from file {filepath} because name matches expected column {cols[c].col_name}"\
+                                    f" and column dtype {c_in_type} matches expected column type {cols[c].col_type}"
                         logger.info(logger_msg)
-                elif equiv_col_types(c_in_type, str(c.col_type)):
+                elif equiv_col_types(c_in_type, str(cols[c].col_type)):
                     c_keep.append(c_in)
+                    if c != c_in:
+                        reorder = True
                     logger_msg = f"Keeping column {c_in}" \
                                 f" from file {filepath}"\
-                                f" because column dtype {c_in_type} matches expected column type {c.col_type}"
+                                f" because column dtype {c_in_type} matches expected column type {cols[c].col_type}"
                     logger.info(logger_msg)
 
     if len(c_keep) < len(cols): # We couldn't identify enough columns as the ones we want
         logger.error(f"Could not identify correct columns from file {filepath}.")
         raise ValueError(f"Could not identify correct columns from file {filepath}.")
     
-    if len(c_keep) != f_mod.shape[1] or len(header) != 0:
+    if len(c_keep) != f_mod.shape[1] or len(header) != 0 or reorder is True:
         f_final = f_mod.iloc[:,c_keep]
         new_filepath = potential_filepath
     

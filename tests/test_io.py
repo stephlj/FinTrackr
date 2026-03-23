@@ -14,6 +14,7 @@ class TestIO(unittest.TestCase):
     def setUpClass(cls):
         # pathx_out is the file that should (or should not) be created as a result of executing the test,
         # not the file with the correct answer (which is pathx_corr)
+
         cls.path1 = os.path.join(TEST_DATA_PATH, "test_balances.csv")
         cls.path1_out = os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv")
         cls.cols1 = [Col_Def(col_name="date", col_type="date"),
@@ -43,6 +44,12 @@ class TestIO(unittest.TestCase):
         ]
         cls.path4_out = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_REFORMAT.csv")
         cls.path4_corr = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_fixed.csv")
+
+        cls.path5 = os.path.join(TEST_DATA_PATH, "test_balances.csv")
+        cls.path5_out = os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv")
+        cls.cols5 = [Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="date", col_type="date"),
+        ]
     
     @classmethod
     def tearDownClass(cls):
@@ -64,6 +71,11 @@ class TestIO(unittest.TestCase):
 
         try:
             os.remove(cls.path4_out)
+        except:
+            pass
+
+        try:
+            os.remove(cls.path5_out)
         except:
             pass
 
@@ -100,3 +112,9 @@ class TestIO(unittest.TestCase):
         # df_correct4 = pd.read_csv(self.path4_corr, header=None)
         # pd.testing.assert_frame_equal(df_test4, df_correct4)
         # os.remove(result4)
+
+        # Everything correct except column order
+        result5 = io.check_csv_format(filepath=self.path5, cols = self.cols5)
+        self.assertEqual(result5, self.path5_out)
+        self.assertTrue(os.path.isfile(self.path5_out), "New file was not created where it should not have been!")
+        os.remove(result5)
