@@ -31,8 +31,8 @@ class TestIO(unittest.TestCase):
 
         cls.path3 = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols.csv")
         cls.cols3 = [Col_Def(col_name="Post Date", col_type="date"),
-                Col_Def(col_name="Amount", col_type="money"),
-                Col_Def(col_name="Description", col_type="text")
+                Col_Def(col_name="Description", col_type="text"),
+                Col_Def(col_name="Amount", col_type="money")
         ]
         cls.path3_out = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv")
         cls.path3_corr = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_fixed.csv")
@@ -96,13 +96,13 @@ class TestIO(unittest.TestCase):
         os.remove(result2)
 
         # Too many columns, and a header
-        # result3 = io.check_csv_format(filepath=self.path3, cols = self.cols3)
-        # self.assertEqual(result3, self.path3_out)
-        # self.assertTrue(self.path3_out, "New file was not created where it should not have been!")
-        # df_test3 = pd.read_csv(result3, header=None)
-        # df_correct3 = pd.read_csv(self.path3_corr, header=None)
-        # pd.testing.assert_frame_equal(df_test3, df_correct3)
-        # os.remove(result3)
+        result3 = io.check_csv_format(filepath=self.path3, cols = self.cols3)
+        self.assertEqual(result3, self.path3_out)
+        self.assertTrue(self.path3_out, "New file was not created where it should not have been!")
+        df_test3 = pd.read_csv(result3, header=None)
+        df_correct3 = pd.read_csv(self.path3_corr, header=None)
+        pd.testing.assert_frame_equal(df_test3, df_correct3, check_dtype=False)
+        os.remove(result3)
 
         # Too many columns, no header
         # result4 = io.check_csv_format(filepath=self.path4, cols = self.cols4)
@@ -110,7 +110,7 @@ class TestIO(unittest.TestCase):
         # self.assertTrue(self.path4_out, "New file was not created where it should not have been!")
         # df_test4 = pd.read_csv(result4, header=None)
         # df_correct4 = pd.read_csv(self.path4_corr, header=None)
-        # pd.testing.assert_frame_equal(df_test4, df_correct4)
+        # pd.testing.assert_frame_equal(df_test4, df_correct4, check_dtype=False)
         # os.remove(result4)
 
         # Everything correct except column order
