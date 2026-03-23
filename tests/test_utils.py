@@ -16,11 +16,13 @@ class TestUtils(unittest.TestCase):
 
         self.assertFalse(utils.valid_date("2024-03-25"))
 
+        self.assertFalse(utils.valid_date("Safeway"))
+
     def test_equiv_col_types(self):
 
         self.assertTrue(utils.equiv_col_types("date", "date"))
 
-        self.assertTrue(utils.equiv_col_types("float", "money"))
+        self.assertTrue(utils.equiv_col_types("float64", "money"))
 
         self.assertTrue(utils.equiv_col_types("str", "text"))
 

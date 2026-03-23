@@ -18,7 +18,7 @@ CONFIG_PATH = os.path.join(os.getcwd(),"src","fintrackr","config.yml")
 date_format = "%m/%d/%Y"
 
 SQL_to_python_types = {"date" : "date",
-                       "money" : "float",
+                       "money" : "float64",
                        "text" : "str"}
 
 @dataclass

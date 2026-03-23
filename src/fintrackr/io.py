@@ -29,6 +29,11 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
     ----------
     filepath : str
         Path to a csv of transactions or balances.
+    cols : List[Col_Def]
+        For every expected column, provide the name as it would appear in a file header
+        and type (see utils.SQL_to_python_types).
+        Note that expected column order is important! - this will be expected import order into
+        the db staging table.
 
     Returns
     -------
@@ -58,8 +63,6 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
         # there is a header that we want to remove
         header = f_input.loc[0,:]
         f_mod = f_input.loc[1:, :].reset_index(drop=True)
-        # We'll need a new filepath since we'll be saving a modified version
-        new_filepath = potential_filepath
     else:
         header = []
         f_mod = f_input.copy() # not great re: memory
@@ -68,8 +71,13 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
     # and try to ID by data type (and header label if present). Raise error if we can't.
     # If there was a header, we have to re-infer new dtypes since everything will have been object
 
-    if header != []:
-        f_mod.infer_objects() # or convert_dtypes()?
+    if len(header) != 0:
+        # I could re-load and re-infer using read_csv: 
+        # f_mod.to_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=False, index=False, sep=",")
+        # f_mod = pd.read_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=None)
+        # os.remove(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"))
+        # but since I think it's only the money column that would load as anything other than object:
+        f_mod = f_mod.apply(pd.to_numeric, errors="ignore")
 
     c_keep = []
     for c in cols: # Iterate through the columns we're looking for
@@ -78,25 +86,37 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
             # We know we're looking for dates, money, or a bank-assigned descrption of a transaction;
             # none of these are strings 0 or 1 length
             if len(str(f_mod.loc[0,c_in])) > 1:
-                if header != []:
-                    if header[c_in].strip().casefold() == c.col_name.casefold() & equiv_col_types(str(f_mod[c_in].dtype), str(c.col_type)):
+                # pandas reads string columns as "objects"
+                # See if we can extract a date from this column; 
+                # otherwise assume object = string
+                if str(f_mod[c_in].dtype) == 'object':
+                    if valid_date(date_string = f_mod.loc[0,c_in]):
+                        c_in_type = "date"
+                    else:
+                        c_in_type = "str"
+                else:
+                    c_in_type = str(f_mod[c_in].dtype)
+
+                # Get info from header if we can    
+                if len(header) != 0:
+                    if header[c_in].strip().casefold() == c.col_name.casefold() and equiv_col_types(c_in_type, str(c.col_type)):
                         c_keep.append(c_in)
                         logger_msg = f"Keeping column with header {header[c_in]}" \
                                     f" from file {filepath} because name matches expected column {c.col_name}"\
-                                    f" and column dtype {str(f_mod[c_in].dtype)} matches expected column type {c.col_type}"
+                                    f" and column dtype {c_in_type} matches expected column type {c.col_type}"
                         logger.info(logger_msg)
-                elif equiv_col_types(str(f_mod[c_in].dtype), str(c.col_type)):
+                elif equiv_col_types(c_in_type, str(c.col_type)):
                     c_keep.append(c_in)
                     logger_msg = f"Keeping column {c_in}" \
                                 f" from file {filepath}"\
-                                f" because column dtype {str(f_mod[c_in].dtype)} matches expected column type {c.col_type}"
+                                f" because column dtype {c_in_type} matches expected column type {c.col_type}"
                     logger.info(logger_msg)
 
     if len(c_keep) < len(cols): # We couldn't identify enough columns as the ones we want
         logger.error(f"Could not identify correct columns from file {filepath}.")
         raise ValueError(f"Could not identify correct columns from file {filepath}.")
     
-    if c_keep != range(0, f_mod.shape[1]):
+    if len(c_keep) != f_mod.shape[1] or len(header) != 0:
         f_final = f_mod.iloc[:,c_keep]
         new_filepath = potential_filepath
     
