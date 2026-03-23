@@ -38,12 +38,23 @@ def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw:
     """
 
     # Check input first
-    transactions_cols = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
-                Col_Def(col_name="description", col_type="text")
-        ]
-
-    new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
+    # Try the two ways we've seen these columns appear so far
+    try:
+        transactions_cols = [Col_Def(col_name="posted_date", col_type="date"),
+                    Col_Def(col_name="amount", col_type="money"),
+                    Col_Def(col_name="description", col_type="text")
+            ]
+        new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
+    except:
+        try: 
+            transactions_cols = [Col_Def(col_name="Post Date", col_type="date"),
+                    Col_Def(col_name="amount", col_type="money"),
+                    Col_Def(col_name="description", col_type="text")
+            ]
+            new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
+        except:
+            logger.error("Unable to load transactions from file {filepath}")
+            raise ValueError("Unable to load transactions from file {filepath}")
 
     if len(new_path) != 0:
         # Switch to modified file with corrected format

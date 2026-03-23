@@ -38,6 +38,8 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
     """
 
     # Check input first
+    # Note order matters here! This must match the column order 
+    # in the staging table the db creates to load the file
     balances_cols = [Col_Def(col_name="Date", col_type="date"),
                 Col_Def(col_name="Amount", col_type="money")
         ]
