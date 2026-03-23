@@ -76,9 +76,9 @@ def equiv_col_types(col1: str, col2: str) -> bool:
     bool, True if a match is found
     """
 
-    if col1 in SQL_to_python_types & SQL_to_python_types[col1] == col2:
+    if col1 in SQL_to_python_types and SQL_to_python_types[col1] == col2:
         return True
-    elif col2 in SQL_to_python_types & SQL_to_python_types[col2] == col1:
+    elif col2 in SQL_to_python_types and SQL_to_python_types[col2] == col1:
         return True
     else:
         return False
