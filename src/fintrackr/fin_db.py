@@ -243,7 +243,9 @@ class FinDB:
     
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
-        Return result of SELECT statement to the db as specified below.
+        Get transactions and balances in a date range.
+
+        Utility used by multiple other functions.
         
         Parameters
         ----------
