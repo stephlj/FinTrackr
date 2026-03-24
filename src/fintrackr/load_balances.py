@@ -48,6 +48,10 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
     for d in date_headers:
         for a in amount_headers:
             try:
+                # Note order matters here!
+                # check_csv_format will reorder columns to match this spec.
+                # So this spec must match the order expected when csv contents
+                # are loaded into the staging table in csv_to_staging().
                 balances_cols = [Col_Def(col_name=d, col_type="date"),
                             Col_Def(col_name=a, col_type="money"),
                     ]
