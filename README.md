@@ -16,53 +16,31 @@ Security: the database runs locally, nothing leaves your machine.
 
 Currently the only interface is running scripts in a terminal. 
 
-These scripts do additional input handling (e.g. of csv formats) that the methods they call do not.
-
 Dates are always assumed to be in format `%m/%d/%Y`, as in `10/3/2026`.
 
 If your input files have headers, specify how the posted date, amount, and transaction description (if applicable)
 are represented in the header in the config file, under the `input_files` section. Multiple possibilities are allowed
 (e.g., "Post Date" and "Date" can both be listed as options under `date_header`.)
 
-### Log transactions in the db
+### Log transactions or balances in the db
 
-To log a list of transactions (amounts on dates, with text description provided by bank) into the db from a csv:
-
-in the terminal, run
-
-``` 
-python ./src/fintrackr/load_transactions.py <account_name> <filepath> <username> <pw>
-```
-
-where:
-- `<account_name>` is the name of an account in the db which had these transactions. 
-In the db schema, this is the `name` field of the `data_sources` table.
-
-- `<filepath>` is the full path to a csv with columns representing date, transaction amount, and description
-
-- `<username>` and `<pw>` to connect to the db (see below for how to set up).
-
-### Log account balances in the db
-
-To log a list of account balances (amounts on dates) into the db from a csv:
+To log a list of account balances (amounts on dates), or transactions (amounts on dates, with text description provided by bank), into the db from a csv:
 
 in the terminal, run
 
 ``` 
-python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw>
+python ./src/fintrackr/load_data.py <account_name> <filepath> <username> <pw>
 ```
 
 where:
-- `<account_name>` is the name of an account in the db for which to record balances. 
+- `<account_name>` is the name of an account in the db which had these transactions or balances. 
 In the db schema, this is the `name` field of the `data_sources` table.
 
-- `<filepath>` is the full path to a csv with columns representing date and balance on that date
+- `<filepath>` is the full path to a csv with columns representing date, transaction/balances amount, and (optionally) description. File will be interpreted as balances if most values are positive; transactions otherwise.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
 To log a single balance directly, use the `add_balance` function in the `load_balances` module.
-
-*TODO - a lot of duplicated code between load_transactions and load_balances, and their tests - find a refactor that eliminates duplication.*
 
 ### Plot account balances
 

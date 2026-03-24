@@ -1,5 +1,7 @@
 """
 Extracting some commonly used code for testing (manual and automated).
+
+Copyright (c) 2026 Stephanie Johnson
 """
 
 import os

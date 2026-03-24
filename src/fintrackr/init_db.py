@@ -1,7 +1,3 @@
-# init_db.py
-#
-# Copyright (c) 2025 Stephanie Johnson
-
 """
 Initial setup of the database.
 

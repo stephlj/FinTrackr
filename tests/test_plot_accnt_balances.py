@@ -1,3 +1,7 @@
+# test_plot_accnt_balances.py
+#
+# Copyright (c) 2025, 2026 Stephanie Johnson
+
 import unittest
 import matplotlib.pyplot as plt
 
