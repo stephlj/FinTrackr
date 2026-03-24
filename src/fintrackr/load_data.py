@@ -1,10 +1,9 @@
 """
-Utility to load data (balances or transactions) from a csv into the db, via the command line.
+Opens a connetion to the db and loads balances or transactions from csvs.
 
 Copyright (c) 2026 Stephanie Johnson
 """
 
-import sys
 import yaml
 import logging
 import pandas as pd
@@ -14,7 +13,7 @@ from decimal import Decimal
 from math import ceil
 
 import fintrackr.fin_db
-from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH, Col_Def
+from fintrackr.utils import CONFIG_PATH, Col_Def
 from fintrackr.io import check_csv_format, strip_header
 
 BALS_STAGING_COLS = [Col_Def(col_name="date", col_type="date"),
@@ -207,7 +206,7 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
 
     return len(all_new_transactions)
 
-def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, db_config: str = '') -> None:
+def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, trans: bool, db_config: str = '') -> None:
     """
     
     Load transactions or balances from csv file into db.
@@ -223,6 +222,8 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
         User to use to connect to db
     pw : str
         User's pw to connect to db
+    trans : bool
+        If true, these are transactions. If false, they are balances.
     db_config : str, optional
         path to config file for db.
         Will use default in utils if not specified.
@@ -241,22 +242,6 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
         date_headers = config["input_files"]["date_header"]
         amount_headers = config["input_files"]["amount_header"]
         desc_headers = config["input_files"]["description_header"]
-
-    # Are these balances or transactions?
-    # Determine based on whether they're mostly negative or mostly positive numbers
-    # (Mostly neg is transactions)
-    # TODO refactor so I'm not loading the file here and in check_csv_format
-    temp_df = pd.read_csv(filepath, header=None)
-    temp_df, _ = strip_header(temp_df)
-    amts_col = temp_df.iloc[:,[str(x)=='float64' for x in temp_df.dtypes]]
-    if amts_col.shape[1] != 1:
-        logger.error("Could not identify amounts column from which to infer balances vs transactions from file {filepath}")
-        raise ValueError("Could not identify amounts column from which to infer balances vs transactions from file {filepath}")
-    num_neg = len(amts_col[amts_col.squeeze()<0])
-    if num_neg >= ceil(len(amts_col)):
-        trans=True
-    else:
-        trans=False
 
     # Clean input if necessary
     # Enumerate all possible input column combos:
@@ -319,12 +304,3 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
         logger.info(f"Successfully logged data from file {filepath} in {db_name} under account {accnt_name}")
     else:
         logger.info(f"Unsuccessful attempt to log data from file {filepath} in {db_name} under account {accnt_name}")
-
-if __name__ == "__main__":
-    logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
-
-    if len(sys.argv) != 6:
-        raise TypeError("load_data_from_CLI.py takes exactly 4 input args: (1) account name; (2) path to csv of transactions; (3) db username; (4) db pw")
-
-    load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4])
-

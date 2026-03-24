@@ -83,6 +83,10 @@ class TestIO(unittest.TestCase):
         except:
             pass
 
+    def test_strip_header(self):
+        #TODO
+        pass
+    
     def test_check_csv_format(self):
         
         # Correct format
