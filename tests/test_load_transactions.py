@@ -6,6 +6,8 @@ import unittest
 import subprocess, os
 import pandas as pd
 
+from datetime import date
+
 import fintrackr.load_transactions
 import fintrackr.testing_utils as utils
 
@@ -74,3 +76,20 @@ class TestLoadTransactions(unittest.TestCase):
             source_info = self.source_info
             )
         self.assertEqual(num_transactions_added, num_new_trans, "Duplicates should not have been successfully loaded")
+    
+    def test_load_transctions_from_CLI(self):
+        # Mostly a does-it-run test for integration (since components are unit tested)
+        accnt = "new_cc"
+        fintrackr.load_transactions.load_transctions_from_CLI(
+            accnt_name = accnt, 
+            filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrong_cols.csv"), 
+            username = self.params["user"], 
+            pw = self.params["user_pw"],
+            db_name = self.params["test_db_name"])
+        
+        test_query = "SELECT date, amount, description FROM transactions WHERE date=%s AND accnt_id=%s;"
+        test_date = date(year=2025, month=7, day=23)
+        accnt_id = self.FinDB.execute_query("SELECT id FROM data_sources WHERE name=%s", (accnt,))
+
+        result = self.FinDB.execute_query(test_query, (test_date,accnt_id[0][0]))
+        self.assertEqual(len(result),1)
