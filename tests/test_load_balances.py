@@ -93,7 +93,7 @@ class TestLoadBalances(unittest.TestCase):
             filepath=os.path.join(utils.TEST_DATA_PATH, "test_balances.csv"), 
             username = self.params["user"], 
             pw = self.params["user_pw"],
-            db_name = self.params["test_db_name"])
+            db_config = utils.TEST_CONFIG_PATH)
         
         test_query = "SELECT date, amount FROM balances WHERE date=%s AND accnt_id=%s;"
         test_date = date(year=2025, month=10, day=2)

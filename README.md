@@ -24,10 +24,6 @@ If your input files have headers, specify how the posted date, amount, and trans
 are represented in the header in the config file, under the `input_files` section. Multiple possibilities are allowed
 (e.g., "Post Date" and "Date" can both be listed as options under `date_header`.)
 
-Because I'm not passing around a FinDB object, I can't use mocking to test these; and 
-I can't use a testing instance of the db because I'm loading the db name from a config ... 
-I may change those design decisions, but right now the CLI scripts are *untested*.
-
 ### Log transactions in the db
 
 To log a list of transactions (amounts on dates, with text description provided by bank) into the db from a csv:
@@ -66,7 +62,7 @@ In the db schema, this is the `name` field of the `data_sources` table.
 
 To log a single balance directly, use the `add_balance` function in the `load_balances` module.
 
-*TODO this is not ideal - a lot of duplicated code between load_transactions and load_balances.*
+*TODO - a lot of duplicated code between load_transactions and load_balances, and their tests - find a refactor that eliminates duplication.*
 
 ### Plot account balances
 

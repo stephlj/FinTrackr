@@ -113,7 +113,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
         logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
         return 0
 
-def load_balances_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, db_name: str = None) -> None:
+def load_balances_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, db_config: str = None) -> None:
     """
     
     Load balances from csv file into db. Uses the db name in config file.
@@ -130,18 +130,21 @@ def load_balances_from_CLI(accnt_name: str, filepath: str, username: str, pw: st
         User to use to connect to db
     pw : str
         User's pw to connect to db
-    db_name : str, optional
-        db to connect to; if not passed, will load from config.
+    db_config : str, optional
+        path to config file for db.
+        Will use default in utils if not specified.
 
     Returns
     -------
     None
     """
 
-    with open(CONFIG_PATH, "r") as config_file:
+    if db_config is None:
+        db_config = CONFIG_PATH
+
+    with open(db_config, "r") as config_file:
         config = yaml.safe_load(config_file)
-        if db_name is None:
-            db_name = config["db"]["db_name"]
+        db_name = config["db"]["db_name"]
         date_headers = config["input_files"]["date_header"]
         amount_headers = config["input_files"]["amount_header"]
     

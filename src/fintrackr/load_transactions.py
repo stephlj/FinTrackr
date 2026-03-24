@@ -108,7 +108,7 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
 
     return len(all_new_transactions)
 
-def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, db_name: str = None) -> None:
+def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, db_config: str = None) -> None:
     """
     
     Load transactions from csv file into db. Uses the db name in config file.
@@ -125,18 +125,21 @@ def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw:
         User to use to connect to db
     pw : str
         User's pw to connect to db
-    db_name : str, optional
-        db to connect to; if not passed, will load from config.
+    db_config : str, optional
+        path to config file for db.
+        Will use default in utils if not specified.
 
     Returns
     -------
     None
     """
+    
+    if db_config is None:
+        db_config = CONFIG_PATH
 
-    with open(CONFIG_PATH, "r") as config_file:
+    with open(db_config, "r") as config_file:
         config = yaml.safe_load(config_file)
-        if db_name is None:
-            db_name = config["db"]["db_name"]
+        db_name = config["db"]["db_name"]
         date_headers = config["input_files"]["date_header"]
         amount_headers = config["input_files"]["amount_header"]
         desc_headers = config["input_files"]["description_header"]
