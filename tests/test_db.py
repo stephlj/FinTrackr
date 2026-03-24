@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # test_db.py
 #
-# Copyright (c) 2025 Stephanie Johnson
+# Copyright (c) 2025, 2026 Stephanie Johnson
 
 import unittest
 import subprocess, os
@@ -13,8 +10,9 @@ from datetime import date
 
 import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
+from fintrackr.load_balances import add_balance
 
-class TestDBSetup(unittest.TestCase):
+class TestDB(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Make a test db, in the process also tests init_db and add_user.
@@ -76,40 +74,6 @@ class TestDBSetup(unittest.TestCase):
         # This is tested in several other places
         pass
     
-    def test_add_balance(self):
-        # does-it-run test
-        self.assertEqual(self.FinDB.add_balance(
-                            accnt=self.source_info,
-                            bal_date=self.balance_date,
-                            bal_amt=self.balance_amount
-                            ), 
-                        1)
-        
-        # Does it exit gracefully if an attempt to add the same balance again is made
-        self.assertEqual(self.FinDB.add_balance(
-                            accnt=self.source_info,
-                            bal_date=self.balance_date,
-                            bal_amt=self.balance_amount
-                            ),
-                         0)
-    
-    def test_add_balances_from_csv(self):
-        # add_balances_from_csv calls csv_to_staging (which we test separately above)
-        
-        input_path = os.path.join(utils.TEST_DATA_PATH,"test_balances.csv")
-        balances_to_add = pd.read_csv(input_path, header=None)
-
-        num_balances_added = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
-        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
-        
-        # Check we can't add the same balances again:
-        num_balances_added2 = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
-        self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
-
-        # Check that we can assign balances to a different account
-        num_balances_added3 = self.FinDB.add_balances_from_csv(accnt = "bals_test_accnt", path_to_balances = input_path)
-        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Could not add balances to a different account")
-    
     def test_add_transactions(self):
         # Add_transactions calls csv_to_staging (which we test separately above)
 
@@ -148,7 +112,8 @@ class TestDBSetup(unittest.TestCase):
         # pytest runs each test case independently, so re-set-up the db
         # Neither of these functions allow duplicates
 
-        self.FinDB.add_balance(
+        add_balance(
+            FinDB = self.FinDB,
             accnt=self.source_info,
             bal_date=self.balance_date,
             bal_amt=self.balance_amount

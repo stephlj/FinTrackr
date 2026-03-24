@@ -8,11 +8,110 @@ import sys
 import yaml
 import logging
 
+from datetime import date
+from decimal import Decimal
+
 import fintrackr.fin_db
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH, Col_Def
 from fintrackr.io import check_csv_format
 
 logger = logging.getLogger(__name__)
+
+def add_balance(FinDB: object, accnt: str, bal_date: date, bal_amt: str) -> int:
+    """
+    Log a balance in the db. Will not allow exact duplicates to be added.
+
+    Parameters
+    ----------
+    FinDB : object
+        FinDB object for db access
+    accnt: str
+        Must exist in data_sources table as a name.
+    bal_date : datetime.date
+        Date that this was the account's balance.
+    bal_amt : str
+        Account balance on balance_date
+    
+    Return
+    ------
+    int, success (1) or not (0)
+    """
+
+    # Make sure bal_amt is formatted so it's recognized as money
+    bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
+
+    accnt_id = FinDB.add_data_source(source_name=accnt)
+
+    try:
+        rows_added = FinDB.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
+    except Exception as e:
+        logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
+        raise ValueError(f"Insertion into balances table failed with exception: {e}")
+    
+    if rows_added is not None:
+        if len(rows_added) == 1:
+            return 1
+        else:
+            logger.exception("Insertion into balances table returned something unexpected: {rows_added}")
+            raise ValueError("Insertion into balances table returned something unexpected: {rows_added}")
+    else:
+        logger.info(f"No rows added to balances table; balance of {bal_amt} on date {bal_date} for account {accnt_id} may already exist")
+        return 0
+    
+def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> int:
+    """
+    Load balances from csv into db.
+    Will not allow duplicates to be added.
+
+    Parameters
+    ----------
+    FinDB : object
+        FinDB object for db access
+    accnt: str
+        Must exist in data_sources table as a name.
+    path_to_balances : str
+        Filepath to csv to load.
+        Columns must be Date, Amount (in that order)
+    
+    Return
+    ------
+    int
+        Number of balances added
+    """        
+
+    num_new_balances = 0
+
+    # Get id for this source_info or add if it doesn't exist
+    accnt_id = FinDB.add_data_source(source_name=accnt)
+
+    staging_cols = [Col_Def(col_name="date", col_type="date"),
+            Col_Def(col_name="amount", col_type="money"),
+    ]
+
+    num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=staging_cols)
+
+    if num_staged_balances == 0:
+        logger.info("No balances loaded from source file to staging table; no balances will be added to db")
+        return num_new_balances
+    
+    balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+        "SELECT date, amount, %s " \
+        "FROM staging " \
+        "RETURNING *;"
+    
+    try:
+        all_new_balances = FinDB.execute_query(balances_query, (accnt_id,))
+    except Exception as e:
+        logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {all_new_balances}")
+        raise ValueError(f"Insertion into balances table failed with exception: {e}")
+    
+    FinDB.execute_action("DROP TABLE staging;")
+    
+    if all_new_balances is not None:
+        return len(all_new_balances)
+    else:
+        logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
+        return 0
 
 def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> None:
     """
@@ -69,7 +168,8 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 
-    result = FinDB.add_balances_from_csv(accnt = accnt_name, path_to_balances=filepath)
+    result = add_balances_from_csv(FinDB=FinDB, accnt = accnt_name, path_to_balances=filepath)
+    FinDB.close()
 
     if result == 1:
         logger.info(f"Successfully logged balances from file {filepath} in {db_name} under account {accnt_name}")

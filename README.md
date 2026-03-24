@@ -64,7 +64,7 @@ In the db schema, this is the `name` field of the `data_sources` table.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
-To log a single balance directly, use the `add_balance` method of the `FinDB` class.
+To log a single balance directly, use the `add_balance` function in the `load_balances` module.
 
 *TODO this is not ideal - a lot of duplicated code between load_transactions and load_balances.*
 
