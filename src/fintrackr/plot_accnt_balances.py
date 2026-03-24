@@ -6,7 +6,7 @@ Copyright (c) 2026 Stephanie Johnson
 
 import logging
 import yaml
-import os, sys
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -14,14 +14,9 @@ from typing import List
 from datetime import date
 
 import fintrackr.fin_db
-from fintrackr.utils import Transaction
-
-CONFIG_PATH = os.path.join(os.getcwd(),"src","fintrackr","config.yml")
+from fintrackr.utils import Transaction, DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
 logger = logging.getLogger(__name__)
-DEFAULT_LOGGING_FORMAT = (
-    "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
-)
 
 
 def relative_bal_by_date(references: List[Transaction], transactions: List[Transaction]) -> List[Transaction]:
@@ -167,7 +162,5 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 6:
         raise TypeError("plot_accnt_balances.py takes exactly 5 input args: (1) account name to plot balances of; (2) earliest date; (3) latest date; (4) db username; (5) db pw")
-
-    path_to_config = os.path.join(os.getcwd(), "src", "fintrackr", "config.yml")
 
     plot_accnt_balances(accnt_name = sys.argv[1], date_range = [sys.argv[2], sys.argv[3]], username = sys.argv[4], pw = sys.argv[5])

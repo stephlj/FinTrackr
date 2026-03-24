@@ -10,7 +10,7 @@ from fintrackr.add_user import add_user
 import fintrackr.fin_db
 
 CONFIG_PATH = os.path.join(os.getcwd(),"tests","data","test_config.yml")
-TEST_TRANSACTIONS_PATH = os.path.join(os.getcwd(),"tests","data","test_data_cc.csv")
+TEST_DATA_PATH = os.path.join(os.getcwd(),"tests","data")
 
 def config_params() -> dict:
     with open(CONFIG_PATH, "r") as config_file:
