@@ -84,3 +84,20 @@ class TestLoadBalances(unittest.TestCase):
                                     path_to_balances = self.input_path
                                     )
         self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add balances to a different account")
+    
+    def test_load_balances_from_CLI(self):
+        # Mostly a does-it-run test for integration (since components are unit tested)
+        accnt = "new_cc"
+        fintrackr.load_balances.load_balances_from_CLI(
+            accnt_name = accnt, 
+            filepath=os.path.join(utils.TEST_DATA_PATH, "test_balances.csv"), 
+            username = self.params["user"], 
+            pw = self.params["user_pw"],
+            db_name = self.params["test_db_name"])
+        
+        bals_test_query = "SELECT date, amount FROM balances WHERE date=%s AND accnt_id=%s;"
+        test_date = date(year=2025, month=10, day=2)
+        accnt_id = self.FinDB.execute_query("SELECT id FROM data_sources WHERE name=%s", (accnt,))
+
+        result = self.FinDB.execute_query(bals_test_query, (test_date,accnt_id[0][0]))
+        self.assertEqual(len(result),1)

@@ -6,8 +6,6 @@ import unittest
 import subprocess, os
 import pandas as pd
 
-from datetime import date
-
 import fintrackr.load_transactions
 import fintrackr.testing_utils as utils
 

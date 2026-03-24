@@ -113,7 +113,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
         logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
         return 0
 
-def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> None:
+def load_balances_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, db_name: str = None) -> None:
     """
     
     Load balances from csv file into db. Uses the db name in config file.
@@ -130,19 +130,22 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
         User to use to connect to db
     pw : str
         User's pw to connect to db
+    db_name : str, optional
+        db to connect to; if not passed, will load from config.
 
     Returns
     -------
     None
     """
 
-    # Check input first
     with open(CONFIG_PATH, "r") as config_file:
         config = yaml.safe_load(config_file)
-        db_name = config["db"]["db_name"]
+        if db_name is None:
+            db_name = config["db"]["db_name"]
         date_headers = config["input_files"]["date_header"]
         amount_headers = config["input_files"]["amount_header"]
     
+    # Check input first
     success = False
     for d in date_headers:
         for a in amount_headers:
@@ -184,5 +187,5 @@ if __name__ == "__main__":
     if len(sys.argv) != 6:
         raise TypeError("load_balances.py takes exactly 4 input args: (1) account name; (2) path to csv of balances; (3) db username; (4) db pw")
 
-    load_balances(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4])
+    load_balances_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4])
 
