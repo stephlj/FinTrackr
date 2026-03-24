@@ -11,6 +11,7 @@ import pandas as pd
 
 from datetime import date
 from decimal import Decimal
+from math import ceil
 
 import fintrackr.fin_db
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH, Col_Def
@@ -243,9 +244,15 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
 
     # Are these balances or transactions?
     # Determine based on whether they're mostly negative or mostly positive numbers
+    # (Mostly neg is transactions)
     temp_df = pd.read_csv(filepath, header=None)
     temp_df, _ = strip_header(temp_df)
-    if something:
+    amts_col = temp_df.iloc[:,[str(x)=='float64' for x in temp_df.dtypes]]
+    if amts_col.shape[1] != 1:
+        logger.error("Could not identify amounts column from which to infer balances vs transactions from file {filepath}")
+        raise ValueError("Could not identify amounts column from which to infer balances vs transactions from file {filepath}")
+    num_neg = len(amts_col[amts_col<0])
+    if num_neg >= ceil(len(amts_col)):
         trans=True
     else:
         trans=False

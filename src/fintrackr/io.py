@@ -14,6 +14,49 @@ from fintrackr.utils import Col_Def, equiv_col_types, valid_date
 
 logger = logging.getLogger(__name__)
 
+def strip_header(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+    """
+    Figure out whether a dataframe has a header.
+    If so, remove it and re-infer float columns.
+    Return modified (or original) df, and header if removed.
+    If there was no header, header will be an empty series.
+    
+    Parameters
+    ----------
+    df : pandas dataframe
+        Result of loading from a csv. 
+    
+    Returns
+    -------
+    pd.DataFrame, original or with header removed
+    pd.Series, header or empty series if there was no header
+    
+    """
+
+    # We define a header as a row of all strings;
+    # this will result in all columns being loaded as dtype objects.
+    # Otherwise, given the numerical data FinTrackr expects, at least one column
+    # should load as a float64.
+    # ie. if there is a header, dtypes for all columns will be the same.
+
+    if df.dtypes.nunique() == 1: 
+        # there is a header that we want to remove
+        header = df.loc[0,:]
+        f_mod = df.loc[1:, :].reset_index(drop=True)
+    else:
+        header = pd.Series()
+        f_mod = df.copy() # not great re: memory
+    
+    # If there was a header, we have to re-infer new dtypes since everything will have been object
+    if len(header) != 0:
+        # I could re-load and re-infer using read_csv: 
+        # f_mod.to_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=False, index=False, sep=",")
+        # f_mod = pd.read_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=None)
+        # os.remove(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"))
+        # but since I think it's only the money column that would load as anything other than object:
+        f_mod = f_mod.apply(pd.to_numeric, errors="ignore")
+
+    return f_mod, header
 
 def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
     """
@@ -51,34 +94,11 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
     if f_input.shape[1] < len(cols):
         logger.error(f"Too few columns in file {filepath}; expected {len(cols)} columns, got {f_input.shape[1]}.")
         raise ValueError(f"Too few columns in file {filepath}.")
-
-    # Drop header if exists. We define a header as a row of all strings;
-    # this will result in all columns being loaded as dtype objects.
-    # Otherwise, given the numerical data FinTrackr expects, at least one column
-    # should load as a float64.
-    # ie. if there is a header, dtypes for all columns will be the same.
-    # Extract header if it exists in case we can use it later.
-
-    if f_input.dtypes.nunique() == 1: 
-        # there is a header that we want to remove
-        header = f_input.loc[0,:]
-        f_mod = f_input.loc[1:, :].reset_index(drop=True)
-    else:
-        header = []
-        f_mod = f_input.copy() # not great re: memory
+    
+    f_mod, header = strip_header(f_input)
 
     # We can tolerate more columns than we need, but we don't expect a particular order, so iterate through
     # and try to ID by data type (and header label if present). Raise error if we can't.
-    # If there was a header, we have to re-infer new dtypes since everything will have been object
-
-    if len(header) != 0:
-        # I could re-load and re-infer using read_csv: 
-        # f_mod.to_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=False, index=False, sep=",")
-        # f_mod = pd.read_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=None)
-        # os.remove(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"))
-        # but since I think it's only the money column that would load as anything other than object:
-        f_mod = f_mod.apply(pd.to_numeric, errors="ignore")
-
     c_keep = []
     reorder = False
     for c in range(0,len(cols)): # Iterate through the columns we're looking for
