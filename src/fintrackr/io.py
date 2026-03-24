@@ -117,7 +117,7 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
                                 f" because column dtype {c_in_type} matches expected column type {cols[c].col_type}"
                     logger.info(logger_msg)
 
-    if len(c_keep) < len(cols): # We couldn't identify enough columns as the ones we want
+    if len(c_keep) != len(cols): # We couldn't identify the right number of columns as the ones we want
         logger.error(f"Could not identify correct columns from file {filepath}.")
         raise ValueError(f"Could not identify correct columns from file {filepath}.")
     
