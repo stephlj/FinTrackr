@@ -252,7 +252,7 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
     if amts_col.shape[1] != 1:
         logger.error("Could not identify amounts column from which to infer balances vs transactions from file {filepath}")
         raise ValueError("Could not identify amounts column from which to infer balances vs transactions from file {filepath}")
-    num_neg = len(amts_col[amts_col<0])
+    num_neg = len(amts_col[amts_col.squeeze()<0])
     if num_neg >= ceil(len(amts_col)):
         trans=True
     else:
@@ -283,7 +283,7 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
     success = False
     for c in expect_cols:
         try:
-            new_path = check_csv_format(filepath=filepath, cols=expect_cols)
+            new_path = check_csv_format(filepath=filepath, cols=c)
             success = True
         except:
             pass

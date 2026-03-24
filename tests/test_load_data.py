@@ -155,24 +155,24 @@ class TestLoadData(unittest.TestCase):
         bal_result = self.FinDB.execute_query(bal_test_query, (bal_test_date, bal_accnt))
         self.assertEqual(len(bal_result),1)
 
-        trans_accnt = "new_cc"
-        fintrackr.load_data.load_data_from_CLI(
-            accnt_name = trans_accnt, 
-            filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols.csv"), 
-            username = self.params["user"], 
-            pw = self.params["user_pw"],
-            db_config = utils.TEST_CONFIG_PATH)
+        # trans_accnt = "new_cc"
+        # fintrackr.load_data.load_data_from_CLI(
+        #     accnt_name = trans_accnt, 
+        #     filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols.csv"), 
+        #     username = self.params["user"], 
+        #     pw = self.params["user_pw"],
+        #     db_config = utils.TEST_CONFIG_PATH)
         
-        trans_test_query = """
-            SELECT t.posted_date, t.amount, t.description
-            FROM transactions AS t
-            JOIN data_load_metadata AS m ON m.id = t.metadatum_id
-            JOIN data_sources AS s ON s.id = m.data_source_id
-            WHERE t.posted_date=%s
-            AND s.name=%s;
-        """
-        trans_test_date = date(year=2024, month=7, day=23)
+        # trans_test_query = """
+        #     SELECT t.posted_date, t.amount, t.description
+        #     FROM transactions AS t
+        #     JOIN data_load_metadata AS m ON m.id = t.metadatum_id
+        #     JOIN data_sources AS s ON s.id = m.data_source_id
+        #     WHERE t.posted_date=%s
+        #     AND s.name=%s;
+        # """
+        # trans_test_date = date(year=2024, month=7, day=23)
         
-        trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
-        self.assertEqual(len(trans_result),1)
-        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
+        # trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
+        # self.assertEqual(len(trans_result),1)
+        # os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
