@@ -6,11 +6,9 @@ Copyright (c) 2026 Stephanie Johnson
 
 import yaml
 import logging
-import pandas as pd
 
 from datetime import date
 from decimal import Decimal
-from math import ceil
 
 import fintrackr.fin_db
 from fintrackr.utils import CONFIG_PATH, Col_Def
