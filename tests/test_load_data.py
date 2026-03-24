@@ -51,7 +51,7 @@ class TestLoadData(unittest.TestCase):
 
     def test_add_balance(self):
         # does-it-run test
-        self.assertEqual(fintrackr.load_balances.add_balance(
+        self.assertEqual(fintrackr.load_data.add_balance(
                             FinDB = self.FinDB,
                             accnt=self.source_info,
                             bal_date=self.balance_date,
@@ -60,7 +60,7 @@ class TestLoadData(unittest.TestCase):
                         1)
         
         # Does it exit gracefully if an attempt to add the same balance again is made
-        self.assertEqual(fintrackr.load_balances.add_balance(
+        self.assertEqual(fintrackr.load_data.add_balance(
                             FinDB = self.FinDB,
                             accnt=self.source_info,
                             bal_date=self.balance_date,
@@ -72,7 +72,7 @@ class TestLoadData(unittest.TestCase):
         
         balances_to_add = pd.read_csv(self.path_to_test_bals, header=None)
 
-        num_balances_added = fintrackr.load_balances.add_balances_from_csv(
+        num_balances_added = fintrackr.load_data.add_balances_from_csv(
                                     FinDB = self.FinDB, 
                                     accnt = self.source_info, 
                                     path_to_balances = self.path_to_test_bals
@@ -80,7 +80,7 @@ class TestLoadData(unittest.TestCase):
         self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
         
         # Check we can't add the same balances again:
-        num_balances_added2 = fintrackr.load_balances.add_balances_from_csv(
+        num_balances_added2 = fintrackr.load_data.add_balances_from_csv(
                                     FinDB = self.FinDB,
                                     accnt = self.source_info, 
                                     path_to_balances = self.path_to_test_bals
@@ -88,7 +88,7 @@ class TestLoadData(unittest.TestCase):
         self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
 
         # Check that we can assign balances to a different account
-        num_balances_added3 = fintrackr.load_balances.add_balances_from_csv(
+        num_balances_added3 = fintrackr.load_data.add_balances_from_csv(
                                     FinDB = self.FinDB,
                                     accnt = "bals_test_accnt", 
                                     path_to_balances = self.path_to_test_bals
@@ -136,7 +136,7 @@ class TestLoadData(unittest.TestCase):
         # Mostly a does-it-run test for integration (since components are unit tested)
         # Try adding balances
         bal_accnt = "new_checking"
-        fintrackr.load_balances.load_balances_from_CLI(
+        fintrackr.load_data.load_data_from_CLI(
             accnt_name = bal_accnt, 
             filepath=self.path_to_test_bals, #same file as in other tests, but adding under a different accnt
             username = self.params["user"], 

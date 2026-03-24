@@ -10,8 +10,7 @@ from datetime import date
 
 import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
-from fintrackr.load_balances import add_balance
-from fintrackr.load_transactions import add_transactions
+from fintrackr.load_data import add_balance, add_transactions
 
 class TestDB(unittest.TestCase):
     @classmethod
@@ -78,7 +77,7 @@ class TestDB(unittest.TestCase):
     def test_data_from_date_range(self):
         # pytest runs each test case independently, so re-set-up the db
         # Neither of these functions allow duplicates
-
+        # Not ideal that this unittest depends on functions from another module ... 
         add_balance(
             FinDB = self.FinDB,
             accnt=self.source_info,

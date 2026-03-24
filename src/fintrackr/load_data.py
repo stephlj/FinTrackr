@@ -95,7 +95,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
     # Get id for this source_info or add if it doesn't exist
     accnt_id = FinDB.add_data_source(source_name=accnt)
 
-    num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=STAGING_COLS)
+    num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=BALS_STAGING_COLS)
 
     if num_staged_balances == 0:
         logger.info("No balances loaded from source file to staging table; no balances will be added to db")
@@ -148,7 +148,7 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
 
     num_new_transactions = 0
 
-    num_staged_transactions = FinDB.csv_to_staging(csv_path=path_to_source_file, csv_columns=STAGING_COLS)
+    num_staged_transactions = FinDB.csv_to_staging(csv_path=path_to_source_file, csv_columns=TRANS_STAGING_COLS)
 
     if num_staged_transactions == 0:
         logger.info("No transactions loaded from source file to staging table; no transactions will be added")
