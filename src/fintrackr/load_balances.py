@@ -38,9 +38,6 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
     """
 
     # Check input first
-    # Note order matters here! This must match the column order 
-    # in the staging table the db creates to load the file
-
     with open(CONFIG_PATH, "r") as config_file:
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
