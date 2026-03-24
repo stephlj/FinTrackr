@@ -245,6 +245,7 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
     # Are these balances or transactions?
     # Determine based on whether they're mostly negative or mostly positive numbers
     # (Mostly neg is transactions)
+    # TODO refactor so I'm not loading the file here and in check_csv_format
     temp_df = pd.read_csv(filepath, header=None)
     temp_df, _ = strip_header(temp_df)
     amts_col = temp_df.iloc[:,[str(x)=='float64' for x in temp_df.dtypes]]
@@ -259,31 +260,36 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, d
 
     # Clean input if necessary
     # Enumerate all possible input column combos:
-    # TODO do this outside of loop
-    success = False
+    expect_cols = []
     for d in date_headers:
         for a in amount_headers:
             for c in desc_headers:
-                if not success:
-                    try:
-                        # Note order matters here!
-                        # check_csv_format will reorder columns to match this spec.
-                        # So this spec must match the order expected when csv contents
-                        # are loaded into the staging table in csv_to_staging().
-                        # That order is in STAGING_COLS at top.
-                        # TODO Derive balances_cols from STAGING_COLS
-                        transactions_cols = [Col_Def(col_name=d, col_type="date"),
+                # Note order matters here!
+                # check_csv_format will reorder columns to match this spec.
+                # So this spec must match the order expected when csv contents
+                # are loaded into the staging table in csv_to_staging().
+                # That order is in *_STAGING_COLS at top.
+                # TODO Derive col order from *_STAGING_COLS
+                if trans:
+                    expect_cols.append([Col_Def(col_name=d, col_type="date"),
                                     Col_Def(col_name=a, col_type="money"),
                                     Col_Def(col_name=c, col_type="text")
-                            ]
-                        #or
-                        balances_cols = [Col_Def(col_name=d, col_type="date"),
+                            ])
+                else:
+                    expect_cols.append([Col_Def(col_name=d, col_type="date"),
                             Col_Def(col_name=a, col_type="money"),
-                    ]
-                        new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
-                        success = True
-                    except:
-                        pass
+                            ])
+    
+    success = False
+    for c in expect_cols:
+        try:
+            new_path = check_csv_format(filepath=filepath, cols=expect_cols)
+            success = True
+        except:
+            pass
+        if success:
+            break
+
     if not success:
         logger.error("Unable to load data from file {filepath}")
         raise ValueError("Unable to load data from file {filepath}")
