@@ -15,6 +15,10 @@ import fintrackr.fin_db
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH, Col_Def
 from fintrackr.io import check_csv_format
 
+STAGING_COLS = [Col_Def(col_name="date", col_type="date"),
+            Col_Def(col_name="amount", col_type="money"),
+    ]
+
 logger = logging.getLogger(__name__)
 
 def add_balance(FinDB: object, accnt: str, bal_date: date, bal_amt: str) -> int:
@@ -84,11 +88,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
     # Get id for this source_info or add if it doesn't exist
     accnt_id = FinDB.add_data_source(source_name=accnt)
 
-    staging_cols = [Col_Def(col_name="date", col_type="date"),
-            Col_Def(col_name="amount", col_type="money"),
-    ]
-
-    num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=staging_cols)
+    num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=STAGING_COLS)
 
     if num_staged_balances == 0:
         logger.info("No balances loaded from source file to staging table; no balances will be added to db")
@@ -151,6 +151,8 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
                 # check_csv_format will reorder columns to match this spec.
                 # So this spec must match the order expected when csv contents
                 # are loaded into the staging table in csv_to_staging().
+                # That order is in STAGING_COLS at top.
+                # TODO Derive balances_cols from STAGING_COLS
                 balances_cols = [Col_Def(col_name=d, col_type="date"),
                             Col_Def(col_name=a, col_type="money"),
                     ]
