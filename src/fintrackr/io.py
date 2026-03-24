@@ -121,7 +121,7 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
         logger.error(f"Could not identify correct columns from file {filepath}.")
         raise ValueError(f"Could not identify correct columns from file {filepath}.")
     
-    if len(c_keep) != f_mod.shape[1] or len(header) != 0 or reorder is True:
+    if len(c_keep) != f_mod.shape[1] or len(header) != 0 or reorder:
         f_final = f_mod.iloc[:,c_keep]
         new_filepath = potential_filepath
     

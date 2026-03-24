@@ -40,19 +40,31 @@ def load_balances(accnt_name: str, filepath: str, username: str, pw: str) -> Non
     # Check input first
     # Note order matters here! This must match the column order 
     # in the staging table the db creates to load the file
-    balances_cols = [Col_Def(col_name="Date", col_type="date"),
-                Col_Def(col_name="Amount", col_type="money")
-        ]
-
-    new_path = check_csv_format(filepath=filepath, cols=balances_cols)
-
-    if len(new_path) != 0:
-        # Switch to modified file with corrected format
-        filepath = new_path
 
     with open(CONFIG_PATH, "r") as config_file:
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
+        date_headers = config["input_files"]["date_header"]
+        amount_headers = config["input_files"]["amount_header"]
+    
+    success = False
+    for d in date_headers:
+        for a in amount_headers:
+            try:
+                balances_cols = [Col_Def(col_name=d, col_type="date"),
+                            Col_Def(col_name=a, col_type="money"),
+                    ]
+                new_path = check_csv_format(filepath=filepath, cols=balances_cols)
+                success = True
+            except:
+                pass
+    if not success:
+        logger.error("Unable to load balances from file {filepath}")
+        raise ValueError("Unable to load balances from file {filepath}")
+
+    if len(new_path) != 0:
+        # Switch to modified file with corrected format
+        filepath = new_path
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 

@@ -1,7 +1,12 @@
 # Fintrackr configuration
 #
-# Copyright (c) 2025 Stephanie Johnson
+# Copyright (c) 2025, 2026 Stephanie Johnson
 
 db:
   db_name: fin_db
   admin_name: fintrackr_admin
+
+input_files:
+  date_header: ["Post Date", "Date"]
+  amount_header: ["Amount"]
+  description_header: ["Description"]

@@ -37,32 +37,35 @@ def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw:
     None
     """
 
+    with open(CONFIG_PATH, "r") as config_file:
+        config = yaml.safe_load(config_file)
+        db_name = config["db"]["db_name"]
+        date_headers = config["input_files"]["date_header"]
+        amount_headers = config["input_files"]["amount_header"]
+        desc_headers = config["input_files"]["description_header"]
+
     # Check input first
-    # Try the two ways we've seen these columns appear so far
-    try:
-        transactions_cols = [Col_Def(col_name="posted_date", col_type="date"),
-                    Col_Def(col_name="amount", col_type="money"),
-                    Col_Def(col_name="description", col_type="text")
-            ]
-        new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
-    except:
-        try: 
-            transactions_cols = [Col_Def(col_name="Post Date", col_type="date"),
-                    Col_Def(col_name="amount", col_type="money"),
-                    Col_Def(col_name="description", col_type="text")
-            ]
-            new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
-        except:
-            logger.error("Unable to load transactions from file {filepath}")
-            raise ValueError("Unable to load transactions from file {filepath}")
+    # Enumerate all possible input column combos:
+    success = False
+    for d in date_headers:
+        for a in amount_headers:
+            for c in desc_headers:
+                try:
+                    transactions_cols = [Col_Def(col_name=d, col_type="date"),
+                                Col_Def(col_name=a, col_type="money"),
+                                Col_Def(col_name=c, col_type="text")
+                        ]
+                    new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
+                    success = True
+                except:
+                    pass
+    if not success:
+        logger.error("Unable to load transactions from file {filepath}")
+        raise ValueError("Unable to load transactions from file {filepath}")
 
     if len(new_path) != 0:
         # Switch to modified file with corrected format
         filepath = new_path
-
-    with open(CONFIG_PATH, "r") as config_file:
-        config = yaml.safe_load(config_file)
-        db_name = config["db"]["db_name"]
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 
