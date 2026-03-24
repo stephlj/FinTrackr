@@ -18,29 +18,48 @@ Currently the only interface is running scripts in a terminal.
 
 Dates are always assumed to be in format `%m/%d/%Y`, as in `10/3/2026`.
 
-If your input files have headers, specify how the posted date, amount, and transaction description (if applicable)
-are represented in the header in the config file, under the `input_files` section. Multiple possibilities are allowed
+If your transcation csvs have headers, specify in the config file how the posted date, amount, and transaction description are represented in the header, under the `input_files` section. Multiple possibilities are allowed
 (e.g., "Post Date" and "Date" can both be listed as options under `date_header`.)
 
-### Log transactions or balances in the db
+### Log transactions in the db
 
-To log a list of account balances (amounts on dates), or transactions (amounts on dates, with text description provided by bank), into the db from a csv:
+To log a list of transactions (amounts on dates, with text description provided by bank), into the db from a csv:
 
 in the terminal, run
 
 ``` 
-python ./src/fintrackr/load_data.py <account_name> <filepath> <username> <pw>
+python ./src/fintrackr/load_transactions.py <account_name> <filepath> <username> <pw>
 ```
 
 where:
-- `<account_name>` is the name of an account in the db which had these transactions or balances. 
+- `<account_name>` is the name of an account in the db which had these transactions. 
 In the db schema, this is the `name` field of the `data_sources` table.
 
-- `<filepath>` is the full path to a csv with columns representing date, transaction/balances amount, and (optionally) description. File will be interpreted as balances if most values are positive; transactions otherwise.
+- `<filepath>` is the full path to a csv with columns representing date, transactions amounts, and description.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
-To log a single balance directly, use the `add_balance` function in the `load_balances` module.
+### Log balances in the db
+
+To log a list of account balances (amounts on dates) into the db from a csv:
+
+in the terminal, run
+
+``` 
+python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw>
+```
+
+where:
+- `<account_name>` is the name of an account in the db which had these balances. 
+In the db schema, this is the `name` field of the `data_sources` table.
+
+- `<filepath>` is the full path to a csv with columns representing date and amount. 
+Since these are user-generated (not from a bank), we insist they have a header with columns `Date` 
+and `Amount`.
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
+To log a single balance directly, use the `add_balance` function in the `load_data` module.
 
 ### Plot account balances
 
