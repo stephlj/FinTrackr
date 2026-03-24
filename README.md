@@ -90,6 +90,8 @@ as well as balances calculated as a result of all logged transactions on that ac
 
 Install PostgreSQL (TODO add more install instructions).
 
+Configure db name, input file headers, etc in `src/fintrackr/config.yml`.
+
 Run (TODO add testing coverage for CLI version of init_db and other scripts)
 
 ```
