@@ -179,7 +179,7 @@ def load_balances_from_CLI(accnt_name: str, filepath: str, username: str, pw: st
     result = add_balances_from_csv(FinDB=FinDB, accnt = accnt_name, path_to_balances=filepath)
     FinDB.close()
 
-    if result == 1:
+    if result >= 1:
         logger.info(f"Successfully logged balances from file {filepath} in {db_name} under account {accnt_name}")
     else:
         logger.info(f"Unsuccessful attempt to log balances from file {filepath} in {db_name} under account {accnt_name}")

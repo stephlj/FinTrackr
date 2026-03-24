@@ -150,21 +150,22 @@ def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw:
     for d in date_headers:
         for a in amount_headers:
             for c in desc_headers:
-                try:
-                    # Note order matters here!
-                    # check_csv_format will reorder columns to match this spec.
-                    # So this spec must match the order expected when csv contents
-                    # are loaded into the staging table in csv_to_staging().
-                    # That order is in STAGING_COLS at top.
-                    # TODO Derive balances_cols from STAGING_COLS
-                    transactions_cols = [Col_Def(col_name=d, col_type="date"),
-                                Col_Def(col_name=a, col_type="money"),
-                                Col_Def(col_name=c, col_type="text")
-                        ]
-                    new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
-                    success = True
-                except:
-                    pass
+                if not success:
+                    try:
+                        # Note order matters here!
+                        # check_csv_format will reorder columns to match this spec.
+                        # So this spec must match the order expected when csv contents
+                        # are loaded into the staging table in csv_to_staging().
+                        # That order is in STAGING_COLS at top.
+                        # TODO Derive balances_cols from STAGING_COLS
+                        transactions_cols = [Col_Def(col_name=d, col_type="date"),
+                                    Col_Def(col_name=a, col_type="money"),
+                                    Col_Def(col_name=c, col_type="text")
+                            ]
+                        new_path = check_csv_format(filepath=filepath, cols=transactions_cols)
+                        success = True
+                    except:
+                        pass
     if not success:
         logger.error("Unable to load transactions from file {filepath}")
         raise ValueError("Unable to load transactions from file {filepath}")
@@ -182,7 +183,7 @@ def load_transctions_from_CLI(accnt_name: str, filepath: str, username: str, pw:
             )
     FinDB.close()
 
-    if result == 1:
+    if result >= 1:
         logger.info(f"Successfully logged transactions from file {filepath} in {db_name} under account {accnt_name}")
     else:
         logger.info(f"Unsuccessful attempt to log transactions from file {filepath} in {db_name} under account {accnt_name}")

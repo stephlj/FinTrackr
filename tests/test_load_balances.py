@@ -95,9 +95,14 @@ class TestLoadBalances(unittest.TestCase):
             pw = self.params["user_pw"],
             db_config = utils.TEST_CONFIG_PATH)
         
-        test_query = "SELECT date, amount FROM balances WHERE date=%s AND accnt_id=%s;"
+        test_query = """
+            SELECT b.date, b.amount
+            FROM balances AS b
+            JOIN data_sources AS s ON s.id = b.accnt_id
+            WHERE b.date=%s
+            AND s.name=%s;
+        """
         test_date = date(year=2025, month=10, day=2)
-        accnt_id = self.FinDB.execute_query("SELECT id FROM data_sources WHERE name=%s", (accnt,))
 
-        result = self.FinDB.execute_query(test_query, (test_date,accnt_id[0][0]))
+        result = self.FinDB.execute_query(test_query, (test_date,accnt))
         self.assertEqual(len(result),1)

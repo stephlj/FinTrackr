@@ -28,6 +28,12 @@ class TestLoadTransactions(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.FinDB.close()
+
+        try:
+            os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
+        except:
+            pass
+
         # Delete testing db
         exit_code = subprocess.run(["dropdb", cls.params["test_db_name"]])
         exit_code2 = subprocess.run(["dropuser",cls.params["user"]])
@@ -77,19 +83,26 @@ class TestLoadTransactions(unittest.TestCase):
             )
         self.assertEqual(num_transactions_added, num_new_trans, "Duplicates should not have been successfully loaded")
     
-    # def test_load_transctions_from_CLI(self):
-    #     # Mostly a does-it-run test for integration (since components are unit tested)
-    #     accnt = "new_cc"
-    #     fintrackr.load_transactions.load_transctions_from_CLI(
-    #         accnt_name = accnt, 
-    #         filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrong_cols.csv"), 
-    #         username = self.params["user"], 
-    #         pw = self.params["user_pw"],
-    #         db_config = utils.TEST_CONFIG_PATH)
+    def test_load_transctions_from_CLI(self):
+        # Mostly a does-it-run test for integration (since components are unit tested)
+        accnt = "new_cc"
+        fintrackr.load_transactions.load_transctions_from_CLI(
+            accnt_name = accnt, 
+            filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols.csv"), 
+            username = self.params["user"], 
+            pw = self.params["user_pw"],
+            db_config = utils.TEST_CONFIG_PATH)
         
-    #     test_query = "SELECT date, amount, description FROM transactions WHERE date=%s AND accnt_id=%s;"
-    #     test_date = date(year=2025, month=7, day=23)
-    #     accnt_id = self.FinDB.execute_query("SELECT id FROM data_sources WHERE name=%s", (accnt,))
-
-    #     result = self.FinDB.execute_query(test_query, (test_date,accnt_id[0][0]))
-    #     self.assertEqual(len(result),1)
+        test_query = """
+            SELECT t.posted_date, t.amount, t.description
+            FROM transactions AS t
+            JOIN data_load_metadata AS m ON m.id = t.metadatum_id
+            JOIN data_sources AS s ON s.id = m.data_source_id
+            WHERE t.posted_date=%s
+            AND s.name=%s;
+        """
+        test_date = date(year=2024, month=7, day=23)
+        
+        result = self.FinDB.execute_query(test_query, (test_date,accnt))
+        self.assertEqual(len(result),1)
+        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
