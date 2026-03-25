@@ -7,6 +7,7 @@ Copyright (c) 2026 Stephanie Johnson
 import os
 import pandas as pd
 import logging
+import re
 
 from typing import List
 
@@ -41,8 +42,14 @@ def strip_header(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 
     if df.dtypes.nunique() == 1: 
         # there is a header that we want to remove
+        # Triple check that the first row is all text
         header = df.loc[0,:]
-        f_mod = df.loc[1:, :].reset_index(drop=True)
+        if sum(header.str.contains(r"[A-Za-z]",regex=True).notna()) == len(header) & sum(header.str.contains(r"[A-Za-z]",regex=True)) == len(header):
+            logger.info(f"Dropping header {header.astype(str).to_list()}")
+            f_mod = df.loc[1:, :].reset_index(drop=True)
+        else:
+            logger.error(f"Can't ensure that first row {header.astype(str).to_list()} is a header")
+            raise ValueError(f"Can't ensure that first row {header.astype(str).to_list()} is a header")
     else:
         header = pd.Series()
         f_mod = df
