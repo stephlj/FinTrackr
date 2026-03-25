@@ -23,7 +23,7 @@ If your transcation csvs have headers, specify in the config file how the posted
 
 ### Log transactions in the db
 
-To log a list of transactions (amounts on dates, with text description provided by bank), into the db from a csv:
+To log a list of transactions (amounts on dates, with text description provided by bank) into the db from a csv:
 
 in the terminal, run
 
@@ -36,6 +36,11 @@ where:
 In the db schema, this is the `name` field of the `data_sources` table.
 
 - `<filepath>` is the full path to a csv with columns representing date, transactions amounts, and description.
+Since this csv is determined by the bank, we tolerate headers vs no header.
+If your bank's csv has a header, specify the headers for columns represented posted date, amount, and description
+in the config. If you have data from multiple banks with different formats, you can provide a list of options for each
+column.
+If your bank's csv has no header, Fintrackr will try to infer the correct columns based on types.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
@@ -55,7 +60,7 @@ In the db schema, this is the `name` field of the `data_sources` table.
 
 - `<filepath>` is the full path to a csv with columns representing date and amount. 
 Since these are user-generated (not from a bank), we insist they have a header with columns `Date` 
-and `Amount`.
+and `Amount` (case insensitive).
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 

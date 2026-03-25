@@ -237,31 +237,29 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, t
     with open(db_config, "r") as config_file:
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
-        date_headers = config["input_files"]["date_header"]
-        amount_headers = config["input_files"]["amount_header"]
-        desc_headers = config["input_files"]["description_header"]
+        if trans:
+            date_headers = config["transaction_headers"][TRANS_STAGING_COLS[0].col_name]
+            amount_headers = config["transaction_headers"][TRANS_STAGING_COLS[1].col_name]
+            desc_headers = config["transaction_headers"][TRANS_STAGING_COLS[2].col_name]
 
     # Clean input if necessary
-    # Enumerate all possible input column combos:
-    expect_cols = []
-    for d in date_headers:
-        for a in amount_headers:
-            for c in desc_headers:
-                # Note order matters here!
-                # check_csv_format will reorder columns to match this spec.
-                # So this spec must match the order expected when csv contents
-                # are loaded into the staging table in csv_to_staging().
-                # That order is in *_STAGING_COLS at top.
-                # TODO Derive col order from *_STAGING_COLS
-                if trans:
-                    expect_cols.append([Col_Def(col_name=d, col_type="date"),
-                                    Col_Def(col_name=a, col_type="money"),
-                                    Col_Def(col_name=c, col_type="text")
-                            ])
-                else:
-                    expect_cols.append([Col_Def(col_name=d, col_type="date"),
-                            Col_Def(col_name=a, col_type="money"),
-                            ])
+    # Enumerate all possible input column combos for transactions:
+    if trans:
+        expect_cols = []
+        for d in date_headers:
+            for a in amount_headers:
+                for c in desc_headers:
+                    # Note order matters here!
+                    # check_csv_format will reorder columns to match this spec.
+                    # So this spec must match the order expected when csv contents
+                    # are loaded into the staging table in csv_to_staging().
+                    expect_cols.append([Col_Def(col_name=d, col_type=TRANS_STAGING_COLS[0].col_type),
+                                        Col_Def(col_name=a, col_type=TRANS_STAGING_COLS[1].col_type),
+                                        Col_Def(col_name=c, col_type=TRANS_STAGING_COLS[2].col_type)
+                                ])
+    else:
+        # We insist on this format since it's user-provided rather than bank provided
+        expect_cols = BALS_STAGING_COLS
     
     success = False
     for c in expect_cols:
