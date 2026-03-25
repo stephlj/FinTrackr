@@ -259,7 +259,7 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, t
                                 ])
     else:
         # We insist on this format since it's user-provided rather than bank provided
-        expect_cols = BALS_STAGING_COLS
+        expect_cols = [BALS_STAGING_COLS]
     
     success = False
     for c in expect_cols:

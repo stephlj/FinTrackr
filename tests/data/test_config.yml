@@ -6,7 +6,7 @@ db:
   db_name: test_fin_db
   admin_name: test_admin
 
-input_files:
-  date_header: ["Post Date", "Date"]
-  amount_header: ["Amount"]
-  description_header: ["Description"]
+transaction_headers:
+  posted_date: ["Post Date", "Date"]
+  amount: ["Amount"]
+  description: ["Description"]
