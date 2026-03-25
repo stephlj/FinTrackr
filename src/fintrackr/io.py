@@ -45,7 +45,7 @@ def strip_header(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         f_mod = df.loc[1:, :].reset_index(drop=True)
     else:
         header = pd.Series()
-        f_mod = df.copy() # not great re: memory
+        f_mod = df
     
     # If there was a header, we have to re-infer new dtypes since everything will have been object
     if len(header) != 0:
