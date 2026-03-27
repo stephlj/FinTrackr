@@ -34,11 +34,12 @@ def col_type(col: pd.Series) -> str:
     """
     
     # Floats will make .str.contains barf; but casting to str with astype will drop trailing zeros in money
-    if sum(col.astype(str).str.fullmatch(r"[-]{0,1}\d+\.\d{1,2}",case=False).notna()) == len(col) & sum(col.astype(str).str.fullmatch(r"[-]{0,1}\d+\.\d{1,2}",case=False)) == len(col):
+    if sum(col.astype(str).str.fullmatch(r"[-]{0,1}\d+\.\d{1,2}",case=False,na=False)) == len(col):
         return 'money'
-    elif sum(col.astype(str).apply(valid_date).notna()) == len(col) & sum(col.astype(str).apply(valid_date)) == len(col):
+    elif sum(col.astype(str).apply(valid_date)) == len(col):
         return 'date'
-    elif sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True).notna()) == len(col) & sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True)) == len(col):
+    # The na=False may be unnecessary given the casting to str with astype (it's the default):
+    elif sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True,na=False)) == len(col):
         return 'text'
     else:
         return ''
@@ -73,7 +74,7 @@ def strip_header(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         # there is a header that we want to remove
         # Triple check that the first row is all text
         header = df.loc[0,:]
-        if sum(header.str.contains(r"[A-Za-z]",regex=True).notna()) == len(header) & sum(header.str.contains(r"[A-Za-z]",regex=True)) == len(header):
+        if sum(header.str.contains(r"[A-Za-z]", na=False, regex=True)) == len(header):
             logger.info(f"Dropping header {header.astype(str).to_list()}")
             f_mod = df.loc[1:, :].reset_index(drop=True)
         else:
