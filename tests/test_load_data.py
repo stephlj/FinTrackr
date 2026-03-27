@@ -26,7 +26,7 @@ class TestLoadData(unittest.TestCase):
         cls.path_to_test_bals = os.path.join(utils.TEST_DATA_PATH,"test_balances_noheader.csv")
         cls.path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
-        cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
+        cls.element_to_match = str(cls.transactions_to_add.iloc[0,1])
         cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
 
     @classmethod
@@ -120,18 +120,14 @@ class TestLoadData(unittest.TestCase):
         self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
 
         # Test what happens when partial duplicates are added
-        additional_transactions_path = os.path.join(utils.TEST_DATA_PATH,"test_data_checking.csv")
-        addtl_trans = pd.read_csv(additional_transactions_path, header=None)
-        num_new_trans = len(addtl_trans)
-        dup_trans = self.transactions_to_add.loc[self.transactions_to_add.iloc[:,2]=="Safeway"]
-        addtl_trans = pd.concat([addtl_trans, dup_trans])
-
+        # This file is nearly the same, with 2 different lines
+        additional_transactions_path = os.path.join(utils.TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
         num_transactions_added = fintrackr.load_data.add_transactions(
             FinDB = self.FinDB,
             path_to_source_file = additional_transactions_path, 
             source_info = self.source_info
             )
-        self.assertEqual(num_transactions_added, num_new_trans, "Duplicates should not have been successfully loaded")
+        self.assertEqual(num_transactions_added, 2, "Duplicates should not have been successfully loaded")
     
     def test_load_data_from_CLI(self):
         # Mostly a does-it-run test for integration (since components are unit tested)

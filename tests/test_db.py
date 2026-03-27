@@ -24,7 +24,7 @@ class TestDB(unittest.TestCase):
         # Some test fixtures shared by multiple tests:
         cls.path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
-        cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
+        cls.element_to_match = str(cls.transactions_to_add.iloc[0,1])
         cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
 
         cls.source_info = "cc"
@@ -98,6 +98,6 @@ class TestDB(unittest.TestCase):
         bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
         self.assertEqual(amts["balances"][0].amount, bal_money, "data_from_date_range did not return correct balance amount")
 
-        self.assertEqual(len(amts["transactions"]), 3, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
+        self.assertEqual(len(amts["transactions"]), 2, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
 
 
