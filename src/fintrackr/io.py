@@ -86,6 +86,7 @@ def strip_header(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         f_mod = df
     
     # If there was a header, we have to re-infer new dtypes since everything will have been object
+    # I still need this even though I'm doing my own type checking - TODO figure out a work around
     if len(header) != 0:
         # I could re-load and re-infer using read_csv: 
         # f_mod.to_csv(os.path.join(os.path.split(filepath)[0], filename+"_TEMP"+".csv"), header=False, index=False, sep=",")

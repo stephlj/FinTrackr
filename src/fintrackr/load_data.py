@@ -238,9 +238,9 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, t
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
         if trans:
-            date_headers = config["transaction_headers"][TRANS_STAGING_COLS[0].col_name]
-            amount_headers = config["transaction_headers"][TRANS_STAGING_COLS[1].col_name]
-            desc_headers = config["transaction_headers"][TRANS_STAGING_COLS[2].col_name]
+            date_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='date'][0]]
+            amount_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='money'][0]]
+            desc_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='text'][0]]
 
     # Clean input if necessary
     # Enumerate all possible input column combos for transactions:
