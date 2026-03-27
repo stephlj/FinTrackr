@@ -22,7 +22,8 @@ class TestLoadData(unittest.TestCase):
         cls.balance_date = date(year=2025, month=9, day=9)
         cls.balance_amount = 5000.00
         
-        cls.path_to_test_bals = os.path.join(utils.TEST_DATA_PATH,"test_balances.csv")
+        # To make this a unittest not an integration test, use correctly formatted input files
+        cls.path_to_test_bals = os.path.join(utils.TEST_DATA_PATH,"test_balances_noheader.csv")
         cls.path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
         cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
@@ -138,7 +139,7 @@ class TestLoadData(unittest.TestCase):
         bal_accnt = "new_checking"
         fintrackr.load_data.load_data_from_CLI(
             accnt_name = bal_accnt, 
-            filepath=self.path_to_test_bals, #same file as in other tests, but adding under a different accnt
+            filepath=os.path.join(utils.TEST_DATA_PATH, "test_balances.csv"), #Since this IS an integration test, use an input file that needs reformatting
             username = self.params["user"], 
             pw = self.params["user_pw"],
             trans=False,
@@ -156,6 +157,7 @@ class TestLoadData(unittest.TestCase):
         bal_result = self.FinDB.execute_query(bal_test_query, (bal_test_date, bal_accnt))
         self.assertEqual(len(bal_result),1)
 
+        # Try adding transactions
         trans_accnt = "new_cc"
         fintrackr.load_data.load_data_from_CLI(
             accnt_name = trans_accnt, 

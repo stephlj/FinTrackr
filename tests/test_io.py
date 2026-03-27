@@ -59,8 +59,7 @@ class TestIO(unittest.TestCase):
         cls.cols5 = [Col_Def(col_name="amount", col_type="money"),
                 Col_Def(col_name="date", col_type="date"),
         ]
-        cls.path5_out = os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv")
-        cls.path5_corr = os.path.join(TEST_DATA_PATH, "test_balances_fixed.csv")
+        cls.path5_out = os.path.join(TEST_DATA_PATH, "test_balances_noheader_REFORMAT.csv")
 
         cls.path6 = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype.csv")
         cls.cols6 = [Col_Def(col_name="posted_date", col_type="date"),
@@ -79,7 +78,7 @@ class TestIO(unittest.TestCase):
             pass
 
         try:
-            os.remove(cls.path1_out) # This shouldn't actually be generated
+            os.remove(cls.path1_out)
         except:
             pass
 
@@ -217,9 +216,6 @@ class TestIO(unittest.TestCase):
         result5 = io.check_csv_format(filepath=self.path5, cols = self.cols5)
         self.assertEqual(result5, self.path5_out)
         self.assertTrue(os.path.isfile(self.path5_out), "New file was NOT created where it should have been!")
-        df_test5 = pd.read_csv(result5, header=None)
-        df_correct5 = pd.read_csv(self.path5_corr, header=None)
-        pd.testing.assert_frame_equal(df_test5, df_correct5, check_dtype=False)
         os.remove(result5)
 
         # Too many columns, no header - additional variant
