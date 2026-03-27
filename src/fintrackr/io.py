@@ -15,6 +15,34 @@ from fintrackr.utils import Col_Def, equiv_col_types, valid_date
 
 logger = logging.getLogger(__name__)
 
+def type_col(col: pd.Series) -> str:
+    """
+    Try to identify data type in a column, where data type is specific
+    to FinTrackr's expectations.
+
+    Parameters
+    ----------
+    col : pd.Series
+        Column from a df that's the result of loading a csv.
+    
+    Return
+    ------
+    str, column type or '' if not possible to determine.
+        Return types will be one of {'date','text','money'}
+        All elements in col must be the same type, else the return
+        will be '' (not determined).
+    """
+
+    if sum(col.str.contains(r"\d+\.\d{2}",regex=True).notna()) == len(col) & sum(col.str.contains(r"\d+\.\d{2}",regex=True)) == len(col):
+        return 'money'
+    elif sum(col.apply(valid_date).notna()) == len(col) & sum(col.apply(valid_date)) == len(col):
+        return 'date'
+    elif sum(col.str.contains(r"[A-Za-z]+",regex=True).notna()) == len(col) & sum(col.str.contains(r"[A-Za-z]+",regex=True)) == len(col):
+        return 'text'
+    else:
+        return ''
+
+
 def strip_header(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """
     Figure out whether a dataframe has a header.

@@ -6,8 +6,6 @@ import unittest
 import os
 import pandas as pd
 
-from datetime import date
-
 import fintrackr.io as io
 from fintrackr.utils import Col_Def
 from fintrackr.testing_utils import TEST_DATA_PATH
@@ -83,6 +81,55 @@ class TestIO(unittest.TestCase):
         except:
             pass
 
+    def test_type_col(self):
+        all_text = pd.Series({0:"Safeway", 
+                              1:"Check # 125", 
+                              2:"Credit Card Autopay 123456", 
+                              3:"Transfer REF # XY*Z-123 on 12/18",
+                              4:"Stuff & things Inc."})
+        self.assertEqual(io.type_col(all_text), 'text')
+        self.assertNotEqual(io.type_col(all_text), 'money')
+        self.assertNotEqual(io.type_col(all_text), 'date')
+        
+        all_money = pd.Series({0:"0.00", 1:"1200.00", 2:"-123.04"})
+        self.assertEqual(io.type_col(all_money), 'money')
+        self.assertNotEqual(io.type_col(all_money), 'text')
+        self.assertNotEqual(io.type_col(all_money), 'date')
+
+        all_money2 = pd.Series({0:0.00, 1:1200.00, 2:-123.04})
+        self.assertEqual(io.type_col(all_money2), 'money')
+        self.assertNotEqual(io.type_col(all_money2), 'text')
+        self.assertNotEqual(io.type_col(all_money2), 'date')
+
+        all_dates = pd.Series({0:"01/02/2025",1:"10/02/2026"})
+        self.assertEqual(io.type_col(all_dates), 'date')
+        self.assertNotEqual(io.type_col(all_dates), 'text')
+        self.assertNotEqual(io.type_col(all_dates), 'money')
+        
+        all_null = pd.Series({0:'',1:'',2:'',3:'',4:''})
+        self.assertEqual(io.type_col(all_null), '')
+        self.assertNotEqual(io.type_col(all_null), 'text')
+
+        some_ints = pd.Series({0:'',1:'123',2:'456',3:'',4:''})
+        self.assertEqual(io.type_col(some_ints), '')
+        self.assertNotEqual(io.type_col(some_ints),'money')
+
+        all_special = pd.Series({0:'*',1:'*',2:'*',3:'*'})
+        self.assertEqual(io.type_col(all_special), '')
+        self.assertNotEqual(io.type_col(all_special), 'text')
+
+        some_special = pd.Series({0:'*',1:'',2:'',3:'*'})
+        self.assertEqual(io.type_col(some_special), '')
+        self.assertNotEqual(io.type_col(some_special), 'text')
+
+        some_text = pd.Series({0:"", 
+                              1:"Check # 125", 
+                              2:"Credit Card Autopay 123456", 
+                              3:"Transfer REF # XY*Z-123 on 12/18",
+                              4:"Stuff & things Inc."})
+        self.assertEqual(io.type_col(some_text), '')
+        self.assertNotEqual(io.type_col(some_text), 'text')
+    
     def test_strip_header(self):
         #TODO
         pass
