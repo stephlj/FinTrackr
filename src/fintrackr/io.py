@@ -38,8 +38,9 @@ def col_type(col: pd.Series) -> str:
         return 'money'
     elif sum(col.astype(str).apply(valid_date)) == len(col):
         return 'date'
-    # The na=False may be unnecessary given the casting to str with astype (it's the default):
-    elif sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True,na=False)) == len(col):
+    # The na=False may be unnecessary given the casting to str with astype (it's the default);
+    # the second conditional checks for "NaN" which is how pandas imports empty cells
+    elif sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True,na=False)) == len(col) and not sum(col.astype(str).str.fullmatch("NaN",case=False, na=False)) == len(col):
         return 'text'
     else:
         return ''
