@@ -15,7 +15,7 @@ from fintrackr.utils import Col_Def, equiv_col_types, valid_date
 
 logger = logging.getLogger(__name__)
 
-def type_col(col: pd.Series) -> str:
+def col_type(col: pd.Series) -> str:
     """
     Try to identify data type in a column, where data type is specific
     to FinTrackr's expectations.
@@ -138,39 +138,24 @@ def check_csv_format(filepath: str, cols: List[Col_Def]) -> str:
     reorder = False
     for c in range(0,len(cols)): # Iterate through the columns we're looking for
         for c_in in range(0, f_mod.shape[1]): # Check against the columns we have
-            # Special cases we've encountered from particular bank outputs:
-            # We know we're looking for dates, money, or a bank-assigned descrption of a transaction;
-            # none of these are strings 0 or 1 length
-            if len(str(f_mod.loc[0,c_in])) > 1:
-                # pandas reads string columns as "objects"
-                # See if we can extract a date from this column; 
-                # otherwise assume object = string
-                if str(f_mod[c_in].dtype) == 'object':
-                    if valid_date(date_string = f_mod.loc[0,c_in]):
-                        c_in_type = "date"
-                    else:
-                        c_in_type = "str"
-                else:
-                    c_in_type = str(f_mod[c_in].dtype)
-
-                # Get info from header if we can    
-                if len(header) != 0:
-                    if header[c_in].strip().casefold() == cols[c].col_name.casefold() and equiv_col_types(c_in_type, str(cols[c].col_type)):
-                        c_keep.append(c_in)
-                        if c != c_in:
-                            reorder = True
-                        logger_msg = f"Keeping column with header {header[c_in]}" \
-                                    f" from file {filepath} because name matches expected column {cols[c].col_name}"\
-                                    f" and column dtype {c_in_type} matches expected column type {cols[c].col_type}"
-                        logger.info(logger_msg)
-                elif equiv_col_types(c_in_type, str(cols[c].col_type)):
+            c_in_type = col_type(f_mod.loc[:,c_in])
+            if len(header) != 0:
+                if header[c_in].strip().casefold() == cols[c].col_name.casefold() and c_in_type==cols[c].col_type:
                     c_keep.append(c_in)
                     if c != c_in:
                         reorder = True
-                    logger_msg = f"Keeping column {c_in}" \
-                                f" from file {filepath}"\
-                                f" because column dtype {c_in_type} matches expected column type {cols[c].col_type}"
+                    logger_msg = f"Keeping column with header {header[c_in]}" \
+                                f" from file {filepath} because name matches expected column {cols[c].col_name}"\
+                                f" and column dtype {c_in_type} matches expected column type {cols[c].col_type}"
                     logger.info(logger_msg)
+            elif c_in_type==cols[c].col_type:
+                c_keep.append(c_in)
+                if c != c_in:
+                    reorder = True
+                logger_msg = f"Keeping column {c_in}" \
+                            f" from file {filepath}"\
+                            f" because column dtype {c_in_type} matches expected column type {cols[c].col_type}"
+                logger.info(logger_msg)
 
     if len(c_keep) != len(cols): # We couldn't identify the right number of columns as the ones we want
         logger.error(f"Could not identify correct columns from file {filepath}.")
