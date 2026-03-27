@@ -39,19 +39,27 @@ class TestIO(unittest.TestCase):
         cls.path3_out = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv")
         cls.path3_corr = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_fixed.csv")
 
-        cls.path4 = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype.csv")
+        cls.path4 = os.path.join(TEST_DATA_PATH, "test_data_checking.csv")
         cls.cols4 = [Col_Def(col_name="posted_date", col_type="date"),
                 Col_Def(col_name="amount", col_type="money"),
                 Col_Def(col_name="description", col_type="text")
         ]
-        cls.path4_out = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_REFORMAT.csv")
-        cls.path4_corr = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_fixed.csv")
+        cls.path4_out = os.path.join(TEST_DATA_PATH, "test_data_checking_REFORMAT.csv")
+        cls.path4_corr = os.path.join(TEST_DATA_PATH, "test_data_checking_fixed.csv")
 
         cls.path5 = os.path.join(TEST_DATA_PATH, "test_balances.csv")
         cls.path5_out = os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv")
         cls.cols5 = [Col_Def(col_name="amount", col_type="money"),
                 Col_Def(col_name="date", col_type="date"),
         ]
+
+        cls.path6 = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype.csv")
+        cls.cols6 = [Col_Def(col_name="posted_date", col_type="date"),
+                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="description", col_type="text")
+        ]
+        cls.path6_out = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_REFORMAT.csv")
+        cls.path6_corr = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_fixed.csv")
     
     @classmethod
     def tearDownClass(cls):
@@ -78,6 +86,11 @@ class TestIO(unittest.TestCase):
 
         try:
             os.remove(cls.path5_out)
+        except:
+            pass
+
+        try:
+            os.remove(cls.path6_out)
         except:
             pass
 
@@ -153,7 +166,7 @@ class TestIO(unittest.TestCase):
         # Header needs removing
         result2 = io.check_csv_format(filepath=self.path2, cols = self.cols2)
         self.assertEqual(result2, self.path2_out)
-        self.assertTrue(os.path.isfile(self.path2_out), "New file was not created where it should not have been!")
+        self.assertTrue(os.path.isfile(self.path2_out), "New file was not created where it should have been!")
         df_test2 = pd.read_csv(result2, header=None)
         df_correct2 = pd.read_csv(self.path2_corr, header=None)
         pd.testing.assert_frame_equal(df_test2, df_correct2, check_dtype=False)
@@ -162,23 +175,32 @@ class TestIO(unittest.TestCase):
         # Too many columns, and a header
         result3 = io.check_csv_format(filepath=self.path3, cols = self.cols3)
         self.assertEqual(result3, self.path3_out)
-        self.assertTrue(self.path3_out, "New file was not created where it should not have been!")
+        self.assertTrue(self.path3_out, "New file was not created where it should have been!")
         df_test3 = pd.read_csv(result3, header=None)
         df_correct3 = pd.read_csv(self.path3_corr, header=None)
         pd.testing.assert_frame_equal(df_test3, df_correct3, check_dtype=False)
         os.remove(result3)
 
         # Too many columns, no header
-        # result4 = io.check_csv_format(filepath=self.path4, cols = self.cols4)
-        # self.assertEqual(result4, self.path4_out)
-        # self.assertTrue(self.path4_out, "New file was not created where it should not have been!")
-        # df_test4 = pd.read_csv(result4, header=None)
-        # df_correct4 = pd.read_csv(self.path4_corr, header=None)
-        # pd.testing.assert_frame_equal(df_test4, df_correct4, check_dtype=False)
-        # os.remove(result4)
+        result4 = io.check_csv_format(filepath=self.path4, cols = self.cols4)
+        self.assertEqual(result4, self.path4_out)
+        self.assertTrue(self.path4_out, "New file was not created where it should have been!")
+        df_test4 = pd.read_csv(result4, header=None)
+        df_correct4 = pd.read_csv(self.path4_corr, header=None)
+        pd.testing.assert_frame_equal(df_test4, df_correct4, check_dtype=False)
+        os.remove(result4)
 
         # Everything correct except column order
         result5 = io.check_csv_format(filepath=self.path5, cols = self.cols5)
         self.assertEqual(result5, self.path5_out)
-        self.assertTrue(os.path.isfile(self.path5_out), "New file was not created where it should not have been!")
+        self.assertTrue(os.path.isfile(self.path5_out), "New file was not created where it should have been!")
         os.remove(result5)
+
+        # Too many columns, no header - additional variant
+        result6 = io.check_csv_format(filepath=self.path6, cols = self.cols6)
+        self.assertEqual(result6, self.path6_out)
+        self.assertTrue(self.path6_out, "New file was not created where it should have been!")
+        df_test6 = pd.read_csv(result6, header=None)
+        df_correct6 = pd.read_csv(self.path6_corr, header=None)
+        pd.testing.assert_frame_equal(df_test6, df_correct6, check_dtype=False)
+        os.remove(result6)
