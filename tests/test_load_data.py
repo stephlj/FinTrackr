@@ -38,6 +38,11 @@ class TestLoadData(unittest.TestCase):
         except:
             pass
 
+        try:
+            os.remove(os.path.join(utils.TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
+        except:
+            pass
+
         # Delete testing db
         exit_code = subprocess.run(["dropdb", cls.params["test_db_name"]])
         exit_code2 = subprocess.run(["dropuser",cls.params["user"]])
@@ -152,6 +157,7 @@ class TestLoadData(unittest.TestCase):
 
         bal_result = self.FinDB.execute_query(bal_test_query, (bal_test_date, bal_accnt))
         self.assertEqual(len(bal_result),1)
+        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
 
         # Try adding transactions
         trans_accnt = "new_cc"
