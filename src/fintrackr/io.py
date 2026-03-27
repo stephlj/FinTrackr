@@ -32,12 +32,13 @@ def col_type(col: pd.Series) -> str:
         All elements in col must be the same type, else the return
         will be '' (not determined).
     """
-
-    if sum(col.str.contains(r"\d+\.\d{2}",regex=True).notna()) == len(col) & sum(col.str.contains(r"\d+\.\d{2}",regex=True)) == len(col):
+    
+    # Floats will make .str.contains barf; but casting to str with astype will drop trailing zeros in money
+    if sum(col.astype(str).str.fullmatch(r"[-]{0,1}\d+\.\d{1,2}",case=False).notna()) == len(col) & sum(col.astype(str).str.fullmatch(r"[-]{0,1}\d+\.\d{1,2}",case=False)) == len(col):
         return 'money'
-    elif sum(col.apply(valid_date).notna()) == len(col) & sum(col.apply(valid_date)) == len(col):
+    elif sum(col.astype(str).apply(valid_date).notna()) == len(col) & sum(col.astype(str).apply(valid_date)) == len(col):
         return 'date'
-    elif sum(col.str.contains(r"[A-Za-z]+",regex=True).notna()) == len(col) & sum(col.str.contains(r"[A-Za-z]+",regex=True)) == len(col):
+    elif sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True).notna()) == len(col) & sum(col.astype(str).str.contains(r"[A-Za-z]+",regex=True)) == len(col):
         return 'text'
     else:
         return ''

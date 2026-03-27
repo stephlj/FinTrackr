@@ -101,6 +101,15 @@ class TestIO(unittest.TestCase):
         self.assertNotEqual(io.col_type(all_money2), 'text')
         self.assertNotEqual(io.col_type(all_money2), 'date')
 
+        not_money = pd.Series({0:"0.0", 1:"1200", 2:"-123.04", 3:"-.02"})
+        self.assertEqual(io.col_type(not_money),'')
+        self.assertNotEqual(io.col_type(not_money),'money')
+
+        # It looks like pandas adds .00 to the second element on construction/load
+        money3 = pd.Series({0:0.0, 1:1200, 2:-123.04, 3:-.02})
+        self.assertEqual(io.col_type(money3),'money')
+        self.assertNotEqual(io.col_type(money3),'')
+
         all_dates = pd.Series({0:"01/02/2025",1:"10/02/2026"})
         self.assertEqual(io.col_type(all_dates), 'date')
         self.assertNotEqual(io.col_type(all_dates), 'text')
