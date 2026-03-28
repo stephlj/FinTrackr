@@ -207,32 +207,9 @@ class FinDB:
         logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
 
         return len(rows_after)
-
     
-    def add_data_source(self, source_name: str) -> int:
-        """
-        Add source to data_source table if it doesn't exist.
-
-        Utility used in multiple places.
-
-        Parameters
-        ----------
-        source_name : str
-        
-        Returns:
-        --------
-        int, id of new data_source
-        """
-        # This can be done in one query but race conditions can occur, apparently
-        source_name_tuple = self.execute_query("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
-        if len(source_name_tuple)==0:
-           logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
-           source_name_tuple = self.execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
-           if source_name_tuple is None:
-               logger.error(f"Could not insert new data source in data_sources table; query returned {source_name_tuple}")
-               raise ValueError("Could not insert new data source in data_sources table")
-        
-        return source_name_tuple[0][0]
+    def get_data_source_id(self, source_name: str) -> int:
+        return self.execute_query("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
     
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """

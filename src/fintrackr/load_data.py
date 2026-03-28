@@ -9,6 +9,7 @@ import logging
 
 from datetime import date
 from decimal import Decimal
+from psycopg import errors as psql_errors
 
 import fintrackr.fin_db
 from fintrackr.utils import CONFIG_PATH, Col_Def
@@ -24,6 +25,34 @@ TRANS_STAGING_COLS = [Col_Def(col_name="posted_date", col_type="date"),
     ]
 
 logger = logging.getLogger(__name__)
+
+def add_data_source(db_conn: object, source_name: str) -> int:
+        """
+        Add source to data_source table if it doesn't exist, and return id.
+
+        Utility used in multiple places; data source means source of a csv file to load
+        (was it downloaded from primary checking, etc); this is equivalent to adding an account
+        (since accounts are data sources). Data source and accounts are used interchangeably in the BLL.
+
+        Parameters
+        ----------
+        db_conn : FinDB object
+            Object that handles db connection
+        source_name : str
+            Account name (e.g. "primary checking")
+        
+        Returns:
+        --------
+        int, id of new data_source
+            Will be added if doesn't exist in db
+        """
+        
+        source_id_tuple = db_conn.get_data_source_id(source_name=source_name)
+        if source_id_tuple is None:
+            logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
+            source_id_tuple = db_conn.add_data_source(source_name=source_name)
+        
+        return source_id_tuple[0][0]
 
 def add_balance(FinDB: object, accnt: str, bal_date: date, bal_amt: str) -> int:
     """
