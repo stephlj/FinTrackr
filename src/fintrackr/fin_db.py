@@ -41,6 +41,9 @@ class FinDB:
         """
         Convenience function. Execute an action for which I want the response message, not a fetch.
 
+        Calling function should handle expected exceptions via specific
+        exception classes. No try-except block here.
+
         Parameters
         ----------
         query : str
@@ -68,15 +71,8 @@ class FinDB:
         # The with statement automatically closes cursor after execution
         with self._conn.cursor() as curs: 
             logger.info(f"Executing query: {query}")
-            response = None
-            try:
-                curs.execute(query)
-                response = curs.statusmessage
-                logger.info(f"Completed with response {response}")
-            except Exception as e:
-                logger.exception(f"Query did not complete with exception: {e}")
-            finally:
-                return response
+            curs.execute(query)
+            return curs.statusmessage
             
     def _import_file(self, dest_table: str, path_to_file: str) -> int:
         """
@@ -124,6 +120,10 @@ class FinDB:
         """
         Returns the result of a fetch to the database, after query execution.
 
+        Calling function should handle expected exceptions (like violation of
+        unique constraints if duplicates are attempted to be inserted) via specific
+        exception classes. No try-except block here.
+
         Parameters
         ----------
         query : str
@@ -131,6 +131,7 @@ class FinDB:
             (something where the return should be the result of a fetchall, rather 
             than a status message)
             Args need to be passed in separately using %s in the query string
+            (ie using parameterized SQL)
         vals: tuple
             Values, in order, for all %s's in the query string
 
@@ -144,18 +145,10 @@ class FinDB:
 
         """
 
-        response = None
-
         with self._conn.cursor() as curs: 
             logger.info(f"Executing query: {query}, with vals: {vals}")
-            try:
-                curs.execute(query, vals)
-                response = curs.fetchall() # Returns a list of tuples (each row a tuple)
-            except Exception as e:
-                logger.debug(f"Query did not complete with exception: {e}")
-                raise ValueError(f"Query did not complete with exception: {e}")
-            finally:
-                return response
+            curs.execute(query, vals)
+            return curs.fetchall() # Returns a list of tuples (each row a tuple)
             
     def csv_to_staging(self, csv_path: str, csv_columns: List[Col_Def]) -> int:
         """ 
