@@ -18,7 +18,8 @@ class TestLoadData(unittest.TestCase):
         cls.FinDB = utils.set_up_test_DB(params=cls.params)
 
         # Shared by multiple tests
-        cls.source_info = "cc"
+        cls.source_name = "cc"
+        cls.source_id = cls.FinDB.add_data_source(source_name = cls.source_name)
         cls.balance_date = date(year=2025, month=9, day=9)
         cls.balance_amount = 5000.00
         
@@ -54,49 +55,31 @@ class TestLoadData(unittest.TestCase):
         assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
         assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
-
-    def test_add_balance(self):
-        # does-it-run test
-        self.assertEqual(fintrackr.load_data.add_balance(
-                            FinDB = self.FinDB,
-                            accnt=self.source_info,
-                            bal_date=self.balance_date,
-                            bal_amt=self.balance_amount
-                            ), 
-                        1)
-        
-        # Does it exit gracefully if an attempt to add the same balance again is made
-        self.assertEqual(fintrackr.load_data.add_balance(
-                            FinDB = self.FinDB,
-                            accnt=self.source_info,
-                            bal_date=self.balance_date,
-                            bal_amt=self.balance_amount
-                            ),
-                         0)
     
-    def test_add_balances_from_csv(self):        
+    def test_add_balances(self):        
         
         balances_to_add = pd.read_csv(self.path_to_test_bals, header=None)
-
-        num_balances_added = fintrackr.load_data.add_balances_from_csv(
+        
+        num_balances_added = fintrackr.load_data.add_balances(
                                     FinDB = self.FinDB, 
-                                    accnt = self.source_info, 
+                                    accnt = self.source_id, 
                                     path_to_balances = self.path_to_test_bals
                                     )
         self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
         
         # Check we can't add the same balances again:
-        num_balances_added2 = fintrackr.load_data.add_balances_from_csv(
+        num_balances_added2 = fintrackr.load_data.add_balances(
                                     FinDB = self.FinDB,
-                                    accnt = self.source_info, 
+                                    accnt = self.source_id, 
                                     path_to_balances = self.path_to_test_bals
                                     )
         self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
 
         # Check that we can assign balances to a different account
-        num_balances_added3 = fintrackr.load_data.add_balances_from_csv(
+        new_source_id = self.FinDB.add_data_source(source_name = "bals_test_accnt")
+        num_balances_added3 = fintrackr.load_data.add_balances(
                                     FinDB = self.FinDB,
-                                    accnt = "bals_test_accnt", 
+                                    accnt = new_source_id, 
                                     path_to_balances = self.path_to_test_bals
                                     )
         self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add balances to a different account")
@@ -107,7 +90,7 @@ class TestLoadData(unittest.TestCase):
         num_transactions_added = fintrackr.load_data.add_transactions(
             FinDB = self.FinDB,
             path_to_source_file = self.path_to_test_transactions, 
-            source_info = self.source_info
+            source_info = self.source_id
             )
         self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
         self.assertEqual(self.element_to_match, 
@@ -120,7 +103,7 @@ class TestLoadData(unittest.TestCase):
         num_transactions_added = fintrackr.load_data.add_transactions(
             FinDB = self.FinDB,
             path_to_source_file = self.path_to_test_transactions, 
-            source_info = self.source_info
+            source_info = self.source_id
             )
         self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
 
@@ -130,7 +113,7 @@ class TestLoadData(unittest.TestCase):
         num_transactions_added = fintrackr.load_data.add_transactions(
             FinDB = self.FinDB,
             path_to_source_file = additional_transactions_path, 
-            source_info = self.source_info
+            source_info = self.source_id
             )
         self.assertEqual(num_transactions_added, 2, "Duplicates should not have been successfully loaded")
     
@@ -144,6 +127,7 @@ class TestLoadData(unittest.TestCase):
             username = self.params["user"], 
             pw = self.params["user_pw"],
             trans=False,
+            add_as_new_acct=True,
             db_config = utils.TEST_CONFIG_PATH)
         
         bal_test_query = """
@@ -167,6 +151,7 @@ class TestLoadData(unittest.TestCase):
             username = self.params["user"], 
             pw = self.params["user_pw"],
             trans=True,
+            add_as_new_acct=True,
             db_config = utils.TEST_CONFIG_PATH)
         
         trans_test_query = """

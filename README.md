@@ -51,7 +51,7 @@ To log a list of account balances (amounts on dates) into the db from a csv:
 in the terminal, run
 
 ``` 
-python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw>
+python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw> add_account
 ```
 
 where:
@@ -64,14 +64,14 @@ and `Amount` (case insensitive).
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
-To log a single balance directly, use the `add_balance` function in the `load_data` module.
+- `add_account` is an optional flag: is `<account_name>` one that already exists in the db? If not, add this flag.
 
 ### Plot account balances
 
 In the terminal, run
 
 ``` 
-python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_date> <username> <pw>
+python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_date> <username> <pw> add_account
 ```
 
 where:
@@ -82,6 +82,8 @@ are recorded. In the db schema, this is the `name` field of the `data_sources` t
 as well as balances calculated as a result of all logged transactions on that account, between the specified dates.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
+- `add_account` is an optional flag: is `<account_name>` one that already exists in the db? If not, add this flag.
 
 
 ## Getting started

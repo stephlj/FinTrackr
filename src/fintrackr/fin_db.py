@@ -208,9 +208,19 @@ class FinDB:
 
         return len(rows_after)
     
+    def get_all_data_sources(self) -> list[str]:
+        # Returns a list of data_sources names
+        names_tuples = self.execute_query("SELECT name FROM data_sources;")
+        # unpack the list of tuples into a list
+        return [n for sublist in names_tuples for n in sublist]
+    
     def get_data_source_id(self, source_name: str) -> int:
         return self.execute_query("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
     
+    def add_data_source(self, source_name: str) -> int:
+        # Returns id after insertion
+        return self.execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
         Get transactions and balances in a date range.

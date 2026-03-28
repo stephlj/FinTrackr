@@ -25,89 +25,18 @@ TRANS_STAGING_COLS = [Col_Def(col_name="posted_date", col_type="date"),
     ]
 
 logger = logging.getLogger(__name__)
-
-def get_or_add_data_source(db_conn: object, source_name: str) -> int:
-        """
-        Add source to data_source table if it doesn't exist, and return id.
-
-        Utility used in multiple places; data source means source of a csv file to load
-        (was it downloaded from primary checking, etc); this is equivalent to adding an account
-        (since accounts are data sources). Data source and accounts are used interchangeably in the BLL.
-
-        Parameters
-        ----------
-        db_conn : FinDB object
-            Object that handles db connection
-        source_name : str
-            Account name (e.g. "primary checking")
-        
-        Returns:
-        --------
-        int, id of new data_source
-            Will be added if doesn't exist in db
-        """
-        
-        source_id_tuple = db_conn.get_data_source_id(source_name=source_name)
-        if len(source_id_tuple) == 0:
-            logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
-            source_id_tuple = db_conn.add_data_source(source_name=source_name)
-        else:
-            logger.debug(f"Account name {source_name} exists, returning existing id")
-        
-        return source_id_tuple[0][0]
-
-def add_balance(FinDB: object, accnt: str, bal_date: date, bal_amt: str) -> int:
-    """
-    Log a balance in the db. Will not allow exact duplicates to be added.
-
-    Parameters
-    ----------
-    FinDB : object
-        FinDB object for db access
-    accnt: str
-        Must exist in data_sources table as a name.
-    bal_date : datetime.date
-        Date that this was the account's balance.
-    bal_amt : str
-        Account balance on balance_date
     
-    Return
-    ------
-    int, success (1) or not (0)
-    """
-
-    # Make sure bal_amt is formatted so it's recognized as money
-    bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
-
-    accnt_id = FinDB.get_or_add_data_source(source_name=accnt)
-
-    try:
-        rows_added = FinDB.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
-    except Exception as e:
-        logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
-        raise ValueError(f"Insertion into balances table failed with exception: {e}")
-    
-    if rows_added is not None:
-        if len(rows_added) == 1:
-            return 1
-        else:
-            logger.exception("Insertion into balances table returned something unexpected: {rows_added}")
-            raise ValueError("Insertion into balances table returned something unexpected: {rows_added}")
-    else:
-        logger.info(f"No rows added to balances table; balance of {bal_amt} on date {bal_date} for account {accnt_id} may already exist")
-        return 0
-    
-def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> int:
+def add_balances(db_conn: object, accnt: int, path_to_balances: str) -> int:
     """
     Load balances from csv into db.
     Will not allow duplicates to be added.
 
     Parameters
     ----------
-    FinDB : object
+    db_conn : object
         FinDB object for db access
-    accnt: str
-        Must exist in data_sources table as a name.
+    accnt: int
+        id of the source in the db
     path_to_balances : str
         Filepath to csv to load.
         Columns must be Date, Amount (in that order)
@@ -120,9 +49,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
 
     num_new_balances = 0
 
-    accnt_id = FinDB.get_or_add_data_source(source_name=accnt)
-
-    num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=BALS_STAGING_COLS)
+    num_staged_balances = db_conn.csv_to_staging(csv_path=path_to_balances, csv_columns=BALS_STAGING_COLS)
 
     if num_staged_balances == 0:
         logger.info("No balances loaded from source file to staging table; no balances will be added to db")
@@ -134,12 +61,12 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
         "RETURNING *;"
     
     try:
-        all_new_balances = FinDB.execute_query(balances_query, (accnt_id,))
+        all_new_balances = db_conn.execute_query(balances_query, (accnt,))
     except Exception as e:
         logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {all_new_balances}")
         raise ValueError(f"Insertion into balances table failed with exception: {e}")
     
-    FinDB.execute_action("DROP TABLE staging;")
+    db_conn.execute_action("DROP TABLE staging;")
     
     if all_new_balances is not None:
         return len(all_new_balances)
@@ -147,7 +74,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
         logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
         return 0
 
-def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) -> None:
+def add_transactions(db_conn: object, path_to_source_file: str, source_info: id) -> None:
     """
     Load transactions from a file and log the addition of these transactions
     in the data_load_metadata table.
@@ -158,14 +85,12 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
 
     Parameters
     ----------
-    FinDB: object
+    db_conn: object
         FinDB object that manages db access.
     path_to_source_file: str
         Path to a csv where every row is a transaction.
-    source_info: str
-        Are these transactions from credit card, checking account, etc
-        This is the "name" field in the data_sources table.
-        It will be added if it doesn't already exist.
+    source_info: id
+        id of an account in data_sources
 
     Returns
     -------
@@ -175,14 +100,12 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
 
     num_new_transactions = 0
 
-    num_staged_transactions = FinDB.csv_to_staging(csv_path=path_to_source_file, csv_columns=TRANS_STAGING_COLS)
+    num_staged_transactions = db_conn.csv_to_staging(csv_path=path_to_source_file, csv_columns=TRANS_STAGING_COLS)
 
     if num_staged_transactions == 0:
         logger.info("No transactions loaded from source file to staging table; no transactions will be added")
         return num_new_transactions
     
-    source_info_id = FinDB.get_or_add_data_source(source_info)
-
     today_date = date.today()
     
     transactions_query = "WITH joined AS ( " \
@@ -207,7 +130,7 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
         "RETURNING *;"
         
     try:
-        all_new_transactions = FinDB.execute_query(transactions_query, (today_date, FinDB.user, path_to_source_file, source_info_id))
+        all_new_transactions = db_conn.execute_query(transactions_query, (today_date, db_conn.user, path_to_source_file, source_info))
     except Exception as e:
         logger.exception(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
         raise ValueError(f"Insertion into transactions table failed with exception: {e}")
@@ -222,35 +145,46 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
             "        t.amount = s.amount AND " \
             "        t.description = s.description " \
             "    WHERE t.id IS NULL;"
-        if len(FinDB.execute_query(check_dups)) == 0:
+        if len(db_conn.execute_query(check_dups)) == 0:
             logger.error("All staged transactions are already in transactions table")
             return 0
         else:
             raise ValueError("No transactions inserted, but not because all new transactions were in db already")
 
     # Drop staging table
-    FinDB.execute_action("DROP TABLE staging;")
+    db_conn.execute_action("DROP TABLE staging;")
 
     return len(all_new_transactions)
 
-def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, trans: bool, db_config: str = '') -> None:
+def load_data_from_CLI(accnt_name: str, 
+                       filepath: str, 
+                       username: str, 
+                       pw: str, 
+                       trans: bool, 
+                       add_as_new_acct = False, 
+                       db_config: str = '') -> None:
     """
     
     Load transactions or balances from csv file into db.
+
 
     Parameters
     ----------
     accnt_name : str
         Which account are these balances or transactions for?
-        Equivalent to name column in data_sources (will be added if doesn't exist in that table)
+        Equivalent to name column in data_sources
     filepath : str
         Path to a csv file to load.
     username : str
         User to use to connect to db
     pw : str
         User's pw to connect to db
-    trans : bool
+    trans : bool, default False
         If true, these are transactions. If false, they are balances.
+    add_as_new_acct : bool
+        If add_as_new_acct is True, it will add accnt_name to data_sources.
+        If accnt_name doesn't exist and add_as_new_acct is False, it will error out.
+        If accnt_name DOES exist and add_as_new_acct is True, it will error out.
     db_config : str, optional
         path to config file for db.
         Will use default in utils if not specified.
@@ -308,22 +242,40 @@ def load_data_from_CLI(accnt_name: str, filepath: str, username: str, pw: str, t
         # Switch to modified file with corrected format
         filepath = new_path
 
-    FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
+    db_conn = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
+    
+    source_id_tuple = db_conn.get_data_source_id(source_name=accnt_name)
+    if not add_as_new_acct and len(source_id_tuple)==0:
+        # User didn't want to add a new account, but this one doesn't exist
+        existing_sources = db_conn.get_all_data_sources()
+        log_msg = f"Account name {accnt_name} doesn't exist; did you mean one of {existing_sources} instead?"
+        logger.error(log_msg)
+        raise ValueError(log_msg)
+    if add_as_new_acct and len(source_id_tuple)!=0:
+        # User wanted to add a new account, but this one already exists
+        log_msg = f"Account name {accnt_name} already exists!"
+        logger.error(log_msg)
+        raise ValueError(log_msg)
+    if add_as_new_acct and len(source_id_tuple)==0:
+        # Perhaps redundant to check both conditions, but: data source doesn't exist and user wanted to add a new one
+        logger.info(f"Adding account name {accnt_name} as new data source")
+        source_id_tuple = db_conn.add_data_source(source_name=accnt_name)  
+    accnt_id = source_id_tuple[0][0]
     
     if trans:
         result = add_transactions(
-                FinDB = FinDB,
+                db_conn = db_conn,
                 path_to_source_file = filepath, 
-                source_info = accnt_name
+                source_info = accnt_id
                 )
     else:
-        result = add_balances_from_csv(
-            FinDB=FinDB, 
-            accnt = accnt_name, 
+        result = add_balances(
+            db_conn=db_conn, 
+            accnt = accnt_id, 
             path_to_balances=filepath
             )
 
-    FinDB.close()
+    db_conn.close()
 
     if result >= 1:
         logger.info(f"Successfully logged data from file {filepath} in {db_name} under account {accnt_name}")
