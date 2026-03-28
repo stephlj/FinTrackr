@@ -1,5 +1,7 @@
 """
 Extracting some commonly used code for testing (manual and automated).
+
+Copyright (c) 2026 Stephanie Johnson
 """
 
 import os
@@ -9,11 +11,11 @@ from fintrackr.init_db import init_db
 from fintrackr.add_user import add_user
 import fintrackr.fin_db
 
-CONFIG_PATH = os.path.join(os.getcwd(),"tests","data","test_config.yml")
+TEST_CONFIG_PATH = os.path.join(os.getcwd(),"tests","data","test_config.yml")
 TEST_DATA_PATH = os.path.join(os.getcwd(),"tests","data")
 
 def config_params() -> dict:
-    with open(CONFIG_PATH, "r") as config_file:
+    with open(TEST_CONFIG_PATH, "r") as config_file:
         config = yaml.safe_load(config_file)
         test_db_name = config["db"]["db_name"]
         test_owner = config["db"]["admin_name"]
@@ -39,12 +41,12 @@ def set_up_test_DB(params: dict) -> None:
         Output of config_params
     """
 
-    init_db(pw=params["owner_pw"], path_to_config=CONFIG_PATH)
+    init_db(pw=params["owner_pw"], path_to_config=TEST_CONFIG_PATH)
 
     add_user(name=params["user"], 
                 pw=params["user_pw"], 
                 admin_pw = params["owner_pw"], 
-                path_to_config=CONFIG_PATH
+                path_to_config=TEST_CONFIG_PATH
     )
 
     FinDB = fintrackr.fin_db.FinDB(user=params["user"], pw=params["user_pw"], db_name=params["test_db_name"])

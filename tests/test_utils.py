@@ -1,3 +1,7 @@
+# test_utils.py
+#
+# Copyright (c) 2026 Stephanie Johnson
+
 import unittest
 
 import fintrackr.utils as utils

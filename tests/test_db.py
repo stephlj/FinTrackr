@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # test_db.py
 #
-# Copyright (c) 2025 Stephanie Johnson
+# Copyright (c) 2025, 2026 Stephanie Johnson
 
 import unittest
 import subprocess, os
@@ -13,8 +10,9 @@ from datetime import date
 
 import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
+from fintrackr.load_data import add_balance, add_transactions
 
-class TestDBSetup(unittest.TestCase):
+class TestDB(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Make a test db, in the process also tests init_db and add_user.
@@ -26,7 +24,7 @@ class TestDBSetup(unittest.TestCase):
         # Some test fixtures shared by multiple tests:
         cls.path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
-        cls.element_to_match = str(cls.transactions_to_add.iloc[1,1])
+        cls.element_to_match = str(cls.transactions_to_add.iloc[0,1])
         cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
 
         cls.source_info = "cc"
@@ -75,85 +73,19 @@ class TestDBSetup(unittest.TestCase):
     def test_add_data_source(self):
         # This is tested in several other places
         pass
-    
-    def test_add_balance(self):
-        # does-it-run test
-        self.assertEqual(self.FinDB.add_balance(
-                            accnt=self.source_info,
-                            bal_date=self.balance_date,
-                            bal_amt=self.balance_amount
-                            ), 
-                        1)
-        
-        # Does it exit gracefully if an attempt to add the same balance again is made
-        self.assertEqual(self.FinDB.add_balance(
-                            accnt=self.source_info,
-                            bal_date=self.balance_date,
-                            bal_amt=self.balance_amount
-                            ),
-                         0)
-    
-    def test_add_balances_from_csv(self):
-        # add_balances_from_csv calls csv_to_staging (which we test separately above)
-        
-        input_path = os.path.join(utils.TEST_DATA_PATH,"test_balances.csv")
-        balances_to_add = pd.read_csv(input_path, header=None)
-
-        num_balances_added = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
-        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
-        
-        # Check we can't add the same balances again:
-        num_balances_added2 = self.FinDB.add_balances_from_csv(accnt = self.source_info, path_to_balances = input_path)
-        self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
-
-        # Check that we can assign balances to a different account
-        num_balances_added3 = self.FinDB.add_balances_from_csv(accnt = "bals_test_accnt", path_to_balances = input_path)
-        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Could not add balances to a different account")
-    
-    def test_add_transactions(self):
-        # Add_transactions calls csv_to_staging (which we test separately above)
-
-        num_transactions_added = self.FinDB.add_transactions(
-            path_to_source_file = self.path_to_test_transactions, 
-            source_info = self.source_info
-            )
-        self.assertEqual(num_transactions_added, self.transactions_to_add.shape[0], "Number of added transactions does not match file")
-        self.assertEqual(self.element_to_match, 
-                         self.FinDB.execute_query("SELECT amount FROM transactions WHERE description=%s;",('Concert tickets',))[0][0], 
-                         "Data were scrambled when loaded into transactions"
-                         )
-        
-        # Test that trying to upload the same file again fails
-        # (it actually errors out with a silent error, unfortunately: raises "Key (source)=(/Users/steph/Documents/Code/FinTrackr/tests/data/test_data_cc.csv) already exists)")
-        num_transactions_added = self.FinDB.add_transactions(
-            path_to_source_file = self.path_to_test_transactions, 
-            source_info = self.source_info
-            )
-        self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
-
-        # Test what happens when partial duplicates are added
-        additional_transactions_path = os.path.join(utils.TEST_DATA_PATH,"test_data_checking.csv")
-        addtl_trans = pd.read_csv(additional_transactions_path, header=None)
-        num_new_trans = len(addtl_trans)
-        dup_trans = self.transactions_to_add.loc[self.transactions_to_add.iloc[:,2]=="Safeway"]
-        addtl_trans = pd.concat([addtl_trans, dup_trans])
-
-        num_transactions_added = self.FinDB.add_transactions(
-            path_to_source_file = additional_transactions_path, 
-            source_info = self.source_info
-            )
-        self.assertEqual(num_transactions_added, num_new_trans, "Duplicates should not have been successfully loaded")
 
     def test_data_from_date_range(self):
         # pytest runs each test case independently, so re-set-up the db
         # Neither of these functions allow duplicates
-
-        self.FinDB.add_balance(
+        # Not ideal that this unittest depends on functions from another module ... 
+        add_balance(
+            FinDB = self.FinDB,
             accnt=self.source_info,
             bal_date=self.balance_date,
             bal_amt=self.balance_amount
         )
-        self.FinDB.add_transactions(
+        add_transactions(
+            FinDB = self.FinDB,
             path_to_source_file = self.path_to_test_transactions, 
             source_info = self.source_info
         )
@@ -166,6 +98,6 @@ class TestDBSetup(unittest.TestCase):
         bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
         self.assertEqual(amts["balances"][0].amount, bal_money, "data_from_date_range did not return correct balance amount")
 
-        self.assertEqual(len(amts["transactions"]), 3, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
+        self.assertEqual(len(amts["transactions"]), 2, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
 
 

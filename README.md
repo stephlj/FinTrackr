@@ -16,17 +16,10 @@ Security: the database runs locally, nothing leaves your machine.
 
 Currently the only interface is running scripts in a terminal. 
 
-These scripts do additional input handling (e.g. of csv formats) that the methods they call do not.
-
 Dates are always assumed to be in format `%m/%d/%Y`, as in `10/3/2026`.
 
-If your input files have headers, specify how the posted date, amount, and transaction description (if applicable)
-are represented in the header in the config file, under the `input_files` section. Multiple possibilities are allowed
+If your transcation csvs have headers, specify in the config file how the posted date, amount, and transaction description are represented in the header, under the `input_files` section. Multiple possibilities are allowed
 (e.g., "Post Date" and "Date" can both be listed as options under `date_header`.)
-
-Because I'm not passing around a FinDB object, I can't use mocking to test these; and 
-I can't use a testing instance of the db because I'm loading the db name from a config ... 
-I may change those design decisions, but right now the CLI scripts are *untested*.
 
 ### Log transactions in the db
 
@@ -42,11 +35,16 @@ where:
 - `<account_name>` is the name of an account in the db which had these transactions. 
 In the db schema, this is the `name` field of the `data_sources` table.
 
-- `<filepath>` is the full path to a csv with columns representing date, transaction amount, and description
+- `<filepath>` is the full path to a csv with columns representing date, transactions amounts, and description.
+Since this csv is determined by the bank, we tolerate headers vs no header.
+If your bank's csv has a header, specify the headers for columns represented posted date, amount, and description
+in the config. If you have data from multiple banks with different formats, you can provide a list of options for each
+column.
+If your bank's csv has no header, Fintrackr will try to infer the correct columns based on types.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
-### Log account balances in the db
+### Log balances in the db
 
 To log a list of account balances (amounts on dates) into the db from a csv:
 
@@ -57,16 +55,16 @@ python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw
 ```
 
 where:
-- `<account_name>` is the name of an account in the db for which to record balances. 
+- `<account_name>` is the name of an account in the db which had these balances. 
 In the db schema, this is the `name` field of the `data_sources` table.
 
-- `<filepath>` is the full path to a csv with columns representing date and balance on that date
+- `<filepath>` is the full path to a csv with columns representing date and amount. 
+Since these are user-generated (not from a bank), we insist they have a header with columns `Date` 
+and `Amount` (case insensitive).
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
-To log a single balance directly, use the `add_balance` method of the `FinDB` class.
-
-*TODO this is not ideal - a lot of duplicated code between load_transactions and load_balances.*
+To log a single balance directly, use the `add_balance` function in the `load_data` module.
 
 ### Plot account balances
 

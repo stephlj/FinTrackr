@@ -1,3 +1,7 @@
+# test_SQL_to_EDL.py
+#
+# Copyright (c) 2025 Stephanie Johnson
+
 import unittest
 import os
 

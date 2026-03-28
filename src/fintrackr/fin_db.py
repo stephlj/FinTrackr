@@ -2,12 +2,11 @@
 #
 # Copyright (c) 2025 Stephanie Johnson
 """
-Class that connects to the database and manages interactions with it
-(adding transasctions, etc).
+Class that connects to the database and manages interactions with it.
 
 This is the database access layer; business logic should be elsewhere.
 
-Copyright (c) 2025 Stephanie Johnson
+Copyright (c) 2025, 2026 Stephanie Johnson
 """
 
 import psycopg
@@ -16,7 +15,6 @@ import os
 from typing import List
 
 from datetime import date
-from decimal import Decimal
 
 from fintrackr.utils import Transaction, Col_Def, DEFAULT_LOGGING_FORMAT
 
@@ -39,7 +37,7 @@ class FinDB:
             # Ignore any erros during shutdown
             pass
     
-    def _execute_action(self, query: str) -> str:
+    def execute_action(self, query: str) -> str:
         """
         Convenience function. Execute an action for which I want the response message, not a fetch.
 
@@ -195,13 +193,13 @@ class FinDB:
             rows_before = 0
         if rows_before != 0:
             logger.info("Staging table still exists with content before loading new file")
-            r = self._execute_action("DROP TABLE staging;")
+            r = self.execute_action("DROP TABLE staging;")
             if r != "DROP TABLE":
                 logger.error("Unable to drop staging table")
                 raise ValueError("Unable to drop staging table before loading new file")
         
         col_and_type = ", ".join(f'{a} {b}' for a, b in csv_columns)
-        r1 = self._execute_action(f"CREATE TABLE staging ({col_and_type}); ")
+        r1 = self.execute_action(f"CREATE TABLE staging ({col_and_type}); ")
         if r1 != "CREATE TABLE":
             logger.error("Failed to create staging table")
             raise ValueError("Failed to create staging table before loading new file")
@@ -222,6 +220,8 @@ class FinDB:
         """
         Add source to data_source table if it doesn't exist.
 
+        Utility used in multiple places.
+
         Parameters
         ----------
         source_name : str
@@ -240,193 +240,12 @@ class FinDB:
                raise ValueError("Could not insert new data source in data_sources table")
         
         return source_name_tuple[0][0]
-
-
-    def add_balance(self, accnt: str, bal_date: date, bal_amt: str) -> int:
-        """
-        Log a balance in the db. Will not allow exact duplicates to be added.
-
-        Parameters
-        ----------
-        accnt: str
-            Must exist in data_sources table as a name.
-        bal_date : datetime.date
-            Date that this was the account's balance.
-        bal_amt : str
-            Account balance on balance_date
-        
-        Return
-        ------
-        int, success (1) or not (0)
-        """
-
-        # Make sure bal_amt is formatted so it's recognized as money
-        bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
-
-        accnt_id = self.add_data_source(source_name=accnt)
-
-        try:
-            rows_added = self.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
-        except Exception as e:
-            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {rows_added}")
-            raise ValueError(f"Insertion into balances table failed with exception: {e}")
-        
-        if rows_added is not None:
-            if len(rows_added) == 1:
-                return 1
-            else:
-                logger.exception("Insertion into balances table returned something unexpected: {rows_added}")
-                raise ValueError("Insertion into balances table returned something unexpected: {rows_added}")
-        else:
-            logger.info(f"No rows added to balances table; balance of {bal_amt} on date {bal_date} for account {accnt_id} may already exist")
-            return 0
-        
-    def add_balances_from_csv(self, accnt: str, path_to_balances: str) -> int:
-        """
-        Load balances from csv into db.
-        Will not allow duplicates to be added.
-
-        Parameters
-        ----------
-        accnt: str
-            Must exist in data_sources table as a name.
-        path_to_balances : str
-            Filepath to csv to load.
-            Columns must be Date, Amount
-        
-        Return
-        ------
-        int
-            Number of balances added
-        """        
-
-        num_new_balances = 0
-
-        # Get id for this source_info or add if it doesn't exist
-        accnt_id = self.add_data_source(source_name=accnt)
-
-        staging_cols = [Col_Def(col_name="date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
-        ]
-
-        num_staged_balances = self.csv_to_staging(csv_path=path_to_balances, csv_columns=staging_cols)
-
-        if num_staged_balances == 0:
-            logger.info("No balances loaded from source file to staging table; no balances will be added to db")
-            return num_new_balances
-        
-        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-            "SELECT date, amount, %s " \
-            "FROM staging " \
-            "RETURNING *;"
-        
-        try:
-            all_new_balances = self.execute_query(balances_query, (accnt_id,))
-        except Exception as e:
-            logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {all_new_balances}")
-            raise ValueError(f"Insertion into balances table failed with exception: {e}")
-        
-        self._execute_action("DROP TABLE staging;")
-        
-        if all_new_balances is not None:
-            return len(all_new_balances)
-        else:
-            logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
-            return 0
-
-    def add_transactions(self, path_to_source_file: str, source_info: str) -> None:
-        """
-        Load transactions from a file and log the addition of these transactions
-        in the data_load_metadata table.
-
-        Only new transactions are added; duplicates (which have identity across the 3
-        input columns of Date, Amount, and Description with an existing transaction row)
-        are ignored.
-
-        Parameters
-        ----------
-        path_to_source_file: str
-            Path to a csv where every row is a transaction.
-        source_info: str
-            Are these transactions from credit card, checking account, etc
-            This is the "name" field in the data_sources table.
-            It will be added if it doesn't already exist.
-
-        Returns
-        -------
-        int
-            Number of transactions added.
-        """
-
-        num_new_transactions = 0
-
-        staging_cols = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
-                Col_Def(col_name="description", col_type="text")
-        ]
-
-        num_staged_transactions = self.csv_to_staging(csv_path=path_to_source_file, csv_columns=staging_cols)
-
-        if num_staged_transactions == 0:
-            logger.info("No transactions loaded from source file to staging table; no transactions will be added")
-            return num_new_transactions
-        
-        # Get id for this source_info or add if it doesn't exist
-        source_info_id = self.add_data_source(source_info)
-
-        today_date = date.today()
-        
-        transactions_query = "WITH joined AS ( " \
-            "    SELECT s.* " \
-            "    FROM staging s " \
-            "    LEFT JOIN transactions t ON " \
-            "        t.posted_date = s.posted_date AND " \
-            "        t.amount = s.amount AND " \
-            "        t.description = s.description " \
-            "    WHERE t.id IS NULL " \
-            "), " \
-            "meta AS ( " \
-            "    INSERT INTO data_load_metadata " \
-            "        (date_added, username, source, data_source_id) " \
-            "    VALUES (%s, %s, %s, %s)" \
-            "    " \
-            "    RETURNING id " \
-            ") " \
-            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) " \
-            "SELECT posted_date, amount, description, meta.id " \
-            "FROM joined, meta " \
-            "RETURNING *;"
-            
-        try:
-            all_new_transactions = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info_id))
-        except Exception as e:
-            logger.exception(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
-            raise ValueError(f"Insertion into transactions table failed with exception: {e}")
-        
-        if all_new_transactions is None:
-            logger.error("No transactions inserted")
-            # Check if all new transactions to load are already in db and that's why it failed:
-            check_dups = "SELECT s.* " \
-                "    FROM staging s " \
-                "    LEFT JOIN transactions t ON " \
-                "        t.posted_date = s.posted_date AND " \
-                "        t.amount = s.amount AND " \
-                "        t.description = s.description " \
-                "    WHERE t.id IS NULL;"
-            if len(self.execute_query(check_dups)) == 0:
-                logger.error("All staged transactions are already in transactions table")
-                return 0
-            else:
-                raise ValueError("No transactions inserted, but not because all new transactions were in db already")
-
-        # Drop staging table
-        self._execute_action("DROP TABLE staging;")
-
-        return len(all_new_transactions)
     
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
-        Return result of SELECT statement to the db as specified below.
+        Get transactions and balances in a date range.
+
+        Utility used by multiple other functions.
         
         Parameters
         ----------

@@ -5,3 +5,8 @@
 db:
   db_name: test_fin_db
   admin_name: test_admin
+
+transaction_headers:
+  posted_date: ["Post Date", "Date"]
+  amount: ["Amount"]
+  description: ["Description"]
