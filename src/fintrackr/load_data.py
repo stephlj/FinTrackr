@@ -9,7 +9,7 @@ import logging
 
 from datetime import date
 from decimal import Decimal
-from psycopg import errors as psql_errors
+from psycopg import errors as psql_errors # psql_errors.UniqueViolation
 
 import fintrackr.fin_db
 from fintrackr.utils import CONFIG_PATH, Col_Def
@@ -26,7 +26,7 @@ TRANS_STAGING_COLS = [Col_Def(col_name="posted_date", col_type="date"),
 
 logger = logging.getLogger(__name__)
 
-def add_data_source(db_conn: object, source_name: str) -> int:
+def get_or_add_data_source(db_conn: object, source_name: str) -> int:
         """
         Add source to data_source table if it doesn't exist, and return id.
 
@@ -48,9 +48,11 @@ def add_data_source(db_conn: object, source_name: str) -> int:
         """
         
         source_id_tuple = db_conn.get_data_source_id(source_name=source_name)
-        if source_id_tuple is None:
+        if len(source_id_tuple) == 0:
             logger.info(f"Account name {source_name} doesn't exist; adding to table data_sources")
             source_id_tuple = db_conn.add_data_source(source_name=source_name)
+        else:
+            logger.debug(f"Account name {source_name} exists, returning existing id")
         
         return source_id_tuple[0][0]
 
@@ -77,7 +79,7 @@ def add_balance(FinDB: object, accnt: str, bal_date: date, bal_amt: str) -> int:
     # Make sure bal_amt is formatted so it's recognized as money
     bal_amt = str(Decimal(bal_amt).quantize(Decimal('0.01')))
 
-    accnt_id = FinDB.add_data_source(source_name=accnt)
+    accnt_id = FinDB.get_or_add_data_source(source_name=accnt)
 
     try:
         rows_added = FinDB.execute_query("INSERT INTO balances (accnt_id, date, amount) VALUES (%s, %s, %s) RETURNING *;", (accnt_id, bal_date, bal_amt))
@@ -118,8 +120,7 @@ def add_balances_from_csv(FinDB: object, accnt: str, path_to_balances: str) -> i
 
     num_new_balances = 0
 
-    # Get id for this source_info or add if it doesn't exist
-    accnt_id = FinDB.add_data_source(source_name=accnt)
+    accnt_id = FinDB.get_or_add_data_source(source_name=accnt)
 
     num_staged_balances = FinDB.csv_to_staging(csv_path=path_to_balances, csv_columns=BALS_STAGING_COLS)
 
@@ -180,8 +181,7 @@ def add_transactions(FinDB: object, path_to_source_file: str, source_info: str) 
         logger.info("No transactions loaded from source file to staging table; no transactions will be added")
         return num_new_transactions
     
-    # Get id for this source_info or add if it doesn't exist
-    source_info_id = FinDB.add_data_source(source_info)
+    source_info_id = FinDB.get_or_add_data_source(source_info)
 
     today_date = date.today()
     
