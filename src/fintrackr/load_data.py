@@ -74,7 +74,7 @@ def add_balances(db_conn: object, accnt: int, path_to_balances: str) -> int:
         logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
         return 0
 
-def add_transactions(db_conn: object, path_to_source_file: str, source_info: id) -> None:
+def add_transactions(db_conn: object, path_to_source_file: str, source_info: int) -> None:
     """
     Load transactions from a file and log the addition of these transactions
     in the data_load_metadata table.
@@ -89,7 +89,7 @@ def add_transactions(db_conn: object, path_to_source_file: str, source_info: id)
         FinDB object that manages db access.
     path_to_source_file: str
         Path to a csv where every row is a transaction.
-    source_info: id
+    source_info: int
         id of an account in data_sources
 
     Returns
