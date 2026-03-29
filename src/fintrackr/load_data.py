@@ -57,8 +57,8 @@ def add_balances(db_conn: object, accnt: str, path_to_balances: str) -> int:
     except psql_errors.UniqueViolation as e:
         logger.info(f"Insertion into balances table under account {accnt} failed; all balances are already in the db")
         return 0
-    except psql_errors.something as e:
-        log_msg = f"Insertion into balances tabkle failed with exception {e}; check account name {accnt} exists"
+    except psql_errors.NotNullViolation as e:
+        log_msg = f"Insertion into balances table failed with exception {e}; check account name {accnt} exists in db"
         logger.error(log_msg)
         raise ValueError(log_msg)
     except Exception as e:

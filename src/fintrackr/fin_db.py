@@ -37,43 +37,6 @@ class FinDB:
             # Ignore any erros during shutdown
             pass
     
-    def execute_action(self, query: str) -> str:
-        """
-        Convenience function. Execute an action for which I want the response message, not a fetch.
-
-        Calling function should handle expected exceptions via specific
-        exception classes. No try-except block here.
-
-        Parameters
-        ----------
-        query : str
-            SQL statement to execute
-
-        Returns
-        -------
-        str
-            conn.cursor.statusmessage
-
-        I could wrap this in a transaction, but that's more opaque if something goes sideways,
-        for non-prod situations like FinTrackr.
-
-        For future reference, it would look something like:
-
-        - BEGIN statement or run in ISOLATION_LEVEL_READ_COMMITTED or similar
-        try:
-            with self._cur ...
-        except Exception as e:
-            self._conn.rollback()
-            raise e
-        self._conn.commit()
-
-        """
-        # The with statement automatically closes cursor after execution
-        with self._conn.cursor() as curs: 
-            logger.info(f"Executing query: {query}")
-            curs.execute(query)
-            return curs.statusmessage
-            
     def _import_file(self, dest_table: str, path_to_file: str) -> int:
         """
         To avoid granting permission to read server files, I use a client-side copy
@@ -114,6 +77,45 @@ class FinDB:
                 logger.error(f"Failed to import from file {path_to_file} with exception: {e}")
             finally:
                 return response
+    
+    def execute_action(self, query: str, vals: tuple = ()) -> str:
+        """
+        Convenience function. Execute an action for which I want the response message, not a fetch.
+
+        Calling function should handle expected exceptions via specific
+        exception classes. No try-except block here.
+
+        Parameters
+        ----------
+        query : str
+            SQL statement to execute
+        vals: tuple
+            Values, in order, for any/all %s's in the query string
+
+        Returns
+        -------
+        str
+            conn.cursor.statusmessage
+
+        I could wrap this in a transaction, but that's more opaque if something goes sideways,
+        for non-prod situations like FinTrackr.
+
+        For future reference, it would look something like:
+
+        - BEGIN statement or run in ISOLATION_LEVEL_READ_COMMITTED or similar
+        try:
+            with self._cur ...
+        except Exception as e:
+            self._conn.rollback()
+            raise e
+        self._conn.commit()
+
+        """
+        # The with statement automatically closes cursor after execution
+        with self._conn.cursor() as curs: 
+            logger.info(f"Executing query: {query}, with vals: {vals}")
+            curs.execute(query, vals)
+            return curs.statusmessage
 
         
     def execute_query(self, query: str, vals: tuple = ()) -> List[tuple] | None:
@@ -226,9 +228,18 @@ class FinDB:
         # Return number of inserted rows.
 
         balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-            "SELECT date, amount FROM staging " \
-            "SELECT id FROM data_sources WHERE name=%s" \
+            "SELECT s.date, s.amount, (select id from data_sources where name = %s) " \
+            "FROM staging AS s " \
             "RETURNING *;"
+        
+        # For reference, another way of doing the same thing:
+        # balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+        #     "SELECT s.date, s.amount, d.id " \
+        #     "FROM staging AS s " \
+        #     "CROSS JOIN data_sources AS d WHERE name = %s "\
+        #     "RETURNING *;"
+        # However this just returns an empty list if name doesn't exist, rather than a NotNullViolation, so
+        # preferring the first version
 
         rows_added = self.execute_query(balances_query, (accnt_name,))
 

@@ -77,10 +77,10 @@ class TestDB(unittest.TestCase):
         self.execute_action("CREATE TABLE staging (date date, amount money);")
         # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
         self.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), 5000.00))
-        with self.assertRaises(something):
+        with self.assertRaises(psql_errors.NotNullViolation):
             self.add_balances_from_staging(accnt_name="primary_checking")
         
-        self.add_data_source(source_name = "primary_checking")
+        _ = self.add_data_source(source_name = "primary_checking")
         num_new_bals = self.add_balances_from_staging(accnt_name="primary_checking")
         self.assertEqual(num_new_bals, 1)
 
