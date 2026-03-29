@@ -102,56 +102,21 @@ def add_transactions(db_conn: object, path_to_source_file: str, source_info: int
     if num_staged_transactions == 0:
         logger.info("No transactions loaded from source file to staging table; no transactions will be added")
         return num_new_transactions
-    
-    today_date = date.today()
-    
-    transactions_query = "WITH joined AS ( " \
-        "    SELECT s.* " \
-        "    FROM staging s " \
-        "    LEFT JOIN transactions t ON " \
-        "        t.posted_date = s.posted_date AND " \
-        "        t.amount = s.amount AND " \
-        "        t.description = s.description " \
-        "    WHERE t.id IS NULL " \
-        "), " \
-        "meta AS ( " \
-        "    INSERT INTO data_load_metadata " \
-        "        (date_added, username, source, data_source_id) " \
-        "    VALUES (%s, %s, %s, %s)" \
-        "    " \
-        "    RETURNING id " \
-        ") " \
-        "INSERT INTO transactions (posted_date, amount, description, metadatum_id) " \
-        "SELECT posted_date, amount, description, meta.id " \
-        "FROM joined, meta " \
-        "RETURNING *;"
         
     try:
-        all_new_transactions = db_conn.execute_query(transactions_query, (today_date, db_conn.user, path_to_source_file, source_info))
+        num_new_transactions = db_conn.add_transactions_from_staging(path_to_source_file=path_to_source_file, source_info=source_info)
     except Exception as e:
-        logger.exception(f"Insertion into transactions table failed with exception: {e}; return from query: {num_new_transactions}")
-        raise ValueError(f"Insertion into transactions table failed with exception: {e}")
+        log_msg = f"Insertion into transactions table failed with exception: {e}"
+        logger.exception(log_msg)
+        raise ValueError(log_msg)
     
-    if all_new_transactions is None:
-        logger.error("No transactions inserted")
-        # Check if all new transactions to load are already in db and that's why it failed:
-        check_dups = "SELECT s.* " \
-            "    FROM staging s " \
-            "    LEFT JOIN transactions t ON " \
-            "        t.posted_date = s.posted_date AND " \
-            "        t.amount = s.amount AND " \
-            "        t.description = s.description " \
-            "    WHERE t.id IS NULL;"
-        if len(db_conn.execute_query(check_dups)) == 0:
-            logger.error("All staged transactions are already in transactions table")
-            return 0
-        else:
-            raise ValueError("No transactions inserted, but not because all new transactions were in db already")
-
+    if num_new_transactions == 0:
+        logger.info("All staged transactions are already in transactions table")
+            
     # Drop staging table
     db_conn.execute_action("DROP TABLE staging;")
 
-    return len(all_new_transactions)
+    return num_new_transactions
 
 def load_data_from_CLI(accnt_name: str, 
                        filepath: str, 

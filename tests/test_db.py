@@ -76,21 +76,41 @@ class TestDB(unittest.TestCase):
         # For test simplicity and readability, keeping as is:
         self.execute_action("CREATE TABLE staging (date date, amount money);")
         # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
-        self.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), 5000.00))
+        self.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00'))
+        accnt = "primary_checking"
         with self.assertRaises(psql_errors.NotNullViolation):
-            self.add_balances_from_staging(accnt_name="primary_checking")
+            self.add_balances_from_staging(accnt_name=accnt)
         
-        _ = self.add_data_source(source_name = "primary_checking")
-        num_new_bals = self.add_balances_from_staging(accnt_name="primary_checking")
+        _ = self.add_data_source(source_name = accnt)
+        num_new_bals = self.add_balances_from_staging(accnt_name=accnt)
         self.assertEqual(num_new_bals, 1)
 
         # Make sure I can't add duplicates
         with self.assertRaises(psql_errors.UniqueViolation):
-            self.add_balances_from_staging(accnt_name="primary_checking")
+            self.add_balances_from_staging(accnt_name=accnt)
         
         # Clean up
         self.execute_action("DROP TABLE staging;")
 
+    def test_add_transactions_from_staging(self):
+        # Create a staging table
+        # Note this test will BREAK if I change the balances table schema
+        self.execute_action("CREATE TABLE staging (posted_date date, amount money, description_text);")
+        self.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00', 'Concert tickets'))
+        accnt = "primary_cc"
+        with self.assertRaises(psql_errors.NotNullViolation):
+            self.add_transactions_from_staging(accnt_name=accnt)
+        
+        _ = self.add_data_source(source_name = accnt)
+        num_new_bals = self.add_transactions_from_staging(accnt_name=accnt)
+        self.assertEqual(num_new_bals, 1)
+
+        # Make sure I can't add duplicates
+        num_dup_trans = self.add_transactions_from_staging(accnt_name=accnt)
+        self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
+
+        self.execute_action("DROP TABLE staging;")
+    
     def test_data_from_date_range(self):
         # pytest runs each test case independently, so re-set-up the db
         # Neither of these functions allow duplicates

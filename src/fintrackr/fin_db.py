@@ -244,8 +244,54 @@ class FinDB:
         rows_added = self.execute_query(balances_query, (accnt_name,))
 
         return len(rows_added)
-            
+    
+    def add_transactions_from_staging(self, path_to_source_file: str, source_info: str) -> int:
+        # Insert transactions that are in a staging table into the transactions table of the db.
+        # Return number of inserted rows. Returns zero if all transactions in staging are already in db.
 
+        # Log that these transactions were added today in the metadata table
+        today_date = date.today()
+    
+        transactions_query = "WITH joined AS ( " \
+            "    SELECT s.* " \
+            "    FROM staging s " \
+            "    LEFT JOIN transactions t ON " \
+            "        t.posted_date = s.posted_date AND " \
+            "        t.amount = s.amount AND " \
+            "        t.description = s.description " \
+            "    WHERE t.id IS NULL " \
+            "), " \
+            "meta AS ( " \
+            "    INSERT INTO data_load_metadata " \
+            "        (date_added, username, source, data_source_id) " \
+            "    VALUES (%s, %s, %s, %s)" \
+            "    " \
+            "    RETURNING id " \
+            ") " \
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) " \
+            "SELECT posted_date, amount, description, meta.id " \
+            "FROM joined, meta " \
+            "RETURNING *;"
+    
+        rows_added = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info))
+
+        if len(rows_added) == 0:
+            # Check if nothing was added because everything in staging is already in db.
+            # If not, raise error.
+            check_dups = "SELECT s.* " \
+                "    FROM staging s " \
+                "    LEFT JOIN transactions t ON " \
+                "        t.posted_date = s.posted_date AND " \
+                "        t.amount = s.amount AND " \
+                "        t.description = s.description " \
+                "    WHERE t.id IS NULL;"
+            if len(self.execute_query(check_dups)) != 0:
+                log_msg = "No transactions inserted from staging, but NOT because all staged transactions were in db already"
+                logger.error(log_msg)
+                raise ValueError(log_msg)
+            
+        return len(rows_added)
+    
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
         Get transactions and balances in a date range.
