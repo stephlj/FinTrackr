@@ -251,29 +251,86 @@ class FinDB:
 
         # Log that these transactions were added today in the metadata table
         today_date = date.today()
+
+        # Option 1:
+        source_id_tuple = self.get_data_source_id(source_info)
+        if len(source_id_tuple) == 0:
+            raise psycopg.errors.NotNullViolation(f"Account {source_info} does not exist; cannot add transactions for that account")
+        source_id = source_id_tuple[0][0]
+        transactions_query = """
+            WITH joined AS ( 
+                SELECT s.* 
+                FROM staging s 
+                LEFT JOIN transactions t ON 
+                    t.posted_date = s.posted_date AND 
+                    t.amount = s.amount AND 
+                    t.description = s.description  
+                    WHERE t.id IS NULL 
+                ), 
+                meta AS ( 
+                    INSERT INTO data_load_metadata 
+                        (date_added, username, source, data_source_id)
+                    VALUES (%s, %s, %s, %s) 
+                    RETURNING id 
+                ) 
+            ) 
+            INSERT INTO transactions (posted_date, amount, description, metadatum_id) 
+            SELECT posted_date, amount, description, meta.id 
+            FROM joined, meta 
+            RETURNING *;
+            """
+        rows_added = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_id))
     
-        transactions_query = "WITH joined AS ( " \
-            "    SELECT s.* " \
-            "    FROM staging s " \
-            "    LEFT JOIN transactions t ON " \
-            "        t.posted_date = s.posted_date AND " \
-            "        t.amount = s.amount AND " \
-            "        t.description = s.description " \
-            "    WHERE t.id IS NULL " \
-            "), " \
-            "meta AS ( " \
-            "    INSERT INTO data_load_metadata " \
-            "        (date_added, username, source, data_source_id) " \
-            "    VALUES (%s, %s, %s, %s)" \
-            "    " \
-            "    RETURNING id " \
-            ") " \
-            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) " \
-            "SELECT posted_date, amount, description, meta.id " \
-            "FROM joined, meta " \
-            "RETURNING *;"
-    
-        rows_added = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info))
+        # Option 2: This returns an empty set if EITHER all transactions in staging are aleady in db,
+        # OR account isn't in data_sources
+        # transactions_query = """
+        #     WITH joined AS ( 
+        #         SELECT s.* 
+        #         FROM staging s 
+        #         LEFT JOIN transactions t ON 
+        #             t.posted_date = s.posted_date AND 
+        #             t.amount = s.amount AND 
+        #             t.description = s.description  
+        #             WHERE t.id IS NULL 
+        #         ), 
+        #         meta AS ( 
+        #             INSERT INTO data_load_metadata 
+        #                 (date_added, username, source, data_source_id)
+        #             SELECT %s, %s, %s, id
+        #             FROM data_sources WHERE name=%s 
+        #             RETURNING id  
+        #     ) 
+        #     INSERT INTO transactions (posted_date, amount, description, metadatum_id) 
+        #     SELECT posted_date, amount, description, meta.id 
+        #     FROM joined, meta 
+        #     RETURNING *;
+        #     """
+        # rows_added = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info))
+
+        # Option 3: This returns the NOTNULLVIOLATION I want if source_info doesn't exist in data_sources,
+        # but is apparently pretty janky SQL ... 
+        # transactions_query = """
+        #     WITH joined AS ( 
+        #         SELECT s.* 
+        #         FROM staging s 
+        #         LEFT JOIN transactions t ON 
+        #             t.posted_date = s.posted_date AND 
+        #             t.amount = s.amount AND 
+        #             t.description = s.description  
+        #             WHERE t.id IS NULL 
+        #         ), 
+        #         meta AS ( 
+        #             INSERT INTO data_load_metadata 
+        #                 (date_added, username, source, data_source_id)
+        #             VALUES (%s, %s, %s, (SELECT id FROM data_sources WHERE name=%s)) 
+        #             RETURNING id  
+        #     ) 
+        #     INSERT INTO transactions (posted_date, amount, description, metadatum_id) 
+        #     SELECT posted_date, amount, description, meta.id 
+        #     FROM joined, meta 
+        #     RETURNING *;
+        #     """
+        # rows_added = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info))
 
         if len(rows_added) == 0:
             # Check if nothing was added because everything in staging is already in db.

@@ -105,6 +105,10 @@ def add_transactions(db_conn: object, path_to_source_file: str, source_info: int
         
     try:
         num_new_transactions = db_conn.add_transactions_from_staging(path_to_source_file=path_to_source_file, source_info=source_info)
+    except psql_errors.NotNullViolation as e:
+        log_msg = f"Insertion into balances table failed with exception {e}; check account name {source_info} exists in db"
+        logger.error(log_msg)
+        raise ValueError(log_msg)
     except Exception as e:
         log_msg = f"Insertion into transactions table failed with exception: {e}"
         logger.exception(log_msg)

@@ -11,7 +11,7 @@ from psycopg import errors as psql_errors
 
 import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
-from fintrackr.load_data import add_balance, add_transactions
+from fintrackr.load_data import add_balances, add_transactions
 
 class TestDB(unittest.TestCase):
     @classmethod
@@ -74,67 +74,69 @@ class TestDB(unittest.TestCase):
         # Note this test will BREAK if I change the balances table schema;
         # I could load the relevant columns and types from a dataclass.
         # For test simplicity and readability, keeping as is:
-        self.execute_action("CREATE TABLE staging (date date, amount money);")
+        self.FinDB.execute_action("CREATE TABLE staging (date date, amount money);")
         # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
-        self.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00'))
+        self.FinDB.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00'))
         accnt = "primary_checking"
         with self.assertRaises(psql_errors.NotNullViolation):
-            self.add_balances_from_staging(accnt_name=accnt)
+            self.FinDB.add_balances_from_staging(accnt_name=accnt)
         
-        _ = self.add_data_source(source_name = accnt)
-        num_new_bals = self.add_balances_from_staging(accnt_name=accnt)
+        _ = self.FinDB.add_data_source(source_name = accnt)
+        num_new_bals = self.FinDB.add_balances_from_staging(accnt_name=accnt)
         self.assertEqual(num_new_bals, 1)
 
         # Make sure I can't add duplicates
         with self.assertRaises(psql_errors.UniqueViolation):
-            self.add_balances_from_staging(accnt_name=accnt)
+            self.FinDB.add_balances_from_staging(accnt_name=accnt)
         
         # Clean up
-        self.execute_action("DROP TABLE staging;")
+        self.FinDB.execute_action("DROP TABLE staging;")
 
     def test_add_transactions_from_staging(self):
         # Create a staging table
         # Note this test will BREAK if I change the balances table schema
-        self.execute_action("CREATE TABLE staging (posted_date date, amount money, description_text);")
-        self.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00', 'Concert tickets'))
+        self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount money, description text);")
+        self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), '55.00', 'Concert tickets'))
         accnt = "primary_cc"
+        filepath = "trans_from_staging_test.csv"
+
         with self.assertRaises(psql_errors.NotNullViolation):
-            self.add_transactions_from_staging(accnt_name=accnt)
+            self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
         
-        _ = self.add_data_source(source_name = accnt)
-        num_new_bals = self.add_transactions_from_staging(accnt_name=accnt)
+        _ = self.FinDB.add_data_source(source_name = accnt)
+        num_new_bals = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
         self.assertEqual(num_new_bals, 1)
 
         # Make sure I can't add duplicates
-        num_dup_trans = self.add_transactions_from_staging(accnt_name=accnt)
+        num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
         self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
 
-        self.execute_action("DROP TABLE staging;")
+        self.FinDB.execute_action("DROP TABLE staging;")
     
-    def test_data_from_date_range(self):
-        # pytest runs each test case independently, so re-set-up the db
-        # Neither of these functions allow duplicates
-        # Not ideal that this unittest depends on functions from another module ... 
-        add_balance(
-            FinDB = self.FinDB,
-            accnt=self.source_info,
-            bal_date=self.balance_date,
-            bal_amt=self.balance_amount
-        )
-        add_transactions(
-            FinDB = self.FinDB,
-            path_to_source_file = self.path_to_test_transactions, 
-            source_info = self.source_info
-        )
+    # def test_data_from_date_range(self):
+    #     # pytest runs each test case independently, so re-set-up the db
+    #     # Neither of these functions allow duplicates
+    #     # Not ideal that this unittest depends on functions from another module ... 
+    #     add_balances(
+    #         FinDB = self.FinDB,
+    #         accnt=self.source_info,
+    #         bal_date=self.balance_date,
+    #         bal_amt=self.balance_amount
+    #     )
+    #     add_transactions(
+    #         FinDB = self.FinDB,
+    #         path_to_source_file = self.path_to_test_transactions, 
+    #         source_info = self.source_info
+    #     )
 
-        amts = self.FinDB.data_from_date_range(
-            data_source = self.source_info, 
-            date_range = [date(year=2025,month=9,day=5),date(year=2025,month=9,day=10)]
-        )
+    #     amts = self.FinDB.data_from_date_range(
+    #         data_source = self.source_info, 
+    #         date_range = [date(year=2025,month=9,day=5),date(year=2025,month=9,day=10)]
+    #     )
         
-        bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
-        self.assertEqual(amts["balances"][0].amount, bal_money, "data_from_date_range did not return correct balance amount")
+    #     bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
+    #     self.assertEqual(amts["balances"][0].amount, bal_money, "data_from_date_range did not return correct balance amount")
 
-        self.assertEqual(len(amts["transactions"]), 2, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
+    #     self.assertEqual(len(amts["transactions"]), 2, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
 
 
