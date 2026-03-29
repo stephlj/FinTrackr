@@ -7,6 +7,7 @@ import subprocess, os
 import pandas as pd
 
 from datetime import date
+from psycopg import errors as psql_errors
 
 import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
@@ -26,10 +27,6 @@ class TestDB(unittest.TestCase):
         cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
         cls.element_to_match = str(cls.transactions_to_add.iloc[0,1])
         cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
-
-        cls.source_info = "cc"
-        cls.balance_date = date(year=2025, month=9, day=9)
-        cls.balance_amount = 5000.00
 
     @classmethod
     def tearDownClass(cls):
@@ -70,9 +67,29 @@ class TestDB(unittest.TestCase):
         self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), self.transactions_to_add.shape[0], "Staging table wasn't cleared")
 
-    def test_add_data_source(self):
-        # This is tested in several other places
-        pass
+    def test_add_balances_from_staging(self):
+        # Not sure I need this test, but it confirms expected behavior for learning purposes
+        
+        # Create a staging table
+        # Note this test will BREAK if I change the balances table schema;
+        # I could load the relevant columns and types from a dataclass.
+        # For test simplicity and readability, keeping as is:
+        self.execute_action("CREATE TABLE staging (date date, amount money);")
+        # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
+        self.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), 5000.00))
+        with self.assertRaises(something):
+            self.add_balances_from_staging(accnt_name="primary_checking")
+        
+        self.add_data_source(source_name = "primary_checking")
+        num_new_bals = self.add_balances_from_staging(accnt_name="primary_checking")
+        self.assertEqual(num_new_bals, 1)
+
+        # Make sure I can't add duplicates
+        with self.assertRaises(psql_errors.UniqueViolation):
+            self.add_balances_from_staging(accnt_name="primary_checking")
+        
+        # Clean up
+        self.execute_action("DROP TABLE staging;")
 
     def test_data_from_date_range(self):
         # pytest runs each test case independently, so re-set-up the db

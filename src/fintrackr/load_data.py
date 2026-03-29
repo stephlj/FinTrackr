@@ -8,8 +8,7 @@ import yaml
 import logging
 
 from datetime import date
-from decimal import Decimal
-from psycopg import errors as psql_errors # psql_errors.UniqueViolation
+from psycopg import errors as psql_errors
 
 import fintrackr.fin_db
 from fintrackr.utils import CONFIG_PATH, Col_Def
@@ -26,7 +25,7 @@ TRANS_STAGING_COLS = [Col_Def(col_name="posted_date", col_type="date"),
 
 logger = logging.getLogger(__name__)
     
-def add_balances(db_conn: object, accnt: int, path_to_balances: str) -> int:
+def add_balances(db_conn: object, accnt: str, path_to_balances: str) -> int:
     """
     Load balances from csv into db.
     Will not allow duplicates to be added.
@@ -35,8 +34,8 @@ def add_balances(db_conn: object, accnt: int, path_to_balances: str) -> int:
     ----------
     db_conn : object
         FinDB object for db access
-    accnt: int
-        id of the source in the db
+    accnt: str
+        Account name to log balances for (name in data_sources)
     path_to_balances : str
         Filepath to csv to load.
         Columns must be Date, Amount (in that order)
@@ -44,35 +43,32 @@ def add_balances(db_conn: object, accnt: int, path_to_balances: str) -> int:
     Return
     ------
     int
-        Number of balances added
+        Number of balances added. Zero if all balances to add were already in db.
     """        
-
-    num_new_balances = 0
 
     num_staged_balances = db_conn.csv_to_staging(csv_path=path_to_balances, csv_columns=BALS_STAGING_COLS)
 
     if num_staged_balances == 0:
         logger.info("No balances loaded from source file to staging table; no balances will be added to db")
-        return num_new_balances
-    
-    balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-        "SELECT date, amount, %s " \
-        "FROM staging " \
-        "RETURNING *;"
+        return 0
     
     try:
-        all_new_balances = db_conn.execute_query(balances_query, (accnt,))
+        num_new_balances = db_conn.add_balances_from_staging(accnt)
+    except psql_errors.UniqueViolation as e:
+        logger.info(f"Insertion into balances table under account {accnt} failed; all balances are already in the db")
+        return 0
+    except psql_errors.something as e:
+        log_msg = f"Insertion into balances tabkle failed with exception {e}; check account name {accnt} exists"
+        logger.error(log_msg)
+        raise ValueError(log_msg)
     except Exception as e:
-        logger.exception(f"Insertion into balances table failed with exception: {e}; return from query: {all_new_balances}")
-        raise ValueError(f"Insertion into balances table failed with exception: {e}")
+        log_msg = f"Insertion into balances table failed with exception: {e}"
+        logger.exception(log_msg)
+        raise ValueError(log_msg)
     
     db_conn.execute_action("DROP TABLE staging;")
     
-    if all_new_balances is not None:
-        return len(all_new_balances)
-    else:
-        logger.info(f"No rows added to balances table; all balances in file {path_to_balances} may be in db")
-        return 0
+    return len(num_new_balances)
 
 def add_transactions(db_conn: object, path_to_source_file: str, source_info: int) -> None:
     """
@@ -260,18 +256,17 @@ def load_data_from_CLI(accnt_name: str,
         # Perhaps redundant to check both conditions, but: data source doesn't exist and user wanted to add a new one
         logger.info(f"Adding account name {accnt_name} as new data source")
         source_id_tuple = db_conn.add_data_source(source_name=accnt_name)  
-    accnt_id = source_id_tuple[0][0]
     
     if trans:
         result = add_transactions(
                 db_conn = db_conn,
                 path_to_source_file = filepath, 
-                source_info = accnt_id
+                source_info = accnt_name
                 )
     else:
         result = add_balances(
             db_conn=db_conn, 
-            accnt = accnt_id, 
+            accnt = accnt_name, 
             path_to_balances=filepath
             )
 

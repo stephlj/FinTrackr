@@ -59,10 +59,12 @@ class TestLoadData(unittest.TestCase):
     def test_add_balances(self):        
         
         balances_to_add = pd.read_csv(self.path_to_test_bals, header=None)
-        
+        name = "checking"
+        self.FinDB.add_data_source(source_name = name)
+
         num_balances_added = fintrackr.load_data.add_balances(
                                     FinDB = self.FinDB, 
-                                    accnt = self.source_id, 
+                                    accnt = name, 
                                     path_to_balances = self.path_to_test_bals
                                     )
         self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
@@ -70,19 +72,20 @@ class TestLoadData(unittest.TestCase):
         # Check we can't add the same balances again:
         num_balances_added2 = fintrackr.load_data.add_balances(
                                     FinDB = self.FinDB,
-                                    accnt = self.source_id, 
+                                    accnt = name, 
                                     path_to_balances = self.path_to_test_bals
                                     )
         self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
 
         # Check that we can assign balances to a different account
-        new_source_id = self.FinDB.add_data_source(source_name = "bals_test_accnt")
+        new_name = "new_checking"
+        self.FinDB.add_data_source(source_name = new_name)
         num_balances_added3 = fintrackr.load_data.add_balances(
                                     FinDB = self.FinDB,
-                                    accnt = new_source_id, 
+                                    accnt = new_name, 
                                     path_to_balances = self.path_to_test_bals
                                     )
-        self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add balances to a different account")
+        self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add duplicate balances to a different account")
     
     def test_add_transactions(self):
         # Add_transactions calls csv_to_staging (which we test separately above)

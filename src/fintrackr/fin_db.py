@@ -220,6 +220,20 @@ class FinDB:
     def add_data_source(self, source_name: str) -> int:
         # Returns id after insertion
         return self.execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+    
+    def add_balances_from_staging(self, accnt_name: str) -> int:
+        # Insert balances that are in a staging table into the balances table of the db, under accnt_name.
+        # Return number of inserted rows.
+
+        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+            "SELECT date, amount FROM staging " \
+            "SELECT id FROM data_sources WHERE name=%s" \
+            "RETURNING *;"
+
+        rows_added = self.execute_query(balances_query, (accnt_name,))
+
+        return len(rows_added)
+            
 
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
