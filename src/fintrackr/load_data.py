@@ -66,6 +66,7 @@ def add_balances(db_conn: object, accnt: str, path_to_balances: str) -> int:
         logger.exception(log_msg)
         raise ValueError(log_msg)
     
+    # I could put this in a finally clause, but that makes debugging harder. csv_to_staging will clear it if it exists
     db_conn.execute_action("DROP TABLE staging;")
     
     return len(num_new_balances)
@@ -240,22 +241,23 @@ def load_data_from_CLI(accnt_name: str,
 
     db_conn = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
     
-    source_id_tuple = db_conn.get_data_source_id(source_name=accnt_name)
-    if not add_as_new_acct and len(source_id_tuple)==0:
-        # User didn't want to add a new account, but this one doesn't exist
-        existing_sources = db_conn.get_all_data_sources()
-        log_msg = f"Account name {accnt_name} doesn't exist; did you mean one of {existing_sources} instead?"
-        logger.error(log_msg)
-        raise ValueError(log_msg)
-    if add_as_new_acct and len(source_id_tuple)!=0:
-        # User wanted to add a new account, but this one already exists
-        log_msg = f"Account name {accnt_name} already exists!"
-        logger.error(log_msg)
-        raise ValueError(log_msg)
-    if add_as_new_acct and len(source_id_tuple)==0:
-        # Perhaps redundant to check both conditions, but: data source doesn't exist and user wanted to add a new one
-        logger.info(f"Adding account name {accnt_name} as new data source")
-        source_id_tuple = db_conn.add_data_source(source_name=accnt_name)  
+    if add_as_new_acct:
+        try:
+            _ = db_conn.add_data_source(source_name=accnt_name)
+            logger.info(f"Added account name {accnt_name} as new data source")
+        except psql_errors.UniqueViolation as e:
+            log_msg = f"Account name {accnt_name} already exists!"
+            logger.error(log_msg)
+            raise ValueError(log_msg)
+    else:
+        # Check account exists
+        source_id_tuple = db_conn.get_data_source_id(source_name=accnt_name)
+        if len(source_id_tuple)==0:
+            # User didn't want to add a new account, but this one doesn't exist
+            existing_sources = db_conn.get_all_data_sources()
+            log_msg = f"Account name {accnt_name} doesn't exist; did you mean one of {existing_sources} instead?"
+            logger.error(log_msg)
+            raise ValueError(log_msg)          
     
     if trans:
         result = add_transactions(
