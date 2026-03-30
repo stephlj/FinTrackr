@@ -273,7 +273,6 @@ class FinDB:
                     VALUES (%s, %s, %s, %s) 
                     RETURNING id 
                 ) 
-            ) 
             INSERT INTO transactions (posted_date, amount, description, metadatum_id) 
             SELECT posted_date, amount, description, meta.id 
             FROM joined, meta 

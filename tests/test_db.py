@@ -107,8 +107,13 @@ class TestDB(unittest.TestCase):
         num_new_bals = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
         self.assertEqual(num_new_bals, 1)
 
-        # Make sure I can't add duplicates
-        num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
+        # Make sure I can't load this exact same file again
+        with self.assertRaises(psql_errors.UniqueViolation):
+            self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
+
+        # Make sure I can't load same transactions under a different filename
+        filepath2 = "new_trans.csv"
+        num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath2, source_info=accnt)
         self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
 
         self.FinDB.execute_action("DROP TABLE staging;")
