@@ -35,6 +35,7 @@ class FinDB:
             self._conn.close()
         except Exception as e:
             # Ignore any erros during shutdown
+            logger.exception("FinDB object failed to close")
             pass
     
     def _import_file(self, dest_table: str, path_to_file: str) -> int:
@@ -181,7 +182,9 @@ class FinDB:
         # This set of logic feels goofy ... 
         rows_before = 0
         try:
-            rows_before = self.execute_query(f"SELECT {cols_placeholders} FROM staging;", tuple([a.col_name for a in csv_columns]))
+            # TODO add an execute_scalar method, if I find myself wanting to do this a lot
+            rows_before_tuple = self.execute_query("SELECT COUNT(*) FROM staging;")
+            rows_before = rows_before_tuple[0][0]
         except Exception as e:
             logger.debug(f"Query of staging table did not execute with exception: {e}")
         if rows_before is None:
@@ -205,10 +208,11 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
-        rows_after = self.execute_query(f"SELECT {cols_placeholders} FROM staging;", tuple([a.col_name for a in csv_columns]))
-        logger.info(f"After loading new transactions, staging has {len(rows_after)} rows")
+        rows_after_tuple = self.execute_query("SELECT COUNT(*) FROM staging;")
+        rows_after = rows_after_tuple[0][0]
+        logger.info(f"After loading new transactions, staging has {rows_after} rows")
 
-        return len(rows_after)
+        return rows_after
     
     def get_all_data_sources(self) -> list[str]:
         # Returns a list of data_sources names
