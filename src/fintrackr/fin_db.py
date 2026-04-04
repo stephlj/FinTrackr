@@ -231,21 +231,27 @@ class FinDB:
         # Insert balances that are in a staging table into the balances table of the db, under accnt_name.
         # Return number of inserted rows.
 
-        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-            "SELECT s.date, s.amount, (select id from data_sources where name = %s) " \
-            "FROM staging AS s " \
-            "RETURNING *;"
+        # balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+        #     "SELECT s.date, s.amount, (select id from data_sources where name = %s) " \
+        #     "FROM staging AS s " \
+        #     "RETURNING *;"
         
         # For reference, another way of doing the same thing:
-        # balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-        #     "SELECT s.date, s.amount, d.id " \
-        #     "FROM staging AS s " \
-        #     "CROSS JOIN data_sources AS d WHERE name = %s "\
-        #     "RETURNING *;"
+        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
+            "SELECT s.date, s.amount, d.id " \
+            "FROM staging AS s " \
+            "CROSS JOIN data_sources AS d WHERE name = %s "\
+            "RETURNING *;"
         # However this just returns an empty list if name doesn't exist, rather than a NotNullViolation, so
         # preferring the first version
+        # print(f"Balances query: {balances_query}")
+        # print(f"With vals: {accnt_name}")
+        # print(self.execute_query("SELECT * FROM data_sources;"))
 
         rows_added = self.execute_query(balances_query, (accnt_name,))
+
+        if len(rows_added) == 0 and len(self.get_data_source_id(accnt_name)) == 0:
+            raise psycopg.errors.NotNullViolation(f"Account {accnt_name} does not exist; cannot add balances for that account")
 
         return len(rows_added)
     

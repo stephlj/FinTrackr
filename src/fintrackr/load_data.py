@@ -53,23 +53,21 @@ def add_balances(db_conn: object, accnt: str, path_to_balances: str) -> int:
         return 0
     
     try:
-        num_new_balances = db_conn.add_balances_from_staging(accnt)
+        num_new_balances = db_conn.add_balances_from_staging(accnt_name = accnt)
     except psql_errors.UniqueViolation as e:
         logger.info(f"Insertion into balances table under account {accnt} failed; all balances are already in the db (exception: {e})")
         return 0
     except psql_errors.NotNullViolation as e:
-        log_msg = f"Insertion into balances table failed with exception {e}; check account name {accnt} exists in db"
-        logger.error(log_msg)
-        raise ValueError(log_msg)
+        logger.error(f"Insertion into balances table failed with exception {e}; check account name {accnt} exists in db")
+        raise
     except Exception as e:
-        log_msg = f"Insertion into balances table failed with exception: {e}"
-        logger.exception(log_msg)
-        raise ValueError(log_msg)
+        logger.exception(f"Insertion into balances table failed with exception: {e}")
+        raise
     
     # I could put this in a finally clause, but that makes debugging harder. csv_to_staging will clear it if it exists
     db_conn.execute_action("DROP TABLE staging;")
     
-    return len(num_new_balances)
+    return num_new_balances
 
 def add_transactions(db_conn: object, path_to_source_file: str, source_info: int) -> None:
     """

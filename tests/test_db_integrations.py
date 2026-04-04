@@ -39,7 +39,7 @@ class TestDBIntegrations(unittest.TestCase):
         assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
     
-    def test_csv_to_staging(self):
+    def test_FinDB_csv_to_staging(self):
         # This function adds rows to a staging table that should be empty at start
 
         path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
@@ -68,7 +68,7 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table wasn't cleared")
 
-    def test_add_balances_from_staging(self):
+    def test_FinDB_add_balances_from_staging(self):
         # Not sure I need this test, but it confirms expected behavior for learning purposes
         
         # Create a staging table
@@ -93,7 +93,7 @@ class TestDBIntegrations(unittest.TestCase):
         # Clean up
         self.FinDB.execute_action("DROP TABLE staging;")
 
-    def test_add_transactions_from_staging(self):
+    def test_FinDB_add_transactions_from_staging(self):
         # Create a staging table
         # Note this test will BREAK if I change the balances table schema
         self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount money, description text);")
@@ -118,6 +118,44 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
 
         self.FinDB.execute_action("DROP TABLE staging;")
+
+    def test_load_data_add_balances(self):        
+        # Use properly formatted csvs
+        path_to_test_bals = os.path.join(utils.TEST_DATA_PATH,"test_balances_noheader.csv")
+        balances_to_add = pd.read_csv(path_to_test_bals, header=None)
+        name = "test_add_bals_integration"
+
+        with self.assertRaises(psql_errors.NotNullViolation):
+            _ = add_balances(db_conn = self.FinDB, 
+                            accnt = name, 
+                            path_to_balances = path_to_test_bals
+                            )
+        
+        _ = self.FinDB.add_data_source(source_name = name)
+        num_balances_added = add_balances(
+                                    db_conn = self.FinDB, 
+                                    accnt = name, 
+                                    path_to_balances = path_to_test_bals
+                                    )
+        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
+        
+        # Check we can't add the same balances again:
+        num_balances_added2 = add_balances(
+                                    db_conn = self.FinDB,
+                                    accnt = name, 
+                                    path_to_balances = path_to_test_bals
+                                    )
+        self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
+
+        # Check that we can assign balances to a different account
+        new_name = "test_add_bals_integration2"
+        _ = self.FinDB.add_data_source(source_name = new_name)
+        num_balances_added3 = add_balances(
+                                    db_conn = self.FinDB,
+                                    accnt = new_name, 
+                                    path_to_balances = path_to_test_bals
+                                    )
+        self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add duplicate balances to a different account")
     
     # def test_data_from_date_range(self):
     #     # pytest runs each test case independently, so re-set-up the db
