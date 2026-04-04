@@ -1,4 +1,6 @@
-# test_db.py
+# test_db_integrations.py
+#
+# Tests functionality from both fin_db.py and load_data.py that require db connections.
 #
 # Copyright (c) 2025, 2026 Stephanie Johnson
 
@@ -13,7 +15,7 @@ import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
 from fintrackr.load_data import add_balances, add_transactions
 
-class TestDB(unittest.TestCase):
+class TestDBIntegrations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Make a test db, in the process also tests init_db and add_user.
@@ -21,12 +23,6 @@ class TestDB(unittest.TestCase):
         cls.params = utils.config_params()
 
         cls.FinDB = utils.set_up_test_DB(params=cls.params)
-
-        # Some test fixtures shared by multiple tests:
-        cls.path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
-        cls.transactions_to_add = pd.read_csv(cls.path_to_test_transactions, header=None)
-        cls.element_to_match = str(cls.transactions_to_add.iloc[0,1])
-        cls.element_to_match = cls.element_to_match[0] + "$" + cls.element_to_match[1:] + "0"
 
     @classmethod
     def tearDownClass(cls):
@@ -46,26 +42,31 @@ class TestDB(unittest.TestCase):
     def test_csv_to_staging(self):
         # This function adds rows to a staging table that should be empty at start
 
+        path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
+        transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
+        element_to_match = str(transactions_to_add.iloc[0,1])
+        element_to_match = element_to_match[0] + "$" + element_to_match[1:] + "0"
+
         # Define expected cols of staging as a result of loading this file:
         test_cols = [Col_Def(col_name="posted_date", col_type="date"),
                 Col_Def(col_name="amount", col_type="money"),
                 Col_Def(col_name="description", col_type="text")
         ]
                      
-        num_rows_added = self.FinDB.csv_to_staging(csv_path=self.path_to_test_transactions, csv_columns = test_cols)
-        self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
-        self.assertEqual(self.element_to_match, 
+        num_rows_added = self.FinDB.csv_to_staging(csv_path=path_to_test_transactions, csv_columns = test_cols)
+        self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
+        self.assertEqual(element_to_match, 
                          self.FinDB.execute_query("SELECT amount FROM staging WHERE description=%s;", ('Concert tickets',))[0][0], 
                          "Data were scrambled when copied into staging"
                          )
         
         # test that staging has NOT been cleared at this point
-        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), self.transactions_to_add.shape[0], "Staging table didn't persist")
+        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table didn't persist")
 
         # test that it does clear if we try to add new transactions
-        num_rows_added = self.FinDB.csv_to_staging(csv_path=self.path_to_test_transactions, csv_columns = test_cols)
-        self.assertEqual(num_rows_added, self.transactions_to_add.shape[0], "Rows added to staging table does not match file")
-        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), self.transactions_to_add.shape[0], "Staging table wasn't cleared")
+        num_rows_added = self.FinDB.csv_to_staging(csv_path=path_to_test_transactions, csv_columns = test_cols)
+        self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
+        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table wasn't cleared")
 
     def test_add_balances_from_staging(self):
         # Not sure I need this test, but it confirms expected behavior for learning purposes
