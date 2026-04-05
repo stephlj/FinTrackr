@@ -205,6 +205,9 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
 
     def test_load_data_from_CLI(self):
+        self.addCleanup(os.remove, os.path.join(utils.TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
+        self.addCleanup(os.remove, os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
+        
         # Mostly a does-it-run test for integration (since components are unit tested)
         # Try adding balances
         bal_accnt = "new_checking"
@@ -228,7 +231,6 @@ class TestDBIntegrations(unittest.TestCase):
 
         bal_result = self.FinDB.execute_query(bal_test_query, (bal_test_date, bal_accnt))
         self.assertEqual(len(bal_result),1)
-        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
 
         # Try adding transactions
         trans_accnt = "new_cc"
@@ -253,8 +255,6 @@ class TestDBIntegrations(unittest.TestCase):
         
         trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
         self.assertEqual(len(trans_result),1)
-
-        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
     
     # def test_data_from_date_range(self):
     #     # pytest runs each test case independently, so re-set-up the db
