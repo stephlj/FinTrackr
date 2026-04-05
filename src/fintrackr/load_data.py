@@ -104,16 +104,14 @@ def add_transactions(db_conn: object, path_to_source_file: str, source_info: int
     try:
         num_new_transactions = db_conn.add_transactions_from_staging(path_to_source_file=path_to_source_file, source_info=source_info)
     except psql_errors.NotNullViolation as e:
-        log_msg = f"Insertion into transactions table failed with null violation (exception: {e}); check account name {source_info} exists in db"
-        logger.error(log_msg)
-        raise ValueError(log_msg)
+        logger.error(f"Insertion into transactions table failed with null violation (exception: {e}); check account name {source_info} exists in db")
+        raise
     except psql_errors.UniqueViolation as e:
         logger.info(f"Insertion of {path_to_source_file} data into transactions table under account {source_info} failed; file may already have been loaded (exception: {e})")
         return 0
     except Exception as e:
-        log_msg = f"Insertion into transactions table failed with exception: {e}"
-        logger.exception(log_msg)
-        raise ValueError(log_msg)
+        logger.exception(f"Insertion into transactions table failed with exception: {e}")
+        raise
     
     if num_new_transactions == 0:
         logger.info("All staged transactions are already in transactions table")

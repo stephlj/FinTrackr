@@ -68,6 +68,8 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table wasn't cleared")
 
+        # self.addCleanup(self.FinDB.execute_action(), "DROP TABLE staging;")
+
     def test_FinDB_add_balances_from_staging(self):
         # Not sure I need this test, but it confirms expected behavior for learning purposes
         
@@ -97,7 +99,7 @@ class TestDBIntegrations(unittest.TestCase):
         # Create a staging table
         # Note this test will BREAK if I change the balances table schema
         self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount money, description text);")
-        self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), '55.00', 'Concert tickets'))
+        self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), '55.00', 'Pet insurance'))
         accnt = "primary_cc"
         filepath = "trans_from_staging_test.csv"
 
@@ -156,6 +158,51 @@ class TestDBIntegrations(unittest.TestCase):
                                     path_to_balances = path_to_test_bals
                                     )
         self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add duplicate balances to a different account")
+    
+    def test_load_data_add_transactions(self):
+        # Use properly formatted csvs
+        path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
+        source_name = "cc"
+        transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
+        element_to_match = str(transactions_to_add.iloc[0,1])
+        element_to_match = element_to_match[0] + "$" + element_to_match[1:] + "0"
+        
+        with self.assertRaises(psql_errors.NotNullViolation):
+            num_transactions_added = add_transactions(
+                db_conn = self.FinDB,
+                path_to_source_file = path_to_test_transactions, 
+                source_info = source_name
+                )
+        
+        _ = self.FinDB.add_data_source(source_name = source_name)
+        num_transactions_added = add_transactions(
+            db_conn = self.FinDB,
+            path_to_source_file = path_to_test_transactions, 
+            source_info = source_name
+            )
+        self.assertEqual(num_transactions_added, transactions_to_add.shape[0], "Number of added transactions does not match file")
+        self.assertEqual(element_to_match, 
+                         self.FinDB.execute_query("SELECT amount FROM transactions WHERE description=%s;",('Concert tickets',))[0][0], 
+                         "Data were scrambled when loaded into transactions"
+                         )
+        
+        # Test that trying to upload the same file again fails
+        num_transactions_added = add_transactions(
+            db_conn = self.FinDB,
+            path_to_source_file = path_to_test_transactions, 
+            source_info = source_name
+            )
+        self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
+
+        # Test what happens when partial duplicates are added
+        # This file is nearly the same, with 2 different lines
+        additional_transactions_path = os.path.join(utils.TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
+        num_transactions_added = add_transactions(
+            db_conn = self.FinDB,
+            path_to_source_file = additional_transactions_path, 
+            source_info = source_name
+            )
+        self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
     
     # def test_data_from_date_range(self):
     #     # pytest runs each test case independently, so re-set-up the db
