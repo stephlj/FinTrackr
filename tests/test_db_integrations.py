@@ -224,7 +224,7 @@ class TestDBIntegrations(unittest.TestCase):
             WHERE b.date=%s
             AND s.name=%s;
         """
-        bal_test_date = date(year=2024, month=10, day=2)
+        bal_test_date = date(year=2025, month=10, day=2)
 
         bal_result = self.FinDB.execute_query(bal_test_query, (bal_test_date, bal_accnt))
         self.assertEqual(len(bal_result),1)
@@ -253,7 +253,7 @@ class TestDBIntegrations(unittest.TestCase):
         
         trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
         self.assertEqual(len(trans_result),1)
-        
+
         os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
     
     # def test_data_from_date_range(self):
