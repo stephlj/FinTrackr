@@ -230,7 +230,9 @@ class FinDB:
     def add_balances_from_staging(self, accnt_name: str) -> int:
         # Insert balances that are in a staging table into the balances table of the db, under accnt_name.
         # Return number of inserted rows.
-
+        # Will return an empty list if (date, amount) already exists (violation of that unique constraint)
+        # and a NotNullViolation exception if accnt_name isn't already in data_sources
+        
         balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
             "SELECT s.date, s.amount, (select id from data_sources where name = %s) " \
             "FROM staging AS s " \

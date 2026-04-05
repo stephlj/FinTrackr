@@ -13,7 +13,7 @@ from psycopg import errors as psql_errors
 
 import fintrackr.testing_utils as utils
 from fintrackr.utils import Col_Def
-from fintrackr.load_data import add_balances, add_transactions
+from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
 
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
@@ -203,6 +203,58 @@ class TestDBIntegrations(unittest.TestCase):
             source_info = source_name
             )
         self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
+
+    def test_load_data_from_CLI(self):
+        # Mostly a does-it-run test for integration (since components are unit tested)
+        # Try adding balances
+        bal_accnt = "new_checking"
+        load_data_from_CLI(
+            accnt_name = bal_accnt, 
+            filepath=os.path.join(utils.TEST_DATA_PATH, "test_balances.csv"), #Since this IS an integration test, use an input file that needs reformatting
+            username = self.params["user"], 
+            pw = self.params["user_pw"],
+            trans=False,
+            add_as_new_acct=True,
+            db_config = utils.TEST_CONFIG_PATH)
+        
+        bal_test_query = """
+            SELECT b.date, b.amount
+            FROM balances AS b
+            JOIN data_sources AS s ON s.id = b.accnt_id
+            WHERE b.date=%s
+            AND s.name=%s;
+        """
+        bal_test_date = date(year=2024, month=10, day=2)
+
+        bal_result = self.FinDB.execute_query(bal_test_query, (bal_test_date, bal_accnt))
+        self.assertEqual(len(bal_result),1)
+        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
+
+        # Try adding transactions
+        trans_accnt = "new_cc"
+        load_data_from_CLI(
+            accnt_name = trans_accnt, 
+            filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols.csv"), 
+            username = self.params["user"], 
+            pw = self.params["user_pw"],
+            trans=True,
+            add_as_new_acct=True,
+            db_config = utils.TEST_CONFIG_PATH)
+        
+        trans_test_query = """
+            SELECT t.posted_date, t.amount, t.description
+            FROM transactions AS t
+            JOIN data_load_metadata AS m ON m.id = t.metadatum_id
+            JOIN data_sources AS s ON s.id = m.data_source_id
+            WHERE t.posted_date=%s
+            AND s.name=%s;
+        """
+        trans_test_date = date(year=2023, month=7, day=23)
+        
+        trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
+        self.assertEqual(len(trans_result),1)
+        
+        os.remove(os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
     
     # def test_data_from_date_range(self):
     #     # pytest runs each test case independently, so re-set-up the db
