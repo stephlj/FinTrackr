@@ -40,6 +40,8 @@ class TestDBIntegrations(unittest.TestCase):
         assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
     
     def test_FinDB_csv_to_staging(self):
+        self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
+
         # This function adds rows to a staging table that should be empty at start
 
         path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
@@ -68,9 +70,9 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table wasn't cleared")
 
-        # self.addCleanup(self.FinDB.execute_action(), "DROP TABLE staging;")
-
     def test_FinDB_add_balances_from_staging(self):
+        self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
+
         # Not sure I need this test, but it confirms expected behavior for learning purposes
         
         # Create a staging table
@@ -91,11 +93,10 @@ class TestDBIntegrations(unittest.TestCase):
         # Make sure I can't add duplicates
         with self.assertRaises(psql_errors.UniqueViolation):
             self.FinDB.add_balances_from_staging(accnt_name=accnt)
-        
-        # Clean up
-        self.FinDB.execute_action("DROP TABLE staging;")
 
     def test_FinDB_add_transactions_from_staging(self):
+        self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
+        
         # Create a staging table
         # Note this test will BREAK if I change the balances table schema
         self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount money, description text);")
@@ -118,8 +119,6 @@ class TestDBIntegrations(unittest.TestCase):
         filepath2 = "new_trans.csv"
         num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath2, source_info=accnt)
         self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
-
-        self.FinDB.execute_action("DROP TABLE staging;")
 
     def test_load_data_add_balances(self):        
         # Use properly formatted csvs
