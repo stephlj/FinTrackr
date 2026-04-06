@@ -357,6 +357,68 @@ class FinDB:
             
         return len(rows_added)
     
+    def get_balances_in_date_range(self, data_source: str, date_range: List[date]) -> List[Tuple]:
+        """
+        Get transactions and balances in a date range.
+
+        Utility used by multiple other functions.
+        
+        Parameters
+        ----------
+        data_source : str
+            Must exist in data_sources table as a name.
+        date_range : List[date]
+            List of length 2: beginning and end dates to return date for.
+            Dates in datetime.date format
+
+        Return
+        ------
+        dict[List[Transaction]]
+            key = "transactions": All transactions (date, amount) with data_source_id = data_source and posted_dates
+            in range(date_range)
+            key = "balances": any account balances for this data_source in date_range
+        """
+
+        if len(date_range) != 2:
+            logger.error(f"Date range must be list of length 2; got instead {date_range}")
+            return None
+        
+        if (type(date_range[0]) != date) or (type(date_range[1]) != date):
+            # date_range.sort() will do the wrong thing if this isn't date format
+            logger.error(f"Date range must be in datetime.date format; got instead {date_range}")
+            return None
+        date_range.sort()
+
+        trans_query = """
+            SELECT t.posted_date, t.amount
+            FROM transactions AS t
+            JOIN data_load_metadata AS m ON m.id = t.metadatum_id
+            JOIN data_sources AS s ON s.id = m.data_source_id
+            WHERE t.posted_date BETWEEN %s AND %s
+            AND s.name=%s;
+        """
+
+        trans = self.execute_query(trans_query, (date_range[0],date_range[1],data_source))
+        transactions = [Transaction(date=d, amount=a) for d, a in trans]
+
+        # All balances in date range
+        bal_query = """
+            SELECT date, amount
+            FROM balances
+            WHERE date BETWEEN %s AND %s
+            AND accnt_id = (
+                SELECT id
+                FROM data_sources
+                WHERE name=%s
+                )
+            ;
+        """
+
+        bals = self.execute_query(bal_query, (date_range[0],date_range[1],data_source))
+        balances = [Transaction(date=d, amount=a) for d, a in bals]
+
+        return {"transactions": transactions, "balances": balances}
+    
     def data_from_date_range(self, data_source: str, date_range: List[date]) -> dict[List[Transaction]]:
         """
         Get transactions and balances in a date range.
