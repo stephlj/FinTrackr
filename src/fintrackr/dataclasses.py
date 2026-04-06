@@ -22,12 +22,13 @@ class Balance:
 class Transaction:
     date: date
     amount: float
-    # description: str
+    description: str
     # account_name: str
 
     def __iter__(self):
         yield self.date
         yield self.amount
+        yield self.description
 
 @dataclass
 class Col_Def:
