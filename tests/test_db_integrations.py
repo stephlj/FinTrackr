@@ -143,13 +143,13 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(len(balances), 3)
         self.assertEqual(balances[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount")
         
-        # # Test for inclusivity on one end
-        # balances2 = self.FinDB.get_balances_in_date_range(
-        #     accnt_name = accnt_name, 
-        #     date_range = [date(year=1990,month=9,day=9),date(year=1992,month=1,day=1)]
-        # )
-        # self.assertEqual(len(balances2), 2)
-        # self.assertEqual(balances2[0].amount, "$9,999.99", "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
+        # Test for inclusivity on one end
+        balances2 = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1990,month=9,day=9),date(year=1992,month=1,day=1)]
+        )
+        self.assertEqual(len(balances2), 2)
+        self.assertEqual(balances2[0].amount, "$9,999.99", "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
 
         # # Try a range that gets none
         # balances3 = self.FinDB.get_balances_in_date_range(
