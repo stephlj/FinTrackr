@@ -14,14 +14,15 @@ from typing import List
 from datetime import date
 
 import fintrackr.fin_db
-from fintrackr.utils import Transaction, DEFAULT_LOGGING_FORMAT, CONFIG_PATH
+from fintrackr.dataclasses import Transaction, Balance
+from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
 logger = logging.getLogger(__name__)
 
 
-def relative_bal_by_date(references: List[Transaction], transactions: List[Transaction]) -> List[Transaction]:
+def relative_bal_by_date(references: List[Balance], transactions: List[Transaction]) -> List[Transaction]:
     """
-    Return a list of Transactions calculated relative to the amount on date in references.
+    Return a list of Transactions calculated relative to the amount on date in reference balance.
     If references is a List of len>1, uses the chronologically *most recent* account balance.
     If references is empty, the balance on the *earliest* date in transactions will be zero.
 
@@ -32,10 +33,10 @@ def relative_bal_by_date(references: List[Transaction], transactions: List[Trans
 
     Parameters
     ----------
-    references : List[Transactions]
+    references : List[Balance]
         Calculate all balances relative to the amount for the most recent date
     transactions : List[Transactions]
-        List of transactions (date, amount); calculate account balance as a result of each transaction
+        Calculate account balance as a result of each transaction in this list
     
     Return
     ------
@@ -43,6 +44,8 @@ def relative_bal_by_date(references: List[Transaction], transactions: List[Trans
         Account balances as a result of the list of dated transactions.
         If there are multiple transactions per day, there will be multiple balances - 
         not aggregated per day.
+        Returning a list of Transactions, rather than Balances, so that I can include the description associated 
+        with each transaction (e.g. for plotting later).
     """
 
     if len(transactions) == 0:
@@ -52,10 +55,10 @@ def relative_bal_by_date(references: List[Transaction], transactions: List[Trans
     if len(references) >= 1:
         ref = sorted(references, key=lambda r: r.date)[-1] # [date, amount] of chronologically most recent account balance
     else:
-        ref = Transaction(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = 0.00) # Set balance for first transaction date to zero
+        ref = Balance(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = 0.00) # Set balance for first transaction date to zero
 
     # balances have to be cumulative relative to ref_bal, by date
-    transactions.sort(key=lambda a: a.date) # sort all transactions by date
+    transactions.sort(key=lambda a: a.date)
 
     earlier_trans = [t for t in transactions if t.date<=ref.date] # Balances are for end of day
     if len(earlier_trans) > 0:
@@ -77,14 +80,14 @@ def relative_bal_by_date(references: List[Transaction], transactions: List[Trans
     else:
         return earlier_bals + later_bals
 
-def plot_balances(all_balances: List[Transaction], calculated_balances: List[Transaction]) -> None:
+def plot_balances(all_balances: List[Balance], calculated_balances: List[Transaction]) -> None:
     """
     Plot calculated account balances (from transactions) as well as any stored balances in 
     the same range of dates. Dates are on x, balances are on y
     
     Parameters
     ----------
-    all_balances : List[Transaction]
+    all_balances : List[Balance]
         Any balances stored in the db. Plotted as red o's for comparison to calculated values.
         Hopefully they match, but there's no guarantee they will (e.g. if some transactions
         are missing from the db)
@@ -146,16 +149,15 @@ def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, 
 
     FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
 
-    amts = FinDB.data_from_date_range(
-        data_source = accnt_name, 
-        date_range = date_range
-    )
+    balances = FinDB.get_balances_in_date_range(accnt_name=accnt_name, date_range=date_range)
+    
+    transactions = FinDB.get_transactions_in_date_range(accnt_name=accnt_name, date_range=date_range)
 
     FinDB.close()
 
-    abs_trans = relative_bal_by_date(references = amts["balances"], transactions = amts["transactions"])
+    abs_trans = relative_bal_by_date(references = balances, transactions = transactions)
 
-    plot_balances(all_balances=amts["balances"], calculated_balances=abs_trans)
+    plot_balances(all_balances=balances, calculated_balances=abs_trans)
 
 if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)

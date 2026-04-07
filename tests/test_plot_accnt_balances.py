@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from datetime import date
 
 import fintrackr.plot_accnt_balances as plot
-from fintrackr.utils import Transaction
+from fintrackr.dataclasses import Transaction, Balance
 
 class TestPlotAccntBalances(unittest.TestCase):
     # The main function in plot_accnt_balances doesn't have testing coverage because it requires db access
