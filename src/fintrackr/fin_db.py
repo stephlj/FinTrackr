@@ -402,6 +402,7 @@ class FinDB:
         """
 
         bals = self.execute_query(bal_query, (date_range[0],date_range[1],accnt_name))
+
         return [Balance(date=d, amount=a) for d, a in bals]
     
     def get_transactions_in_date_range(self, accnt_name: str, date_range: List[date]) -> List[Transaction]:

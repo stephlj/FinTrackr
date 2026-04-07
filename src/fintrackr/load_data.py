@@ -11,7 +11,8 @@ from datetime import date
 from psycopg import errors as psql_errors
 
 import fintrackr.fin_db
-from fintrackr.utils import CONFIG_PATH, Col_Def
+from fintrackr.utils import CONFIG_PATH
+from fintrackr.dataclasses import Col_Def
 from fintrackr.io import check_csv_format, strip_header
 
 BALS_STAGING_COLS = [Col_Def(col_name="date", col_type="date"),

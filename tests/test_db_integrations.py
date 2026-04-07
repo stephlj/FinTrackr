@@ -12,7 +12,7 @@ from datetime import date
 from psycopg import errors as psql_errors
 
 import fintrackr.testing_utils as utils
-from fintrackr.utils import Col_Def
+from fintrackr.dataclasses import Col_Def
 from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
 
 class TestDBIntegrations(unittest.TestCase):
@@ -120,6 +120,59 @@ class TestDBIntegrations(unittest.TestCase):
         num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath2, source_info=accnt)
         self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
 
+    def test_FinDB_get_balances_in_date_range(self):
+        # Add some data to test against (specific to this test)
+        accnt_name = "test_accnt"
+        accnt_id_tuple = self.FinDB.add_data_source(source_name=accnt_name)
+        accnt_id = accnt_id_tuple[0][0]
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=1988, month=8, day=8), '8888.88'))
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=1990, month=9, day=9), '9999.99'))
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=1991, month=1, day=1), '11111.11'))
+        
+        # Try all 3 entries,  inclusive
+        balances = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1988,month=7,day=1),date(year=1992,month=1,day=1)]
+        )
+        self.assertEqual(len(balances), 3)
+        self.assertEqual(balances[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount")
+        
+        # # Test for inclusivity on one end
+        # balances2 = self.FinDB.get_balances_in_date_range(
+        #     accnt_name = accnt_name, 
+        #     date_range = [date(year=1990,month=9,day=9),date(year=1992,month=1,day=1)]
+        # )
+        # self.assertEqual(len(balances2), 2)
+        # self.assertEqual(balances2[0].amount, "$9,999.99", "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
+
+        # # Try a range that gets none
+        # balances3 = self.FinDB.get_balances_in_date_range(
+        #     accnt_name = accnt_name, 
+        #     date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
+        # )
+        # self.assertEqual(len(balances3), 0)
+        
+        # # Test dates get properly sorted
+        # balances4 = self.FinDB.get_balances_in_date_range(
+        #     accnt_name = accnt_name, 
+        #     date_range = [date(year=1990,month=10,day=1),date(year=1988,month=1,day=1)]
+        # )
+        # self.assertEqual(len(balances4), 2)
+        # self.assertEqual(balances4[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount for unsorted date range")
+
+        # # Test non-date type fails
+        # with self.assertRaises(TypeError):
+        #     balances5 = self.FinDB.get_balances_in_date_range(
+        #         accnt_name = accnt_name,
+        #         date_range = ["9/9/1997", "1/1/1993"]
+        #     )
+        
     def test_load_data_add_balances(self):        
         # Use properly formatted csvs
         path_to_test_bals = os.path.join(utils.TEST_DATA_PATH,"test_balances_noheader.csv")
@@ -255,30 +308,4 @@ class TestDBIntegrations(unittest.TestCase):
         trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
         self.assertEqual(len(trans_result),1)
     
-    # def test_data_from_date_range(self):
-    #     # pytest runs each test case independently, so re-set-up the db
-    #     # Neither of these functions allow duplicates
-    #     # Not ideal that this unittest depends on functions from another module ... 
-    #     add_balances(
-    #         FinDB = self.FinDB,
-    #         accnt=self.source_info,
-    #         bal_date=self.balance_date,
-    #         bal_amt=self.balance_amount
-    #     )
-    #     add_transactions(
-    #         FinDB = self.FinDB,
-    #         path_to_source_file = self.path_to_test_transactions, 
-    #         source_info = self.source_info
-    #     )
-
-    #     amts = self.FinDB.data_from_date_range(
-    #         data_source = self.source_info, 
-    #         date_range = [date(year=2025,month=9,day=5),date(year=2025,month=9,day=10)]
-    #     )
-        
-    #     bal_money = "$"+f"{self.balance_amount}"[0]+","+f"{self.balance_amount}"[1:]+"0"
-    #     self.assertEqual(amts["balances"][0].amount, bal_money, "data_from_date_range did not return correct balance amount")
-
-    #     self.assertEqual(len(amts["transactions"]), 2, "data_from_date_range did not return the correct number of transactions") # assumes BETWEEN is inclusive
-
-
+    
