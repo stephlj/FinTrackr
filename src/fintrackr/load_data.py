@@ -220,8 +220,8 @@ def load_data_from_CLI(accnt_name: str,
             raise ValueError(log_msg)
     else:
         # Check account exists
-        source_id_tuple = db_conn.get_data_source_id(source_name=accnt_name)
-        if len(source_id_tuple)==0:
+        source_id = db_conn.get_data_source_id(source_name=accnt_name)
+        if source_id is None:
             # User didn't want to add a new account, but this one doesn't exist
             existing_sources = db_conn.get_all_data_sources()
             log_msg = f"Account name {accnt_name} doesn't exist; did you mean one of {existing_sources} instead?"

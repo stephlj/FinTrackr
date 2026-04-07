@@ -173,7 +173,8 @@ class FinDB:
 
         Returns
         -------
-        int | str
+        int | str | None
+            Returns None if no rows matched query
 
         """
 
@@ -181,6 +182,9 @@ class FinDB:
             logger.info(f"Executing query: {query}, with vals: {vals}")
             curs.execute(query, vals)
             row_tuple = curs.fetchall() # Returns a list of tuples (each row a tuple)
+        
+        if len(row_tuple)==0:
+            return None
         
         if len(row_tuple) != 1:
             log_msg = f"Query: {query} with vals: {vals} did not return a single row as expected"
@@ -288,7 +292,7 @@ class FinDB:
 
         rows_added = self.execute_query(balances_query, (accnt_name,))
 
-        # if len(rows_added) == 0 and len(self.get_data_source_id(accnt_name)) == 0:
+        # if len(rows_added) == 0 and self.get_data_source_id is None:
         #     raise psycopg.errors.NotNullViolation(f"Account {accnt_name} does not exist; cannot add balances for that account")
 
         return len(rows_added)
@@ -301,10 +305,9 @@ class FinDB:
         today_date = date.today()
 
         # Option 1:
-        source_id_tuple = self.get_data_source_id(source_info)
-        if len(source_id_tuple) == 0:
+        source_id= self.get_data_source_id(source_info)
+        if source_id is None:
             raise psycopg.errors.NotNullViolation(f"Account {source_info} does not exist; cannot add transactions for that account")
-        source_id = source_id_tuple[0][0]
         transactions_query = """
             WITH joined AS ( 
                 SELECT s.* 
