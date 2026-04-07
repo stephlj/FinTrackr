@@ -151,27 +151,27 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(len(balances2), 2)
         self.assertEqual(balances2[0].amount, "$9,999.99", "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
 
-        # # Try a range that gets none
-        # balances3 = self.FinDB.get_balances_in_date_range(
-        #     accnt_name = accnt_name, 
-        #     date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
-        # )
-        # self.assertEqual(len(balances3), 0)
+        # Try a range that gets none
+        balances3 = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
+        )
+        self.assertEqual(len(balances3), 0)
         
-        # # Test dates get properly sorted
-        # balances4 = self.FinDB.get_balances_in_date_range(
-        #     accnt_name = accnt_name, 
-        #     date_range = [date(year=1990,month=10,day=1),date(year=1988,month=1,day=1)]
-        # )
-        # self.assertEqual(len(balances4), 2)
-        # self.assertEqual(balances4[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount for unsorted date range")
+        # Test dates get properly sorted
+        balances4 = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1990,month=10,day=1),date(year=1988,month=1,day=1)]
+        )
+        self.assertEqual(len(balances4), 2)
+        self.assertEqual(balances4[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount for unsorted date range")
 
-        # # Test non-date type fails
-        # with self.assertRaises(TypeError):
-        #     balances5 = self.FinDB.get_balances_in_date_range(
-        #         accnt_name = accnt_name,
-        #         date_range = ["9/9/1997", "1/1/1993"]
-        #     )
+        # Test non-date type fails
+        with self.assertRaises(TypeError):
+            balances5 = self.FinDB.get_balances_in_date_range(
+                accnt_name = accnt_name,
+                date_range = ["9/9/1997", "1/1/1993"]
+            )
         
     def test_load_data_add_balances(self):        
         # Use properly formatted csvs
