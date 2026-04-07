@@ -7,7 +7,7 @@ import os
 import pandas as pd
 
 import fintrackr.io as io
-from fintrackr.utils import Col_Def
+from fintrackr.dataclasses import Col_Def
 from fintrackr.testing_utils import TEST_DATA_PATH
 
 class TestIO(unittest.TestCase):

@@ -30,7 +30,7 @@ CREATE TABLE data_load_metadata(
     date_added date NOT NULL,
     username text NOT NULL,
     source text UNIQUE NOT NULL, /* filename */
-    data_source_id integer REFERENCES data_sources(id)
+    data_source_id integer NOT NULL REFERENCES data_sources(id)
 );
 
 /* this table preserves the original data */

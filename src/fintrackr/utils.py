@@ -6,7 +6,6 @@ Copyright (c) 2026 Stephanie Johnson
 
 import os
 
-from dataclasses import dataclass
 from datetime import date, datetime
 
 DEFAULT_LOGGING_FORMAT = (
@@ -20,25 +19,6 @@ date_format = "%m/%d/%Y"
 SQL_to_python_types = {"date" : "date",
                        "money" : "float64",
                        "text" : "str"}
-
-@dataclass
-class Transaction:
-    date: date
-    amount: float
-
-    def __iter__(self):
-        yield self.date
-        yield self.amount
-
-@dataclass
-class Col_Def:
-    # db column definitions (name and type, e.g. "amount", "money")
-    col_name: str
-    col_type: str
-
-    def __iter__(self):
-        yield self.col_name
-        yield self.col_type
 
 def valid_date(date_string: str) -> bool:
     """

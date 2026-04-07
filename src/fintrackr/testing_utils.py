@@ -4,7 +4,7 @@ Extracting some commonly used code for testing (manual and automated).
 Copyright (c) 2026 Stephanie Johnson
 """
 
-import os
+import os, subprocess
 import yaml
 
 from fintrackr.init_db import init_db
@@ -30,11 +30,6 @@ def config_params() -> dict:
 
 def set_up_test_DB(params: dict) -> None:
     """
-    If testing manually, run this in the terminal afterwards to clean up:
-        dropdb test_fin_db
-        dropuser test_user
-        dropuser test_admin
-
     Parameters
     ----------
     params : dict
@@ -52,3 +47,26 @@ def set_up_test_DB(params: dict) -> None:
     FinDB = fintrackr.fin_db.FinDB(user=params["user"], pw=params["user_pw"], db_name=params["test_db_name"])
 
     return FinDB
+
+def tear_down_test_DB(db_conn: object, params: dict) -> None:
+    """
+    Parameters
+    ----------
+    db_conn: FinDB object
+
+    params: dict
+        Result of loading a config file; specifies db name to tear down, etc
+    """
+    db_conn.close()
+
+    # Delete testing db
+    exit_code = subprocess.run(["dropdb", params["test_db_name"]])
+    exit_code2 = subprocess.run(["dropuser",params["user"]])
+    exit_code3 = subprocess.run(["dropuser",params["test_owner"]])
+
+    # We put these at the end to ensure teardown completes even if one of these fails.
+    # Note that the @classmethod decorator changes the first arg to the class not
+    # an instance of the class, so self.assertEqual fails.
+    assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
+    assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
+    assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"

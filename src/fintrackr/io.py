@@ -11,7 +11,8 @@ import re
 
 from typing import List
 
-from fintrackr.utils import Col_Def, equiv_col_types, valid_date
+from fintrackr.utils import equiv_col_types, valid_date
+from fintrackr.dataclasses import Col_Def
 
 logger = logging.getLogger(__name__)
 
