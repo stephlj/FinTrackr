@@ -153,6 +153,46 @@ class FinDB:
             logger.info(f"Executing query: {query}, with vals: {vals}")
             curs.execute(query, vals)
             return curs.fetchall() # Returns a list of tuples (each row a tuple)
+        
+    def execute_scalar(self, query: str, vals: tuple = ()) -> int | str | None:
+        """
+        Returns the result of a fetch to the database, after query execution.
+
+        Assumes single return (will error if the query returns multiple rows).
+
+        Parameters
+        ----------
+        query : str
+            SELECT or INSERT statement to execute
+            (something where the return should be the result of a fetchall, rather 
+            than a status message)
+            Args need to be passed in separately using %s in the query string
+            (ie using parameterized SQL)
+        vals: tuple
+            Values, in order, for all %s's in the query string
+
+        Returns
+        -------
+        int | str
+
+        """
+
+        with self._conn.cursor() as curs: 
+            logger.info(f"Executing query: {query}, with vals: {vals}")
+            curs.execute(query, vals)
+            row_tuple = curs.fetchall() # Returns a list of tuples (each row a tuple)
+        
+        if len(row_tuple) != 1:
+            log_msg = f"Query: {query} with vals: {vals} did not return a single row as expected"
+            logger.error(log_msg)
+            raise ValueError(log_msg)
+        
+        if len(row_tuple[0]) != 1:
+            log_msg2 = f"Query: {query} with vals: {vals} did not return a single item as expected"
+            logger.error(log_msg2)
+            raise ValueError(log_msg2)
+        
+        return row_tuple[0][0]
             
     def csv_to_staging(self, csv_path: str, csv_columns: List[Col_Def]) -> int:
         """ 
@@ -184,8 +224,7 @@ class FinDB:
         rows_before = 0
         try:
             # TODO add an execute_scalar method, if I find myself wanting to do this a lot
-            rows_before_tuple = self.execute_query("SELECT COUNT(*) FROM staging;")
-            rows_before = rows_before_tuple[0][0]
+            rows_before = self.execute_scalar("SELECT COUNT(*) FROM staging;")
         except Exception as e:
             logger.debug(f"Query of staging table did not execute with exception: {e}")
         if rows_before is None:
@@ -209,8 +248,7 @@ class FinDB:
             return 0
 
         # Query how many rows are now in staging table
-        rows_after_tuple = self.execute_query("SELECT COUNT(*) FROM staging;")
-        rows_after = rows_after_tuple[0][0]
+        rows_after = self.execute_scalar("SELECT COUNT(*) FROM staging;")
         logger.info(f"After loading new transactions, staging has {rows_after} rows")
 
         return rows_after
@@ -222,11 +260,11 @@ class FinDB:
         return [n for sublist in names_tuples for n in sublist]
     
     def get_data_source_id(self, source_name: str) -> int:
-        return self.execute_query("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
+        return self.execute_scalar("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
     
     def add_data_source(self, source_name: str) -> int:
         # Returns id after insertion
-        return self.execute_query("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+        return self.execute_scalar("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
     
     def add_balances_from_staging(self, accnt_name: str) -> int:
         # Insert balances that are in a staging table into the balances table of the db, under accnt_name.
