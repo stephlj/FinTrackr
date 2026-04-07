@@ -16,10 +16,10 @@ class TestPlotAccntBalances(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # TODO probably should make these numbers make sense together (balances and transactions)
-        cls.bals = [Transaction(date=date(year=2025,month=9,day=10),amount=5000.00),
-                 Transaction(date=date(year=2025,month=9,day=2),amount=10000.00),
-                 Transaction(date=date(year=2024,month=2,day=2),amount=2500.00),
-                 Transaction(date=date(year=2025,month=8,day=10),amount=25000.02)
+        cls.bals = [Balance(date=date(year=2025,month=9,day=10),amount=5000.00),
+                 Balance(date=date(year=2025,month=9,day=2),amount=10000.00),
+                 Balance(date=date(year=2024,month=2,day=2),amount=2500.00),
+                 Balance(date=date(year=2025,month=8,day=10),amount=25000.02)
                  ]
 
         cls.trans = [Transaction(date=date(year=2023, month=10, day=5),amount=-200.50),
@@ -76,7 +76,7 @@ class TestPlotAccntBalances(unittest.TestCase):
                          )
         
         # Check relative to a single date later than the latest transaction
-        rel_bals_4 = plot.relative_bal_by_date(references=[Transaction(date=date(year=2026,month=1,day=1), amount=5000.00)], transactions=self.trans)
+        rel_bals_4 = plot.relative_bal_by_date(references=[Balance(date=date(year=2026,month=1,day=1), amount=5000.00)], transactions=self.trans)
         self.assertEqual(rel_bals_4, 
                         [Transaction(date=date(year=2023, month=10, day=5), amount=5000.00+500.00+250.00+250.00+550.05-50.00+250.00+200.50),
                             Transaction(date=date(year=2023,month=10,day=5), amount=5000.00+500.00+250.00+250.00+550.05-50.00+250.00),
@@ -90,7 +90,7 @@ class TestPlotAccntBalances(unittest.TestCase):
                          )
         
         # Check relative to a single date at other end
-        rel_bals_5 = plot.relative_bal_by_date(references=[Transaction(date=date(year=2023, month=10, day=5), amount=2500.00)], transactions=self.trans)
+        rel_bals_5 = plot.relative_bal_by_date(references=[Balance(date=date(year=2023, month=10, day=5), amount=2500.00)], transactions=self.trans)
         self.assertEqual(rel_bals_5, 
                         [Transaction(date=date(year=2023, month=10, day=5), amount=2500.00+200.50),
                             Transaction(date=date(year=2023, month=10, day=5), amount=2500.00),
@@ -104,7 +104,7 @@ class TestPlotAccntBalances(unittest.TestCase):
                          )
         
         # Check relative to a single date earlier than the earliest transaction
-        rel_bals_6 = plot.relative_bal_by_date(references=[Transaction(date=date(year=2023, month=10, day=4),amount=2500.00)], transactions=self.trans)
+        rel_bals_6 = plot.relative_bal_by_date(references=[Balance(date=date(year=2023, month=10, day=4),amount=2500.00)], transactions=self.trans)
         self.assertEqual(rel_bals_6, 
                         [Transaction(date=date(year=2023, month=10, day=5), amount=2500.00-200.50),
                             Transaction(date=date(year=2024,month=1,day=1), amount=2500.00-200.50-250.00),
