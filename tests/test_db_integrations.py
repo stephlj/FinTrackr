@@ -185,7 +185,7 @@ class TestDBIntegrations(unittest.TestCase):
         accnt_name = "test_accnt2"
         accnt_id = self.FinDB.add_data_source(source_name=accnt_name)
 
-        metadatum_id = self.FinDB.execute_query(
+        metadatum_id = self.FinDB.execute_scalar(
             "INSERT INTO data_load_metadata (date_added, username, source, data_source_id) VALUES (%s,%s,%s,%s) RETURNING id;",
             (
                 date(year=2026, month=1, day=1),
@@ -214,37 +214,37 @@ class TestDBIntegrations(unittest.TestCase):
         trans.sort(key=lambda t: t.date)
         self.assertEqual(trans[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct transaction amount")
         
-        # # Test for inclusivity on one end
-        # trans2 = self.FinDB.get_transactions_in_date_range(
-        #     accnt_name = accnt_name, 
-        #     date_range = [date(year=1978,month=8,day=8),date(year=1980,month=1,day=1)]
-        # )
-        # self.assertEqual(len(trans2), 3)
-        # trans2.sort(key=lambda t: t.date)
-        # self.assertEqual(trans2[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for inclusive bounds")
+        # Test for inclusivity on one end
+        trans2 = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1978,month=8,day=8),date(year=1980,month=1,day=1)]
+        )
+        self.assertEqual(len(trans2), 3)
+        trans2.sort(key=lambda t: t.date)
+        self.assertEqual(trans2[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for inclusive bounds")
 
-        # # Try a range that gets none
-        # trans3 = self.FinDB.get_transactions_in_date_range(
-        #     accnt_name = accnt_name, 
-        #     date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
-        # )
-        # self.assertEqual(len(trans3), 0)
+        # Try a range that gets none
+        trans3 = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
+        )
+        self.assertEqual(len(trans3), 0)
         
-        # # Test dates get properly sorted
-        # trans4 = self.FinDB.get_transactions_in_date_range(
-        #     accnt_name = accnt_name, 
-        #     date_range = [date(year=1980,month=10,day=1),date(year=1977,month=1,day=1)]
-        # )
-        # self.assertEqual(len(trans4), 2)
-        # trans4.sort(key=lambda t: t.date)
-        # self.assertEqual(trans4[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for unsorted date range")
+        # Test dates get properly sorted
+        trans4 = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1980,month=10,day=1),date(year=1977,month=1,day=1)]
+        )
+        self.assertEqual(len(trans4), 3)
+        trans4.sort(key=lambda t: t.date)
+        self.assertEqual(trans4[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for unsorted date range")
 
-        # # Test non-date type fails
-        # with self.assertRaises(TypeError):
-        #     trans5 = self.FinDB.get_transactions_in_date_range(
-        #         accnt_name = accnt_name,
-        #         date_range = ["9/9/1997", "1/1/1993"]
-        #     )
+        # Test non-date type fails
+        with self.assertRaises(TypeError):
+            trans5 = self.FinDB.get_transactions_in_date_range(
+                accnt_name = accnt_name,
+                date_range = ["9/9/1997", "1/1/1993"]
+            )
         
     def test_load_data_add_balances(self):        
         # Use properly formatted csvs
