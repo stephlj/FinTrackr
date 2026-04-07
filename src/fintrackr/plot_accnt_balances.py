@@ -116,7 +116,7 @@ def plot_balances(all_balances: List[Balance], calculated_balances: List[Transac
 
     plt.show(block=False) # This makes CI not block
 
-def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, pw: str) -> None:
+def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, pw: str, db_config: str = '') -> None:
     """
     Plot specified account data within date range.
     If no point-in-time account balance is saved in the db, 
@@ -137,13 +137,19 @@ def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, 
         username to use to connect to db
     pw : str
         pw to use to connect to db
+    db_config : str, optional
+        path to config file for db.
+        Will use default in utils if not specified.
 
     Returns
     -------
     None, but a plot is displayed
     """
 
-    with open(CONFIG_PATH, "r") as config_file:
+    if db_config=='':
+        db_config = CONFIG_PATH
+
+    with open(db_config, "r") as config_file:
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
 

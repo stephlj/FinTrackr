@@ -1,4 +1,7 @@
-# Tests fin_db.py
+# Tests fin_db.py (the DAL)
+#
+# The DAL is simple enough that most of these tests are probably unnecessary.
+# but they're helpful as I'm still learning!
 #
 # Copyright (c) 2025, 2026 Stephanie Johnson
 

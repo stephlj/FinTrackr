@@ -1,6 +1,7 @@
 # test_db_integrations.py
 #
-# Tests functionality from both fin_db.py and load_data.py that require db connections.
+# Integration tests for functions in load_data.py and plot_accnt_balances.py 
+# that need a db to test against.
 #
 # Copyright (c) 2025, 2026 Stephanie Johnson
 
@@ -14,6 +15,7 @@ from psycopg import errors as psql_errors
 import fintrackr.testing_utils as utils
 from fintrackr.dataclasses import Col_Def
 from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
+from fintrackr.plot_accnt_balances import plot_accnt_balances
 
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
@@ -160,5 +162,43 @@ class TestDBIntegrations(unittest.TestCase):
         
         trans_result = self.FinDB.execute_query(trans_test_query, (trans_test_date, trans_accnt))
         self.assertEqual(len(trans_result),1)
+
+    def test_plot_accnt_balances(self):
+        # Add some data for this test, to keep it independent
+        accnt = "plot_me"
+        accnt_id = self.FinDB.add_data_source(source_name=accnt)
+        
+        # add a balance as a reference point
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=2008, month=8, day=8), '8888.88')
+        )
+        
+        # add a couple transactions
+        metadatum_id = self.FinDB.execute_scalar(
+            "INSERT INTO data_load_metadata (date_added, username, source, data_source_id) VALUES (%s,%s,%s,%s) RETURNING id;",
+            (
+                date(year=2008, month=11, day=1),
+                self.params["user"],
+                "transactions_file.csv",
+                accnt_id
+             )
+        )
+        self.FinDB.execute_action(
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
+            (date(year=2008, month=8, day=8), '-50.00', 'Safeway', metadatum_id))
+        self.FinDB.execute_action(
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
+            (date(year=2008, month=8, day=9), '-400.00', 'Rent', metadatum_id))
+        self.FinDB.execute_action(
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
+            (date(year=2008, month=9, day=9), '-55.00', 'Safeway', metadatum_id))
+        # A does-it-run test:
+        plot_accnt_balances(
+            accnt_name = accnt, 
+            date_range = [date(year=2008, month=7, day=1), date(year=2008, month=11, day=1)], 
+            username = self.params["user"], 
+            pw = self.params["user_pw"],
+            db_config = utils.TEST_CONFIG_PATH)
     
     
