@@ -478,7 +478,7 @@ class FinDB:
         date_range.sort()
 
         trans_query = """
-            SELECT t.posted_date, t.amount, t.description
+            SELECT t.posted_date, t.amount
             FROM transactions AS t
             JOIN data_load_metadata AS m ON m.id = t.metadatum_id
             JOIN data_sources AS s ON s.id = m.data_source_id
@@ -487,7 +487,7 @@ class FinDB:
         """
 
         trans = self.execute_query(trans_query, (date_range[0],date_range[1],accnt_name))
-        return [Transaction(date=d, amount=a, description=s) for d, a, s in trans]
+        return [Transaction(date=d, amount=a) for d, a in trans]
     
     # def get_uncategorized(self):
     #     """

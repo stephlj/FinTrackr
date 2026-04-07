@@ -5,7 +5,7 @@
 # Copyright (c) 2025, 2026 Stephanie Johnson
 
 import unittest
-import subprocess, os
+import os
 import pandas as pd
 
 from datetime import date
@@ -18,26 +18,13 @@ from fintrackr.load_data import add_balances, add_transactions, load_data_from_C
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Make a test db, in the process also tests init_db and add_user.
-        
+        # Make a test db; implicit test of init_db and add_user.
         cls.params = utils.config_params()
-
         cls.FinDB = utils.set_up_test_DB(params=cls.params)
 
     @classmethod
     def tearDownClass(cls):
-        cls.FinDB.close()
-        # Delete testing db
-        exit_code = subprocess.run(["dropdb", cls.params["test_db_name"]])
-        exit_code2 = subprocess.run(["dropuser",cls.params["user"]])
-        exit_code3 = subprocess.run(["dropuser",cls.params["test_owner"]])
-
-        # We put these at the end to ensure teardown completes even if one of these fails.
-        # Note that the @classmethod decorator changes the first arg to the class not
-        # an instance of the class, so self.assertEqual fails.
-        assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
-        assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
-        assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
+        utils.tear_down_test_DB(db_conn=cls.FinDB, params=cls.params)
     
     def test_FinDB_csv_to_staging(self):
         self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
