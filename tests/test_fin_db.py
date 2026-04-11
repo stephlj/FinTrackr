@@ -57,36 +57,36 @@ class TestFinDB(unittest.TestCase):
         self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
         self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table wasn't cleared")
 
-    # def test_add_balances_from_staging(self):
-    #     self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
+    def test_add_balances_from_staging(self):
+        self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
 
-    #     # Not sure I need this test, but it confirms expected behavior for learning purposes
+        # Not sure I need this test, but it confirms expected behavior for learning purposes
         
-    #     # Create a staging table
-    #     # Note this test will BREAK if I change the balances table schema;
-    #     # I could load the relevant columns and types from a dataclass.
-    #     # For test simplicity and readability, keeping as is:
-    #     self.FinDB.execute_action("CREATE TABLE staging (date date, amount money);")
-    #     # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
-    #     self.FinDB.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00'))
-    #     accnt = "primary_checking"
-    #     with self.assertRaises(psql_errors.NotNullViolation):
-    #         self.FinDB.add_balances_from_staging(accnt_name=accnt)
+        # Create a staging table
+        # Note this test will BREAK if I change the balances table schema;
+        # I could load the relevant columns and types from a dataclass.
+        # For test simplicity and readability, keeping as is:
+        self.FinDB.execute_action("CREATE TABLE staging (date date, amount numeric(12,2));")
+        # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
+        self.FinDB.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), Decimal('5000.00')))
+        accnt = "primary_checking"
+        with self.assertRaises(psql_errors.NotNullViolation):
+            self.FinDB.add_balances_from_staging(accnt_name=accnt)
         
-    #     _ = self.FinDB.add_data_source(source_name = accnt)
-    #     num_new_bals = self.FinDB.add_balances_from_staging(accnt_name=accnt)
-    #     self.assertEqual(num_new_bals, 1)
+        _ = self.FinDB.add_data_source(source_name = accnt)
+        num_new_bals = self.FinDB.add_balances_from_staging(accnt_name=accnt)
+        self.assertEqual(num_new_bals, 1)
 
-    #     # Make sure I can't add duplicates
-    #     with self.assertRaises(psql_errors.UniqueViolation):
-    #         self.FinDB.add_balances_from_staging(accnt_name=accnt)
+        # Make sure I can't add duplicates
+        with self.assertRaises(psql_errors.UniqueViolation):
+            self.FinDB.add_balances_from_staging(accnt_name=accnt)
 
     # def test_add_transactions_from_staging(self):
     #     self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
         
     #     # Create a staging table
     #     # Note this test will BREAK if I change the balances table schema
-    #     self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount money, description text);")
+    #     self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount numeric(12,2), description text);")
     #     self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), '55.00', 'Pet insurance'))
     #     accnt = "primary_cc"
     #     filepath = "trans_from_staging_test.csv"
