@@ -81,31 +81,31 @@ class TestFinDB(unittest.TestCase):
         with self.assertRaises(psql_errors.UniqueViolation):
             self.FinDB.add_balances_from_staging(accnt_name=accnt)
 
-    # def test_add_transactions_from_staging(self):
-    #     self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
+    def test_add_transactions_from_staging(self):
+        self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
         
-    #     # Create a staging table
-    #     # Note this test will BREAK if I change the balances table schema
-    #     self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount numeric(12,2), description text);")
-    #     self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), '55.00', 'Pet insurance'))
-    #     accnt = "primary_cc"
-    #     filepath = "trans_from_staging_test.csv"
+        # Create a staging table
+        # Note this test will BREAK if I change the balances table schema
+        self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount numeric(12,2), description text);")
+        self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), Decimal('55.00'), 'Pet insurance'))
+        accnt = "primary_cc"
+        filepath = "trans_from_staging_test.csv"
 
-    #     with self.assertRaises(psql_errors.NotNullViolation):
-    #         self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
+        with self.assertRaises(psql_errors.NotNullViolation):
+            self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
         
-    #     _ = self.FinDB.add_data_source(source_name = accnt)
-    #     num_new_bals = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
-    #     self.assertEqual(num_new_bals, 1)
+        _ = self.FinDB.add_data_source(source_name = accnt)
+        num_new_bals = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
+        self.assertEqual(num_new_bals, 1)
 
-    #     # Make sure I can't load this exact same file again
-    #     with self.assertRaises(psql_errors.UniqueViolation):
-    #         self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
+        # Make sure I can't load this exact same file again
+        with self.assertRaises(psql_errors.UniqueViolation):
+            self.FinDB.add_transactions_from_staging(path_to_source_file = filepath, source_info=accnt)
 
-    #     # Make sure I can't load same transactions under a different filename
-    #     filepath2 = "new_trans.csv"
-    #     num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath2, source_info=accnt)
-    #     self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
+        # Make sure I can't load same transactions under a different filename
+        filepath2 = "new_trans.csv"
+        num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath2, source_info=accnt)
+        self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
 
     # def test_get_balances_in_date_range(self):
     #     # Add some data to test against (specific to this test)
