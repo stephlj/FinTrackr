@@ -43,6 +43,9 @@ class FinDB:
         """
         To avoid granting permission to read server files, I use a client-side copy
         This function wraps that copy command.
+
+        ASSUMES column type order of (date, amount, description), ie (date, numeric, text) 
+        which works for both balances and transactions per my current loading schema.
         
         Parameters
         ----------
@@ -71,7 +74,7 @@ class FinDB:
             try:
                 with open(path_to_file, "r") as f:
                     with curs.copy(f"COPY {dest_table} FROM STDIN WITH (FORMAT csv, HEADER false)") as copy:
-                        copy.set_types(["date", "float8", "text"]) # TODO should this not be hardcoded, if I'm not hard-coding dest_table?
+                        copy.set_types(["date", "numeric(12,2)", "text"]) # TODO should this not be hardcoded, if I'm not hard-coding dest_table?
                         for line in f:
                             copy.write(line) # TODO figure out the difference between write and write_row
                 response = 1
