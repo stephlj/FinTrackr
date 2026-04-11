@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 from typing import List
 from datetime import date
+from decimal import Decimal
 
 import fintrackr.fin_db
 from fintrackr.dataclasses import Transaction, Balance
@@ -55,7 +56,7 @@ def relative_bal_by_date(references: List[Balance], transactions: List[Transacti
     if len(references) >= 1:
         ref = sorted(references, key=lambda r: r.date)[-1] # [date, amount] of chronologically most recent account balance
     else:
-        ref = Balance(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = 0.00) # Set balance for first transaction date to zero
+        ref = Balance(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = Decimal('0.00')) # Set balance for first transaction date to zero
 
     # balances have to be cumulative relative to ref_bal, by date
     transactions.sort(key=lambda a: a.date)
