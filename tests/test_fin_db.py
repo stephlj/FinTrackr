@@ -107,129 +107,129 @@ class TestFinDB(unittest.TestCase):
         num_dup_trans = self.FinDB.add_transactions_from_staging(path_to_source_file = filepath2, source_info=accnt)
         self.assertEqual(num_dup_trans, 0, "Duplicates should not have been added to transactions table")
 
-    # def test_get_balances_in_date_range(self):
-    #     # Add some data to test against (specific to this test)
-    #     accnt_name = "test_accnt"
-    #     accnt_id = self.FinDB.add_data_source(source_name=accnt_name)
-    #     self.FinDB.execute_action(
-    #         "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-    #         (accnt_id, date(year=1988, month=8, day=8), '8888.88')
-    #     )
-    #     self.FinDB.execute_action(
-    #         "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-    #         (accnt_id, date(year=1990, month=9, day=9), '9999.99')
-    #     )
-    #     self.FinDB.execute_action(
-    #         "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-    #         (accnt_id, date(year=1991, month=1, day=1), '11111.11')
-    #     )
+    def test_get_balances_in_date_range(self):
+        # Add some data to test against (specific to this test)
+        accnt_name = "test_accnt"
+        accnt_id = self.FinDB.add_data_source(source_name=accnt_name)
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=1988, month=8, day=8), Decimal('8888.88'))
+        )
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=1990, month=9, day=9), Decimal('9999.99'))
+        )
+        self.FinDB.execute_action(
+            "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+            (accnt_id, date(year=1991, month=1, day=1), Decimal('11111.11'))
+        )
         
-    #     # Try all 3 entries,  inclusive
-    #     balances = self.FinDB.get_balances_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=1988,month=7,day=1),date(year=1992,month=1,day=1)]
-    #     )
-    #     self.assertEqual(len(balances), 3)
-    #     # So far they've returned in chronological order but in case that's not the case:
-    #     balances.sort(key=lambda b: b.date)
-    #     self.assertEqual(balances[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount")
+        # Try all 3 entries,  inclusive
+        balances = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1988,month=7,day=1),date(year=1992,month=1,day=1)]
+        )
+        self.assertEqual(len(balances), 3)
+        # So far they've returned in chronological order but in case that's not the case:
+        balances.sort(key=lambda b: b.date)
+        self.assertEqual(balances[0].amount, Decimal('8888.88'), "get_balances_in_date_range did not return correct balance amount")
         
-    #     # Test for inclusivity on one end
-    #     balances2 = self.FinDB.get_balances_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=1990,month=9,day=9),date(year=1992,month=1,day=1)]
-    #     )
-    #     balances2.sort(key=lambda b: b.date)
-    #     self.assertEqual(len(balances2), 2)
-    #     self.assertEqual(balances2[0].amount, "$9,999.99", "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
+        # Test for inclusivity on one end
+        balances2 = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1990,month=9,day=9),date(year=1992,month=1,day=1)]
+        )
+        balances2.sort(key=lambda b: b.date)
+        self.assertEqual(len(balances2), 2)
+        self.assertEqual(balances2[0].amount, Decimal('9999.99'), "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
 
-    #     # Try a range that gets none
-    #     balances3 = self.FinDB.get_balances_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
-    #     )
-    #     self.assertEqual(len(balances3), 0)
+        # Try a range that gets none
+        balances3 = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
+        )
+        self.assertEqual(len(balances3), 0)
         
-    #     # Test dates get properly sorted
-    #     balances4 = self.FinDB.get_balances_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=1990,month=10,day=1),date(year=1988,month=1,day=1)]
-    #     )
-    #     balances4.sort(key=lambda b: b.date)
-    #     self.assertEqual(len(balances4), 2)
-    #     self.assertEqual(balances4[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount for unsorted date range")
+        # Test dates get properly sorted
+        balances4 = self.FinDB.get_balances_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1990,month=10,day=1),date(year=1988,month=1,day=1)]
+        )
+        balances4.sort(key=lambda b: b.date)
+        self.assertEqual(len(balances4), 2)
+        self.assertEqual(balances4[0].amount, Decimal('8888.88'), "get_balances_in_date_range did not return correct balance amount for unsorted date range")
 
-    #     # Test non-date type fails
-    #     with self.assertRaises(TypeError):
-    #         balances5 = self.FinDB.get_balances_in_date_range(
-    #             accnt_name = accnt_name,
-    #             date_range = ["9/9/1997", "1/1/1993"]
-    #         )
+        # Test non-date type fails
+        with self.assertRaises(TypeError):
+            balances5 = self.FinDB.get_balances_in_date_range(
+                accnt_name = accnt_name,
+                date_range = ["9/9/1997", "1/1/1993"]
+            )
 
-    # def test_get_transactions_in_date_range(self):
-    #     # Add some data to test against (specific to this test)
-    #     # Transactions are a little more complicated than balances
-    #     accnt_name = "test_accnt2"
-    #     accnt_id = self.FinDB.add_data_source(source_name=accnt_name)
+    def test_get_transactions_in_date_range(self):
+        # Add some data to test against (specific to this test)
+        # Transactions are a little more complicated than balances
+        accnt_name = "test_accnt2"
+        accnt_id = self.FinDB.add_data_source(source_name=accnt_name)
 
-    #     metadatum_id = self.FinDB.execute_scalar(
-    #         "INSERT INTO data_load_metadata (date_added, username, source, data_source_id) VALUES (%s,%s,%s,%s) RETURNING id;",
-    #         (
-    #             date(year=2026, month=1, day=1),
-    #             self.params["user"],
-    #             "transactions_file.csv",
-    #             accnt_id
-    #          )
-    #     )
+        metadatum_id = self.FinDB.execute_scalar(
+            "INSERT INTO data_load_metadata (date_added, username, source, data_source_id) VALUES (%s,%s,%s,%s) RETURNING id;",
+            (
+                date(year=2026, month=1, day=1),
+                self.params["user"],
+                "transactions_file.csv",
+                accnt_id
+             )
+        )
 
-    #     self.FinDB.execute_action(
-    #         "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-    #         (date(year=1978, month=8, day=8), '-50.00', 'Safeway', metadatum_id))
-    #     self.FinDB.execute_action(
-    #         "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-    #         (date(year=1978, month=8, day=8), '-400.00', 'Rent', metadatum_id))
-    #     self.FinDB.execute_action(
-    #         "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-    #         (date(year=1979, month=9, day=9), '-55.00', 'Safeway', metadatum_id))
+        self.FinDB.execute_action(
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
+            (date(year=1978, month=8, day=8), Decimal('-50.00'), 'Safeway', metadatum_id))
+        self.FinDB.execute_action(
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
+            (date(year=1978, month=8, day=8), Decimal('-400.00'), 'Rent', metadatum_id))
+        self.FinDB.execute_action(
+            "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
+            (date(year=1979, month=9, day=9), Decimal('-55.00'), 'Safeway', metadatum_id))
         
-    #     # Try all 3 entries,  inclusive
-    #     trans = self.FinDB.get_transactions_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=1977,month=7,day=1),date(year=1980,month=1,day=1)]
-    #     )
-    #     self.assertEqual(len(trans), 3)
-    #     trans.sort(key=lambda t: t.date)
-    #     self.assertEqual(trans[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct transaction amount")
+        # Try all 3 entries,  inclusive
+        trans = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1977,month=7,day=1),date(year=1980,month=1,day=1)]
+        )
+        self.assertEqual(len(trans), 3)
+        trans.sort(key=lambda t: t.date)
+        self.assertEqual(trans[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct transaction amount")
         
-    #     # Test for inclusivity on one end
-    #     trans2 = self.FinDB.get_transactions_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=1978,month=8,day=8),date(year=1980,month=1,day=1)]
-    #     )
-    #     self.assertEqual(len(trans2), 3)
-    #     trans2.sort(key=lambda t: t.date)
-    #     self.assertEqual(trans2[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for inclusive bounds")
+        # Test for inclusivity on one end
+        trans2 = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1978,month=8,day=8),date(year=1980,month=1,day=1)]
+        )
+        self.assertEqual(len(trans2), 3)
+        trans2.sort(key=lambda t: t.date)
+        self.assertEqual(trans2[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct amount for inclusive bounds")
 
-    #     # Try a range that gets none
-    #     trans3 = self.FinDB.get_transactions_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
-    #     )
-    #     self.assertEqual(len(trans3), 0)
+        # Try a range that gets none
+        trans3 = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=2025,month=9,day=9),date(year=2026,month=1,day=1)]
+        )
+        self.assertEqual(len(trans3), 0)
         
-    #     # Test dates get properly sorted
-    #     trans4 = self.FinDB.get_transactions_in_date_range(
-    #         accnt_name = accnt_name, 
-    #         date_range = [date(year=1980,month=10,day=1),date(year=1977,month=1,day=1)]
-    #     )
-    #     self.assertEqual(len(trans4), 3)
-    #     trans4.sort(key=lambda t: t.date)
-    #     self.assertEqual(trans4[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for unsorted date range")
+        # Test dates get properly sorted
+        trans4 = self.FinDB.get_transactions_in_date_range(
+            accnt_name = accnt_name, 
+            date_range = [date(year=1980,month=10,day=1),date(year=1977,month=1,day=1)]
+        )
+        self.assertEqual(len(trans4), 3)
+        trans4.sort(key=lambda t: t.date)
+        self.assertEqual(trans4[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct amount for unsorted date range")
 
-    #     # Test non-date type fails
-    #     with self.assertRaises(TypeError):
-    #         trans5 = self.FinDB.get_transactions_in_date_range(
-    #             accnt_name = accnt_name,
-    #             date_range = ["9/9/1997", "1/1/1993"]
-    #         )
+        # Test non-date type fails
+        with self.assertRaises(TypeError):
+            trans5 = self.FinDB.get_transactions_in_date_range(
+                accnt_name = accnt_name,
+                date_range = ["9/9/1997", "1/1/1993"]
+            )
         
