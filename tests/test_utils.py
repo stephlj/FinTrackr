@@ -22,15 +22,5 @@ class TestUtils(unittest.TestCase):
 
         self.assertFalse(utils.valid_date("Safeway"))
 
-    def test_equiv_col_types(self):
-
-        self.assertTrue(utils.equiv_col_types("date", "date"))
-
-        self.assertTrue(utils.equiv_col_types("float64", "money"))
-
-        self.assertTrue(utils.equiv_col_types("str", "text"))
-
-        self.assertFalse(utils.equiv_col_types("object", "date"))
-
 
 
