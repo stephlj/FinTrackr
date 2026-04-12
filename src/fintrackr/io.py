@@ -11,7 +11,7 @@ import re
 
 from typing import List
 
-from fintrackr.utils import equiv_col_types, valid_date
+from fintrackr.utils import valid_date
 from fintrackr.dataclasses import Col_Def
 
 logger = logging.getLogger(__name__)
@@ -29,14 +29,14 @@ def col_type(col: pd.Series) -> str:
     Return
     ------
     str, column type or '' if not possible to determine.
-        Return types will be one of {'date','text','money'}
+        Return types will be one of {'date','text','numeric'}
         All elements in col must be the same type, else the return
         will be '' (not determined).
     """
     
     # Floats will make .str.contains barf; but casting to str with astype will drop trailing zeros in money
     if sum(col.astype(str).str.fullmatch(r"[-]{0,1}\d+\.\d{1,2}",case=False,na=False)) == len(col):
-        return 'money'
+        return 'numeric'
     elif sum(col.astype(str).apply(valid_date)) == len(col):
         return 'date'
     # The na=False may be unnecessary given the casting to str with astype (it's the default);

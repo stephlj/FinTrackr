@@ -16,11 +16,11 @@ from fintrackr.dataclasses import Col_Def
 from fintrackr.io import check_csv_format, strip_header
 
 BALS_STAGING_COLS = [Col_Def(col_name="date", col_type="date"),
-            Col_Def(col_name="amount", col_type="money"),
+            Col_Def(col_name="amount", col_type="numeric"),
     ]
 
 TRANS_STAGING_COLS = [Col_Def(col_name="posted_date", col_type="date"),
-            Col_Def(col_name="amount", col_type="money"),
+            Col_Def(col_name="amount", col_type="numeric"),
             Col_Def(col_name="description", col_type="text")
     ]
 
@@ -168,7 +168,7 @@ def load_data_from_CLI(accnt_name: str,
         db_name = config["db"]["db_name"]
         if trans:
             date_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='date'][0]]
-            amount_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='money'][0]]
+            amount_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='numeric'][0]]
             desc_headers = config["transaction_headers"][[x.col_name for x in TRANS_STAGING_COLS if x.col_type=='text'][0]]
 
     # Clean input if necessary

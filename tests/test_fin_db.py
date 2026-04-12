@@ -11,6 +11,7 @@ import pandas as pd
 
 from datetime import date
 from psycopg import errors as psql_errors
+from decimal import Decimal
 
 import fintrackr.testing_utils as utils
 from fintrackr.dataclasses import Col_Def
@@ -33,12 +34,11 @@ class TestFinDB(unittest.TestCase):
 
         path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
-        element_to_match = str(transactions_to_add.iloc[0,1])
-        element_to_match = element_to_match[0] + "$" + element_to_match[1:] + "0"
+        element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
 
         # Define expected cols of staging as a result of loading this file:
         test_cols = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="amount", col_type="numeric"),
                 Col_Def(col_name="description", col_type="text")
         ]
                      
@@ -66,9 +66,9 @@ class TestFinDB(unittest.TestCase):
         # Note this test will BREAK if I change the balances table schema;
         # I could load the relevant columns and types from a dataclass.
         # For test simplicity and readability, keeping as is:
-        self.FinDB.execute_action("CREATE TABLE staging (date date, amount money);")
+        self.FinDB.execute_action("CREATE TABLE staging (date date, amount numeric(12,2));")
         # Newbie note! Because I don't have a RETURNING clause, use execute_action not execute_query
-        self.FinDB.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), '5000.00'))
+        self.FinDB.execute_action("INSERT INTO staging (date, amount) VALUES (%s,%s);", (date(year=2025, month=9, day=9), Decimal('5000.00')))
         accnt = "primary_checking"
         with self.assertRaises(psql_errors.NotNullViolation):
             self.FinDB.add_balances_from_staging(accnt_name=accnt)
@@ -86,8 +86,8 @@ class TestFinDB(unittest.TestCase):
         
         # Create a staging table
         # Note this test will BREAK if I change the balances table schema
-        self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount money, description text);")
-        self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), '55.00', 'Pet insurance'))
+        self.FinDB.execute_action("CREATE TABLE staging (posted_date date, amount numeric(12,2), description text);")
+        self.FinDB.execute_action("INSERT INTO staging (posted_date, amount, description) VALUES (%s,%s,%s);", (date(year=2025, month=9, day=9), Decimal('55.00'), 'Pet insurance'))
         accnt = "primary_cc"
         filepath = "trans_from_staging_test.csv"
 
@@ -113,15 +113,15 @@ class TestFinDB(unittest.TestCase):
         accnt_id = self.FinDB.add_data_source(source_name=accnt_name)
         self.FinDB.execute_action(
             "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-            (accnt_id, date(year=1988, month=8, day=8), '8888.88')
+            (accnt_id, date(year=1988, month=8, day=8), Decimal('8888.88'))
         )
         self.FinDB.execute_action(
             "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-            (accnt_id, date(year=1990, month=9, day=9), '9999.99')
+            (accnt_id, date(year=1990, month=9, day=9), Decimal('9999.99'))
         )
         self.FinDB.execute_action(
             "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-            (accnt_id, date(year=1991, month=1, day=1), '11111.11')
+            (accnt_id, date(year=1991, month=1, day=1), Decimal('11111.11'))
         )
         
         # Try all 3 entries,  inclusive
@@ -132,7 +132,7 @@ class TestFinDB(unittest.TestCase):
         self.assertEqual(len(balances), 3)
         # So far they've returned in chronological order but in case that's not the case:
         balances.sort(key=lambda b: b.date)
-        self.assertEqual(balances[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount")
+        self.assertEqual(balances[0].amount, Decimal('8888.88'), "get_balances_in_date_range did not return correct balance amount")
         
         # Test for inclusivity on one end
         balances2 = self.FinDB.get_balances_in_date_range(
@@ -141,7 +141,7 @@ class TestFinDB(unittest.TestCase):
         )
         balances2.sort(key=lambda b: b.date)
         self.assertEqual(len(balances2), 2)
-        self.assertEqual(balances2[0].amount, "$9,999.99", "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
+        self.assertEqual(balances2[0].amount, Decimal('9999.99'), "get_balances_in_date_range did not return correct balance amount for inclusive bounds")
 
         # Try a range that gets none
         balances3 = self.FinDB.get_balances_in_date_range(
@@ -157,7 +157,7 @@ class TestFinDB(unittest.TestCase):
         )
         balances4.sort(key=lambda b: b.date)
         self.assertEqual(len(balances4), 2)
-        self.assertEqual(balances4[0].amount, "$8,888.88", "get_balances_in_date_range did not return correct balance amount for unsorted date range")
+        self.assertEqual(balances4[0].amount, Decimal('8888.88'), "get_balances_in_date_range did not return correct balance amount for unsorted date range")
 
         # Test non-date type fails
         with self.assertRaises(TypeError):
@@ -184,13 +184,13 @@ class TestFinDB(unittest.TestCase):
 
         self.FinDB.execute_action(
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-            (date(year=1978, month=8, day=8), '-50.00', 'Safeway', metadatum_id))
+            (date(year=1978, month=8, day=8), Decimal('-50.00'), 'Safeway', metadatum_id))
         self.FinDB.execute_action(
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-            (date(year=1978, month=8, day=8), '-400.00', 'Rent', metadatum_id))
+            (date(year=1978, month=8, day=8), Decimal('-400.00'), 'Rent', metadatum_id))
         self.FinDB.execute_action(
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-            (date(year=1979, month=9, day=9), '-55.00', 'Safeway', metadatum_id))
+            (date(year=1979, month=9, day=9), Decimal('-55.00'), 'Safeway', metadatum_id))
         
         # Try all 3 entries,  inclusive
         trans = self.FinDB.get_transactions_in_date_range(
@@ -199,7 +199,7 @@ class TestFinDB(unittest.TestCase):
         )
         self.assertEqual(len(trans), 3)
         trans.sort(key=lambda t: t.date)
-        self.assertEqual(trans[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct transaction amount")
+        self.assertEqual(trans[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct transaction amount")
         
         # Test for inclusivity on one end
         trans2 = self.FinDB.get_transactions_in_date_range(
@@ -208,7 +208,7 @@ class TestFinDB(unittest.TestCase):
         )
         self.assertEqual(len(trans2), 3)
         trans2.sort(key=lambda t: t.date)
-        self.assertEqual(trans2[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for inclusive bounds")
+        self.assertEqual(trans2[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct amount for inclusive bounds")
 
         # Try a range that gets none
         trans3 = self.FinDB.get_transactions_in_date_range(
@@ -224,7 +224,7 @@ class TestFinDB(unittest.TestCase):
         )
         self.assertEqual(len(trans4), 3)
         trans4.sort(key=lambda t: t.date)
-        self.assertEqual(trans4[-1].amount, "-$55.00", "get_transactions_in_date_range did not return correct amount for unsorted date range")
+        self.assertEqual(trans4[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct amount for unsorted date range")
 
         # Test non-date type fails
         with self.assertRaises(TypeError):

@@ -135,12 +135,10 @@ params = utils.config_params()
 FinDB = utils.set_up_test_DB(params=params)
 ```
 
-When done, run in the Terminal:
+When done, run:
 
 ```
-dropdb test_fin_db
-dropuser test_user
-dropuser test_admin
+tear_down_test_DB(db_conn = FinDB, params = params)
 ```
 
 To regenerate the schema diagram, run `python src/fintrackr/SQL_to_EDL.py src/fintrackr/schema.sql`. A file `schema_EDL.txt` will appear in `src/fintrackr`.

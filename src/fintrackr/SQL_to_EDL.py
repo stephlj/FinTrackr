@@ -1,5 +1,14 @@
 """
 Copyright (c) 2026 Stephanie Johnson
+
+TODO this has a couple bugs - 
+amount numeric(12,2) NOT NULL,
+UNIQUE (accnt_id, date, amount)
+
+outputs as:
+Amount numeric(122)
+UNIQUE (accnt_id
+
 """
 
 import os, sys

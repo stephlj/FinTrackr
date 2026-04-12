@@ -43,6 +43,9 @@ class FinDB:
         """
         To avoid granting permission to read server files, I use a client-side copy
         This function wraps that copy command.
+
+        ASSUMES column type order of (date, amount, description), ie (date, numeric, text) 
+        which works for both balances and transactions per my current loading schema.
         
         Parameters
         ----------
@@ -71,7 +74,7 @@ class FinDB:
             try:
                 with open(path_to_file, "r") as f:
                     with curs.copy(f"COPY {dest_table} FROM STDIN WITH (FORMAT csv, HEADER false)") as copy:
-                        copy.set_types(["date", "float8", "text"]) # TODO should this not be hardcoded, if I'm not hard-coding dest_table?
+                        copy.set_types(["date", "numeric", "text"]) # TODO should this not be hardcoded, if I'm not hard-coding dest_table?
                         for line in f:
                             copy.write(line) # TODO figure out the difference between write and write_row
                 response = 1
@@ -201,7 +204,7 @@ class FinDB:
     def csv_to_staging(self, csv_path: str, csv_columns: List[Col_Def]) -> int:
         """ 
         FinTracker accepts csv inputs.
-        Load csv from disk into a temporary staging table; caliing function loads from the
+        Load csv from disk into a temporary staging table; calling function loads from the
         staging table into the relevant permanent table(s) in the db.
 
         WILL OVERWRITE STAGING IF ALREADY EXISTS!
@@ -209,7 +212,7 @@ class FinDB:
         Parameters
         ----------
         csv_path : str
-            path to csv of transactions, balances, etc
+            path to csv of transactions or balances
         csv_columns : List[Col_Def]
             Columns in the csv which become columns in the staging table.
             Each element of the list is (col_name, col_type), eg ("posted date", "date")
@@ -221,13 +224,10 @@ class FinDB:
 
         """
         
-        cols_placeholders = ', '.join('%s' for _ in csv_columns)
-
         # Drop staging table if it already exists
         # This set of logic feels goofy ... 
         rows_before = 0
         try:
-            # TODO add an execute_scalar method, if I find myself wanting to do this a lot
             rows_before = self.execute_scalar("SELECT COUNT(*) FROM staging;")
         except Exception as e:
             logger.debug(f"Query of staging table did not execute with exception: {e}")
@@ -498,6 +498,7 @@ class FinDB:
     #     """
     #     Given a csv of transactions and categorizations, update.
     #     Should this add new transactions if they're not already in db? probably yes?
+    #     NOTE I'll have to change _import_file or make a new one to handle additional columns
     #     """
 
 

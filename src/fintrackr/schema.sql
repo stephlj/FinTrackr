@@ -21,7 +21,7 @@ CREATE TABLE balances(
     id SERIAL PRIMARY KEY,
     accnt_id integer NOT NULL REFERENCES data_sources(id),
     date date NOT NULL,
-    amount money NOT NULL,
+    amount numeric(12,2) NOT NULL,
     UNIQUE (accnt_id, date, amount)
 );
 
@@ -37,7 +37,7 @@ CREATE TABLE data_load_metadata(
 CREATE TABLE transactions(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
-    amount money NOT NULL,
+    amount numeric(12,2) NOT NULL,
     description text, /* e.g merchant name on cc transaction */
     metadatum_id integer NOT NULL REFERENCES data_load_metadata(id)
 );

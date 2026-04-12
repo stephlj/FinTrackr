@@ -19,14 +19,14 @@ class TestIO(unittest.TestCase):
 
         cls.path1 = os.path.join(TEST_DATA_PATH, "test_balances.csv")
         cls.cols1 = [Col_Def(col_name="date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="amount", col_type="numeric"),
         ]
         cls.path1_out = os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv")
         cls.path1_corr = os.path.join(TEST_DATA_PATH, "test_balances_fixed.csv")
 
         cls.path1_2 = os.path.join(TEST_DATA_PATH, "test_balances_noheader.csv")
         cls.cols1_2 = [Col_Def(col_name="date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="amount", col_type="numeric"),
         ]
         cls.path1_2_out = os.path.join(TEST_DATA_PATH, "test_balances_noheader_REFORMAT.csv")
         # There is no corr for this one, it's already correct
@@ -34,7 +34,7 @@ class TestIO(unittest.TestCase):
         cls.path2 = os.path.join(TEST_DATA_PATH, "test_csv_header.csv")
         cls.cols2 = [Col_Def(col_name="Date", col_type="date"),
                 Col_Def(col_name="description", col_type="text"),
-                Col_Def(col_name="amount", col_type="money")
+                Col_Def(col_name="amount", col_type="numeric")
         ]
         cls.path2_out = os.path.join(TEST_DATA_PATH, "test_csv_header_REFORMAT.csv")
         cls.path2_corr = os.path.join(TEST_DATA_PATH, "test_csv_header_fixed.csv")
@@ -42,28 +42,28 @@ class TestIO(unittest.TestCase):
         cls.path3 = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols.csv")
         cls.cols3 = [Col_Def(col_name="Post Date", col_type="date"),
                 Col_Def(col_name="Description", col_type="text"),
-                Col_Def(col_name="Amount", col_type="money")
+                Col_Def(col_name="Amount", col_type="numeric")
         ]
         cls.path3_out = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv")
         cls.path3_corr = os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_fixed.csv")
 
         cls.path4 = os.path.join(TEST_DATA_PATH, "test_data_checking.csv")
         cls.cols4 = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="amount", col_type="numeric"),
                 Col_Def(col_name="description", col_type="text")
         ]
         cls.path4_out = os.path.join(TEST_DATA_PATH, "test_data_checking_REFORMAT.csv")
         cls.path4_corr = os.path.join(TEST_DATA_PATH, "test_data_checking_fixed.csv")
 
         cls.path5 = os.path.join(TEST_DATA_PATH, "test_balances_noheader.csv")
-        cls.cols5 = [Col_Def(col_name="amount", col_type="money"),
+        cls.cols5 = [Col_Def(col_name="amount", col_type="numeric"),
                 Col_Def(col_name="date", col_type="date"),
         ]
         cls.path5_out = os.path.join(TEST_DATA_PATH, "test_balances_noheader_REFORMAT.csv")
 
         cls.path6 = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype.csv")
         cls.cols6 = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="money"),
+                Col_Def(col_name="amount", col_type="numeric"),
                 Col_Def(col_name="description", col_type="text")
         ]
         cls.path6_out = os.path.join(TEST_DATA_PATH, "test_csv_wrongtype_REFORMAT.csv")
@@ -114,32 +114,32 @@ class TestIO(unittest.TestCase):
                               3:"Transfer REF # XY*Z-123 on 12/18",
                               4:"Stuff & things Inc."})
         self.assertEqual(io.col_type(all_text), 'text')
-        self.assertNotEqual(io.col_type(all_text), 'money')
+        self.assertNotEqual(io.col_type(all_text), 'numeric')
         self.assertNotEqual(io.col_type(all_text), 'date')
         
         all_money = pd.Series({0:"0.00", 1:"1200.00", 2:"-123.04"})
-        self.assertEqual(io.col_type(all_money), 'money')
+        self.assertEqual(io.col_type(all_money), 'numeric')
         self.assertNotEqual(io.col_type(all_money), 'text')
         self.assertNotEqual(io.col_type(all_money), 'date')
 
         all_money2 = pd.Series({0:0.00, 1:1200.00, 2:-123.04})
-        self.assertEqual(io.col_type(all_money2), 'money')
+        self.assertEqual(io.col_type(all_money2), 'numeric')
         self.assertNotEqual(io.col_type(all_money2), 'text')
         self.assertNotEqual(io.col_type(all_money2), 'date')
 
         not_money = pd.Series({0:"0.0", 1:"1200", 2:"-123.04", 3:"-.02"})
         self.assertEqual(io.col_type(not_money),'')
-        self.assertNotEqual(io.col_type(not_money),'money')
+        self.assertNotEqual(io.col_type(not_money),'numeric')
 
         # It looks like pandas adds .00 to the second element on construction/load
         money3 = pd.Series({0:0.0, 1:1200, 2:-123.04, 3:-.02})
-        self.assertEqual(io.col_type(money3),'money')
+        self.assertEqual(io.col_type(money3),'numeric')
         self.assertNotEqual(io.col_type(money3),'')
 
         all_dates = pd.Series({0:"01/02/2025",1:"10/02/2026"})
         self.assertEqual(io.col_type(all_dates), 'date')
         self.assertNotEqual(io.col_type(all_dates), 'text')
-        self.assertNotEqual(io.col_type(all_dates), 'money')
+        self.assertNotEqual(io.col_type(all_dates), 'numeric')
         
         all_null = pd.Series({0:'',1:'',2:'',3:'',4:''})
         self.assertEqual(io.col_type(all_null), '')
@@ -147,7 +147,7 @@ class TestIO(unittest.TestCase):
 
         some_ints = pd.Series({0:'',1:'123',2:'456',3:'',4:''})
         self.assertEqual(io.col_type(some_ints), '')
-        self.assertNotEqual(io.col_type(some_ints),'money')
+        self.assertNotEqual(io.col_type(some_ints),'numeric')
 
         all_special = pd.Series({0:'*',1:'*',2:'*',3:'*'})
         self.assertEqual(io.col_type(all_special), '')

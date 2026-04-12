@@ -7,11 +7,12 @@ Copyright (c) 2026 Stephanie Johnson
 
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 
 @dataclass
 class Balance:
     date: date
-    amount: float
+    amount: Decimal
     # account_name: str
 
     def __iter__(self):
@@ -21,7 +22,7 @@ class Balance:
 @dataclass
 class Transaction:
     date: date
-    amount: float
+    amount: Decimal
     # description: str # TODO carry description text around e.g. for plotting
     # account_name: str
 

@@ -10,10 +10,10 @@ import os
 import pandas as pd
 
 from datetime import date
+from decimal import Decimal
 from psycopg import errors as psql_errors
 
 import fintrackr.testing_utils as utils
-from fintrackr.dataclasses import Col_Def
 from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
 from fintrackr.plot_accnt_balances import plot_accnt_balances
 
@@ -71,8 +71,7 @@ class TestDBIntegrations(unittest.TestCase):
         path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
         source_name = "cc"
         transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
-        element_to_match = str(transactions_to_add.iloc[0,1])
-        element_to_match = element_to_match[0] + "$" + element_to_match[1:] + "0"
+        element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
         
         with self.assertRaises(psql_errors.NotNullViolation):
             num_transactions_added = add_transactions(
@@ -171,7 +170,7 @@ class TestDBIntegrations(unittest.TestCase):
         # add a balance as a reference point
         self.FinDB.execute_action(
             "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
-            (accnt_id, date(year=2008, month=8, day=8), '8888.88')
+            (accnt_id, date(year=2008, month=8, day=8), Decimal('8888.88'))
         )
         
         # add a couple transactions
@@ -186,13 +185,13 @@ class TestDBIntegrations(unittest.TestCase):
         )
         self.FinDB.execute_action(
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-            (date(year=2008, month=8, day=8), '-50.00', 'Safeway', metadatum_id))
+            (date(year=2008, month=8, day=8), Decimal('-50.00'), 'Safeway', metadatum_id))
         self.FinDB.execute_action(
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-            (date(year=2008, month=8, day=9), '-400.00', 'Rent', metadatum_id))
+            (date(year=2008, month=8, day=9), Decimal('-400.00'), 'Rent', metadatum_id))
         self.FinDB.execute_action(
             "INSERT INTO transactions (posted_date, amount, description, metadatum_id) VALUES (%s,%s,%s,%s);", 
-            (date(year=2008, month=9, day=9), '-55.00', 'Safeway', metadatum_id))
+            (date(year=2008, month=9, day=9), Decimal('-55.00'), 'Safeway', metadatum_id))
         # A does-it-run test:
         plot_accnt_balances(
             accnt_name = accnt, 
