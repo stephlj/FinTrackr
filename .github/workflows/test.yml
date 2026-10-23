@@ -25,10 +25,10 @@ jobs:
         sudo -u postgres createuser -s -d -r -w runner
     
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@v10.0.1
       with:
         version: "latest"
 
@@ -36,11 +36,13 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
 
     - name: Create virtual environment and install dependencies
+      # Install the exact versions in uv.lock, so CI tests what runs locally.
+      # --frozen fails rather than re-resolving if uv.lock is out of date.
       run: |
         uv venv --python ${{ matrix.python-version }}
-        uv pip install -e ".[dev]"
+        uv sync --frozen
 
     - name: Run tests with pytest
       run: |
-        uv run pytest tests/ -v --tb=short
+        uv run --no-sync pytest tests/ -v --tb=short
       

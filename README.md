@@ -112,11 +112,13 @@ Users are associated with data they add to the database. They can modify all tab
 
 This package uses `uv` for package and virtual environment management, based on the very helpful tutorials at [Sebastia Agramunt Puig's blog](https://agramunt.me/posts/python-virtual-environments-with-uv/).
 
-Create the environment with `uv venv .venv` and then run `uv sync --all-extras` (to get developer extras).
+Create the environment with `uv venv .venv` and then run `uv sync`, which installs the exact versions in `uv.lock`, including the `dev` dependency group (tools only needed for development, like `pytest`).
+
+`uv sync` doesn't upgrade packages on its own. To upgrade, run `uv lock --upgrade-package <package>` (or `uv lock --upgrade` for everything), then `uv sync`, run the tests, and commit the updated `uv.lock`.
 
 Activate with `source .venv/bin/activate`.
 
-Add dependencies with `uv add <package1> <package2>`. If you get an error that looks like:
+Add dependencies with `uv add <package1> <package2>` (or `uv add --dev <package>` for development-only tools). If you get an error that looks like:
 
 ```
 No solution found when resolving dependencies:
