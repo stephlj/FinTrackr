@@ -13,9 +13,11 @@ from datetime import date
 from decimal import Decimal
 from psycopg import errors as psql_errors
 
-import utils_for_tests as utils
+import dbcommons.testing_utils as utils
 from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
 from fintrackr.plot_accnt_balances import plot_accnt_balances
+
+from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
@@ -30,7 +32,7 @@ class TestDBIntegrations(unittest.TestCase):
     
     def test_load_data_add_balances(self):        
         # Use properly formatted csvs
-        path_to_test_bals = os.path.join(utils.TEST_DATA_PATH,"test_balances_noheader.csv")
+        path_to_test_bals = os.path.join(TEST_DATA_PATH,"test_balances_noheader.csv")
         balances_to_add = pd.read_csv(path_to_test_bals, header=None)
         name = "test_add_bals_integration"
 
@@ -68,7 +70,7 @@ class TestDBIntegrations(unittest.TestCase):
     
     def test_load_data_add_transactions(self):
         # Use properly formatted csvs
-        path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
+        path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
         source_name = "cc"
         transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
         element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
@@ -102,7 +104,7 @@ class TestDBIntegrations(unittest.TestCase):
 
         # Test what happens when partial duplicates are added
         # This file is nearly the same, with 2 different lines
-        additional_transactions_path = os.path.join(utils.TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
+        additional_transactions_path = os.path.join(TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
         num_transactions_added = add_transactions(
             db_conn = self.FinDB,
             path_to_source_file = additional_transactions_path, 
@@ -111,20 +113,20 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
 
     def test_load_data_from_CLI(self):
-        self.addCleanup(os.remove, os.path.join(utils.TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
-        self.addCleanup(os.remove, os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
+        self.addCleanup(os.remove, os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
+        self.addCleanup(os.remove, os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols_REFORMAT.csv"))
         
         # Mostly a does-it-run test for integration (since components are unit tested)
         # Try adding balances
         bal_accnt = "new_checking"
         load_data_from_CLI(
             accnt_name = bal_accnt, 
-            filepath=os.path.join(utils.TEST_DATA_PATH, "test_balances.csv"), #Since this IS an integration test, use an input file that needs reformatting
+            filepath=os.path.join(TEST_DATA_PATH, "test_balances.csv"), #Since this IS an integration test, use an input file that needs reformatting
             username = self.params["user"], 
             pw = self.params["user_pw"],
             trans=False,
             add_as_new_acct=True,
-            db_config = utils.TEST_CONFIG_PATH)
+            db_config = TEST_CONFIG_PATH)
         
         bal_test_query = """
             SELECT b.date, b.amount
@@ -142,12 +144,12 @@ class TestDBIntegrations(unittest.TestCase):
         trans_accnt = "new_cc"
         load_data_from_CLI(
             accnt_name = trans_accnt, 
-            filepath=os.path.join(utils.TEST_DATA_PATH, "test_csv_header_wrongcols.csv"), 
+            filepath=os.path.join(TEST_DATA_PATH, "test_csv_header_wrongcols.csv"), 
             username = self.params["user"], 
             pw = self.params["user_pw"],
             trans=True,
             add_as_new_acct=True,
-            db_config = utils.TEST_CONFIG_PATH)
+            db_config = TEST_CONFIG_PATH)
         
         trans_test_query = """
             SELECT t.posted_date, t.amount, t.description
@@ -198,6 +200,6 @@ class TestDBIntegrations(unittest.TestCase):
             date_range = [date(year=2008, month=7, day=1), date(year=2008, month=11, day=1)], 
             username = self.params["user"], 
             pw = self.params["user_pw"],
-            db_config = utils.TEST_CONFIG_PATH)
+            db_config = TEST_CONFIG_PATH)
     
     

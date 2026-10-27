@@ -13,8 +13,10 @@ from datetime import date
 from psycopg import errors as psql_errors
 from decimal import Decimal
 
-import utils_for_tests as utils
+import dbcommons.testing_utils as utils
 from fintrackr.dataclasses import Col_Def
+
+from utils_for_tests import TEST_DATA_PATH
 
 class TestFinDB(unittest.TestCase):
     @classmethod
@@ -32,7 +34,7 @@ class TestFinDB(unittest.TestCase):
 
         # This function adds rows to a staging table that should be empty at start
 
-        path_to_test_transactions = os.path.join(utils.TEST_DATA_PATH, "test_data_cc.csv")
+        path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
         transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
         element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
 
