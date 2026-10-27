@@ -1,9 +1,5 @@
 # FinTrackr: Personal finances and budgeting app
 
-![Schema diagram](img/schema.png)
-
-*Schema diagram made at [QuickDataBaseDiagrams.com](https://app.quickdatabasediagrams.com), using SQL_to_EDL.py in this repo (so inconsistency with actual db schema is possible!)*
-
 ## Inputs
 
 Users provide csvs of transactions (e.g. downloaded credit card statements from your bank).
@@ -109,6 +105,10 @@ python ./src/fintrackr/add_user.py <new user name> <new user password> <db admin
 Users are associated with data they add to the database. They can modify all tables but can't create users/roles; therefore the db owner's password must be passed so the admin can create the new user.
 
 ## Dev
+
+![Schema diagram](img/schema.png)
+
+*Schema diagram made at [QuickDataBaseDiagrams.com](https://app.quickdatabasediagrams.com), using a manual run of SQL_to_EDL.py from DBCommons (so inconsistency with actual db schema is possible!)*
 
 This package uses `uv` for package and virtual environment management, based on the very helpful tutorials at [Sebastia Agramunt Puig's blog](https://agramunt.me/posts/python-virtual-environments-with-uv/).
 

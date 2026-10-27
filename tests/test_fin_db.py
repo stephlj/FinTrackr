@@ -13,7 +13,7 @@ from datetime import date
 from psycopg import errors as psql_errors
 from decimal import Decimal
 
-import fintrackr.testing_utils as utils
+import utils_for_tests as utils
 from fintrackr.dataclasses import Col_Def
 
 class TestFinDB(unittest.TestCase):

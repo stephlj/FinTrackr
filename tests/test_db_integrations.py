@@ -13,7 +13,7 @@ from datetime import date
 from decimal import Decimal
 from psycopg import errors as psql_errors
 
-import fintrackr.testing_utils as utils
+import utils_for_tests as utils
 from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
 from fintrackr.plot_accnt_balances import plot_accnt_balances
 
