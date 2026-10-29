@@ -12,7 +12,8 @@ DEFAULT_LOGGING_FORMAT = (
     "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"
 )
 
-CONFIG_PATH = os.path.join(os.getcwd(),"src","fintrackr","config.yml")
+CONFIG_PATH = os.path.join(os.path.dirname(__file__),"config.yml")
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__),"schema.sql")
 
 date_format = "%m/%d/%Y"
 

@@ -22,7 +22,7 @@ from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Make a test db; implicit test of init_db and add_fin_user.
+        # Make a test db; implicit test of fin_init and add_fin_user.
         cls.params = utils.config_params()
         cls.FinDB = utils.set_up_test_DB(params=cls.params)
 

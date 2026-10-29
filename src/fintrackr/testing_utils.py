@@ -7,7 +7,7 @@ Copyright (c) 2026 Stephanie Johnson
 import os, subprocess
 import yaml
 
-from fintrackr.init_db import init_db
+from fintrackr.init_db import fin_init
 from fintrackr.add_user import add_fin_user
 import fintrackr.fin_db
 
@@ -36,7 +36,7 @@ def set_up_test_DB(params: dict) -> None:
         Output of config_params
     """
 
-    init_db(pw=params["owner_pw"], path_to_config=TEST_CONFIG_PATH)
+    fin_init(pw=params["owner_pw"], path_to_config=TEST_CONFIG_PATH)
 
     add_fin_user(name=params["user"], 
                 pw=params["user_pw"], 
