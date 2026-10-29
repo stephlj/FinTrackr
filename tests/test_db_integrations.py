@@ -14,6 +14,8 @@ from decimal import Decimal
 from psycopg import errors as psql_errors
 
 import dbcommons.testing_utils as utils
+from fintrackr.utils import SCHEMA_PATH # We test against the real schema (but a fresh db)
+from fintrackr.fin_db import FinDB
 from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
 from fintrackr.plot_accnt_balances import plot_accnt_balances
 
@@ -22,9 +24,11 @@ from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Make a test db; implicit test of fin_init and add_fin_user.
-        cls.params = utils.config_params()
-        cls.FinDB = utils.set_up_test_DB(params=cls.params)
+        # Make a test db; note that these DO NOT test fin_init and add_fin_user.
+        cls.params = utils.config_params(config_path=TEST_CONFIG_PATH)
+        utils.set_up_test_DB(params=cls.params, path_to_schema=SCHEMA_PATH)
+
+        cls.FinDB = FinDB(user=cls.params["user"], pw=cls.params["user_pw"], db_name=cls.params["test_db_name"])
 
     @classmethod
     def tearDownClass(cls):

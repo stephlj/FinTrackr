@@ -78,7 +78,7 @@ wheels = [
 [[package]]
 name = "dbcommons"
 version = "0.1.0"
-source = { git = "https://github.com/stephlj/DBCommons#3ce78c9a6272f21e27f70c7ae78106dbfa936846" }
+source = { git = "https://github.com/stephlj/DBCommons#07f7a962b862bda132edd8c0b89bc3282edf78de" }
 dependencies = [
     { name = "psycopg" },
     { name = "pyyaml" },
