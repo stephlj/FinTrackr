@@ -8,7 +8,7 @@ import os, subprocess
 import yaml
 
 from fintrackr.init_db import init_db
-from fintrackr.add_user import add_user
+from fintrackr.add_user import add_fin_user
 import fintrackr.fin_db
 
 TEST_CONFIG_PATH = os.path.join(os.getcwd(),"tests","data","test_config.yml")
@@ -38,7 +38,7 @@ def set_up_test_DB(params: dict) -> None:
 
     init_db(pw=params["owner_pw"], path_to_config=TEST_CONFIG_PATH)
 
-    add_user(name=params["user"], 
+    add_fin_user(name=params["user"], 
                 pw=params["user_pw"], 
                 admin_pw = params["owner_pw"], 
                 path_to_config=TEST_CONFIG_PATH
