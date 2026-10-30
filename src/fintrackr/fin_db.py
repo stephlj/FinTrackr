@@ -16,7 +16,7 @@ from typing import List
 from datetime import date
 from dbcommons.db_conn import DBConn
 
-from fintrackr.fin_dataclasses import Transaction, Balance, Col_Def
+from fintrackr.fin_dataclasses import Transaction, Balance, BAL_COL_NAMES, TRANS_COL_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -199,10 +199,12 @@ class FinDB(DBConn):
         
         date_range.sort()
 
-        bal_query = """
-            SELECT date, amount
+        col_names_str = ", ".join(BAL_COL_NAMES)
+
+        bal_query = f"""
+            SELECT {col_names_str}
             FROM balances
-            WHERE date BETWEEN %s AND %s
+            WHERE balance_date BETWEEN %s AND %s
             AND accnt_id = (
                 SELECT id
                 FROM data_sources
@@ -211,9 +213,7 @@ class FinDB(DBConn):
             ;
         """
 
-        bals = self.execute_query(bal_query, (date_range[0],date_range[1],accnt_name))
-
-        return [Balance(date=d, amount=a) for d, a in bals]
+        return self.execute_query_w_class(query=bal_query, return_class=Balance, vals=(date_range[0],date_range[1],accnt_name))
     
     def get_transactions_in_date_range(self, accnt_name: str, date_range: List[date]) -> List[Transaction]:
         """
@@ -246,8 +246,10 @@ class FinDB(DBConn):
         
         date_range.sort()
 
-        trans_query = """
-            SELECT t.posted_date, t.amount
+        col_names_str = ", ".join(f"t.{n}" for n in TRANS_COL_NAMES)
+
+        trans_query = f"""
+            SELECT {col_names_str}
             FROM transactions AS t
             JOIN data_load_metadata AS m ON m.id = t.metadatum_id
             JOIN data_sources AS s ON s.id = m.data_source_id
@@ -255,8 +257,7 @@ class FinDB(DBConn):
             AND s.name=%s;
         """
 
-        trans = self.execute_query(trans_query, (date_range[0],date_range[1],accnt_name))
-        return [Transaction(date=d, amount=a) for d, a in trans]
+        return self.execute_query_w_class(query=trans_query, return_class=Transaction, vals=(date_range[0],date_range[1],accnt_name))
     
     # def get_uncategorized(self):
     #     """

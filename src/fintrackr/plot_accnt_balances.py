@@ -54,30 +54,30 @@ def relative_bal_by_date(references: List[Balance], transactions: List[Transacti
     
     # Set a single absolute account balance on a date, which all subsequent balances will be relative to
     if len(references) >= 1:
-        ref = sorted(references, key=lambda r: r.date)[-1] # [date, amount] of chronologically most recent account balance
+        ref = sorted(references, key=lambda r: r.balance_date)[-1] # [date, amount] of chronologically most recent account balance
     else:
-        ref = Balance(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = Decimal('0.00')) # Set balance for first transaction date to zero
+        ref = Balance(balance_date=sorted(transactions, key=lambda t: t.posted_date)[0].posted_date, amount = Decimal('0.00')) # Set balance for first transaction date to zero
 
     # balances have to be cumulative relative to ref_bal, by date
-    transactions.sort(key=lambda a: a.date)
+    transactions.sort(key=lambda a: a.posted_date)
 
-    earlier_trans = [t for t in transactions if t.date<=ref.date] # Balances are for end of day
+    earlier_trans = [t for t in transactions if t.posted_date<=ref.balance_date] # Balances are for end of day
     if len(earlier_trans) > 0:
         # Add the extra initial balance for the first day:
-        earlier_bals_tuple = list(zip([earlier_trans[0].date]+[a.date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)]))))
-        earlier_bals = [Transaction(date=d, amount=a) for d, a in earlier_bals_tuple]
+        earlier_bals_tuple = list(zip([earlier_trans[0].posted_date]+[a.posted_date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)]))))
+        earlier_bals = [Transaction(posted_date=d, amount=a) for d, a in earlier_bals_tuple]
     else:
         earlier_bals = []
     
-    later_trans = [t for t in transactions if t.date>ref.date] 
+    later_trans = [t for t in transactions if t.posted_date>ref.balance_date] 
     if len(later_trans) > 0:
-        later_bals_tuple = list(zip([a.date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount))
-        later_bals = [Transaction(date=d, amount=a) for d, a in later_bals_tuple]
+        later_bals_tuple = list(zip([a.posted_date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount))
+        later_bals = [Transaction(posted_date=d, amount=a) for d, a in later_bals_tuple]
     else:
         later_bals = []
     
     if len(earlier_trans) > 0:
-        return earlier_bals + [Transaction(date=earlier_trans[-1].date, amount=ref.amount)] + later_bals
+        return earlier_bals + [Transaction(posted_date=earlier_trans[-1].posted_date, amount=ref.amount)] + later_bals
     else:
         return earlier_bals + later_bals
 

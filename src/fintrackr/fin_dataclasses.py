@@ -7,38 +7,35 @@ Copyright (c) 2026 Stephanie Johnson
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from dbcommons.dataclass_utils import flat_col_defs
+from fintrackr.utils import date_format
 
 @dataclass
 class Balance:
-    date: date
-    amount: Decimal
-    # account_name: str
+    balance_date: date = field(metadata={'sql_type':'real', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
+    amount: Decimal = field(metadata={'sql_type':'money', 'csv_parser': lambda s: Decimal(s)})
+    # account_name: str = field(metadata={'sql_type':'text', 'csv_parser': lambda s: s})
 
     def __iter__(self):
-        yield self.date
+        yield self.balance_date
         yield self.amount
 
 @dataclass
 class Transaction:
-    date: date
-    amount: Decimal
+    posted_date: date = field(metadata={'sql_type':'real', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
+    amount: Decimal = field(metadata={'sql_type':'money', 'csv_parser': lambda s: Decimal(s)})
     # description: str # TODO carry description text around e.g. for plotting
     # account_name: str
 
     def __iter__(self):
-        yield self.date
+        yield self.posted_date
         yield self.amount
 
-@dataclass
-class Col_Def:
-    # db column definitions (name and type, e.g. "amount", "money")
-    col_name: str
-    col_type: str
-
-    def __iter__(self):
-        yield self.col_name
-        yield self.col_type
+# Col defs for interaction with the db layer
+BAL_COL_DEFS = flat_col_defs(Balance)
+BAL_COL_NAMES = [n for n, _ in BAL_COL_DEFS]
+TRANS_COL_DEFS = flat_col_defs(Transaction)
+TRANS_COL_NAMES = [n for n, _ in TRANS_COL_DEFS]
