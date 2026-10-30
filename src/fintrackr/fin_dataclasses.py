@@ -1,13 +1,16 @@
 """
 These dataclasses hold the structured data from the db in the python layer. 
 They're objects that are roughly equivalent to how the information is stored in the db.
+They're meant to mesh with the utilities in dbcommons for loading data into the db.
 
 Copyright (c) 2026 Stephanie Johnson
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
+
+from dbcommons.dataclass_utils import flat_col_defs
 
 @dataclass
 class Balance:

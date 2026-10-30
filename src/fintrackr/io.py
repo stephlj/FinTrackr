@@ -12,7 +12,7 @@ import re
 from typing import List
 
 from fintrackr.utils import valid_date
-from fintrackr.dataclasses import Col_Def
+from fintrackr.fin_dataclasses import Col_Def
 
 logger = logging.getLogger(__name__)
 

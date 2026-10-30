@@ -15,7 +15,7 @@ from datetime import date
 from decimal import Decimal
 
 import fintrackr.fin_db
-from fintrackr.dataclasses import Transaction, Balance
+from fintrackr.fin_dataclasses import Transaction, Balance
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
 logger = logging.getLogger(__name__)

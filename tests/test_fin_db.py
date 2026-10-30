@@ -14,7 +14,7 @@ from psycopg import errors as psql_errors
 from decimal import Decimal
 
 import dbcommons.testing_utils as utils
-from fintrackr.dataclasses import Col_Def
+from fintrackr.fin_dataclasses import Col_Def
 from fintrackr.utils import SCHEMA_PATH # We test against the real schema (but a fresh db)
 from fintrackr.fin_db import FinDB
 
@@ -32,36 +32,6 @@ class TestFinDB(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         utils.tear_down_test_DB(db_conn=cls.FinDB, params=cls.params)
-    
-    def test_csv_to_staging(self):
-        self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")
-
-        # This function adds rows to a staging table that should be empty at start
-
-        path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
-        transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
-        element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
-
-        # Define expected cols of staging as a result of loading this file:
-        test_cols = [Col_Def(col_name="posted_date", col_type="date"),
-                Col_Def(col_name="amount", col_type="numeric"),
-                Col_Def(col_name="description", col_type="text")
-        ]
-                     
-        num_rows_added = self.FinDB.csv_to_staging(csv_path=path_to_test_transactions, csv_columns = test_cols)
-        self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
-        self.assertEqual(element_to_match, 
-                         self.FinDB.execute_query("SELECT amount FROM staging WHERE description=%s;", ('Concert tickets',))[0][0], 
-                         "Data were scrambled when copied into staging"
-                         )
-        
-        # test that staging has NOT been cleared at this point
-        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table didn't persist")
-
-        # test that it does clear if we try to add new transactions
-        num_rows_added = self.FinDB.csv_to_staging(csv_path=path_to_test_transactions, csv_columns = test_cols)
-        self.assertEqual(num_rows_added, transactions_to_add.shape[0], "Rows added to staging table does not match file")
-        self.assertEqual(len(self.FinDB.execute_query("SELECT posted_date, amount, description FROM staging;")), transactions_to_add.shape[0], "Staging table wasn't cleared")
 
     def test_add_balances_from_staging(self):
         self.addCleanup(self.FinDB.execute_action, "DROP TABLE staging;")

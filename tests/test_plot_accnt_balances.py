@@ -9,7 +9,7 @@ from datetime import date
 from decimal import Decimal
 
 import fintrackr.plot_accnt_balances as plot
-from fintrackr.dataclasses import Transaction, Balance
+from fintrackr.fin_dataclasses import Transaction, Balance
 
 class TestPlotAccntBalances(unittest.TestCase):
     # The main function in plot_accnt_balances doesn't have testing coverage because it requires db access

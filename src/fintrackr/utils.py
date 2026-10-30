@@ -6,7 +6,7 @@ Copyright (c) 2026 Stephanie Johnson
 
 import os
 
-from datetime import date, datetime
+from datetime import datetime
 
 DEFAULT_LOGGING_FORMAT = (
     "%(levelname)s %(asctime)-15s @ %(module)s.%(funcName)s.%(lineno)d - %(msg)s"

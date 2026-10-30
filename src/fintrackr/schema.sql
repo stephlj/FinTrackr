@@ -14,15 +14,15 @@ CREATE TYPE recurrance AS ENUM(
 
 CREATE TABLE data_sources(
     id SERIAL PRIMARY KEY,
-    name text UNIQUE NOT NULL /* e.g., "credit card", "primary checking" */
+    account_name text UNIQUE NOT NULL /* e.g., "credit card", "primary checking" */
 );
 
 CREATE TABLE balances(
     id SERIAL PRIMARY KEY,
     accnt_id integer NOT NULL REFERENCES data_sources(id),
-    date date NOT NULL,
+    balance_date date NOT NULL,
     amount numeric(12,2) NOT NULL,
-    UNIQUE (accnt_id, date, amount)
+    UNIQUE (accnt_id, balance_date, amount)
 );
 
 CREATE TABLE data_load_metadata(
@@ -45,7 +45,7 @@ CREATE TABLE transactions(
 CREATE TABLE categorizations(
     id SERIAL PRIMARY KEY,
     username text NOT NULL,
-    name text /* if a user wants more than one categorization scheme */ 
+    categorization_name text /* if a user wants more than one categorization scheme */ 
 );
 
 CREATE TABLE categories(

@@ -11,14 +11,12 @@ Copyright (c) 2025, 2026 Stephanie Johnson
 
 import psycopg
 import logging
-import os
 from typing import List
 
 from datetime import date
 from dbcommons.db_conn import DBConn
 
-from fintrackr.dataclasses import Transaction, Balance, Col_Def
-from fintrackr.utils import DEFAULT_LOGGING_FORMAT
+from fintrackr.fin_dataclasses import Transaction, Balance, Col_Def
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +26,11 @@ class FinDB(DBConn):
         super().__init__(user=user, pw=pw, db_name=db_name)
         self._logger = logging.getLogger(__name__)
     
-    def get_all_data_sources(self) -> list[str]:
+    def get_all_data_sources(self) -> List[str]:
         # Returns a list of data_sources names
-        names_tuples = self.execute_query("SELECT name FROM data_sources;")
-        # unpack the list of tuples into a list
-        return [n for sublist in names_tuples for n in sublist]
+        names_list = self.execute_query("SELECT name FROM data_sources;")
+        # unpack the list of dicts into a list
+        return [n['name'] for n in names_list]
     
     def get_data_source_id(self, source_name: str) -> int:
         return self.execute_scalar("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
