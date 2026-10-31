@@ -14,7 +14,7 @@ from typing import List
 from datetime import date
 from decimal import Decimal
 
-import fintrackr.fin_db
+from fintrackr.fin_db import FinDB
 from fintrackr.fin_dataclasses import Transaction, Balance
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
@@ -154,13 +154,9 @@ def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, 
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
 
-    FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
-
-    balances = FinDB.get_balances_in_date_range(accnt_name=accnt_name, date_range=date_range)
-    
-    transactions = FinDB.get_transactions_in_date_range(accnt_name=accnt_name, date_range=date_range)
-
-    FinDB.close()
+    with FinDB(user=username, pw=pw, db_name=db_name) as db_conn:
+        balances = db_conn.get_balances_in_date_range(accnt_name=accnt_name, date_range=date_range)  
+        transactions = db_conn.get_transactions_in_date_range(accnt_name=accnt_name, date_range=date_range)
 
     abs_trans = relative_bal_by_date(references = balances, transactions = transactions)
 
