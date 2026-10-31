@@ -24,20 +24,22 @@ class FinDB(DBConn):
     def __init__(self, user: str, pw: str, db_name: str):
         # Use super() because I've now override base class init
         super().__init__(user=user, pw=pw, db_name=db_name)
+        self.user = user
         self._logger = logging.getLogger(__name__)
     
     def get_all_data_sources(self) -> List[str]:
         # Returns a list of data_sources names
-        names_list = self.execute_query("SELECT name FROM data_sources;")
+        names_list = self.execute_query("SELECT account_name FROM data_sources;")
         # unpack the list of dicts into a list
-        return [n['name'] for n in names_list]
+        return [n['account_name'] for n in names_list]
     
     def get_data_source_id(self, source_name: str) -> int:
-        return self.execute_scalar("SELECT id FROM data_sources WHERE name=%s;", (source_name,))
+        return self.execute_scalar("SELECT id FROM data_sources WHERE account_name=%s;", (source_name,))
     
     def add_data_source(self, source_name: str) -> int:
         # Returns id after insertion
-        return self.execute_scalar("INSERT INTO data_sources (name) VALUES (%s) RETURNING id;", (source_name,))
+        source_id_list = self.execute_query("INSERT INTO data_sources (account_name) VALUES (%s) RETURNING id;", (source_name,))
+        return source_id_list[0]["id"]
     
     def add_balances_from_staging(self, accnt_name: str) -> int:
         # Insert balances that are in a staging table into the balances table of the db, under accnt_name.
@@ -45,18 +47,18 @@ class FinDB(DBConn):
         # Will return an empty list if (date, amount) already exists (violation of that unique constraint)
         # and a NotNullViolation exception if accnt_name isn't already in data_sources
         
-        balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-            "SELECT s.date, s.amount, (select id from data_sources where name = %s) " \
+        balances_query = "INSERT INTO balances (balance_date, amount, accnt_id) " \
+            "SELECT s.balance_date, s.amount, (select id from data_sources where account_name = %s) " \
             "FROM staging AS s " \
             "RETURNING *;"
         
         # For reference, another way of doing the same thing:
-        # balances_query = "INSERT INTO balances (date, amount, accnt_id) " \
-        #     "SELECT s.date, s.amount, d.id " \
+        # balances_query = "INSERT INTO balances (balance_date, amount, accnt_id) " \
+        #     "SELECT s.balance_date, s.amount, d.id " \
         #     "FROM staging AS s " \
-        #     "CROSS JOIN data_sources AS d WHERE name = %s "\
+        #     "CROSS JOIN data_sources AS d WHERE account_name = %s "\
         #     "RETURNING *;"
-        # However this just returns an empty list if name doesn't exist, rather than a NotNullViolation, so
+        # However this just returns an empty list if account_name doesn't exist, rather than a NotNullViolation, so
         # preferring the first version (see commented out code below to raise the error I would want)
 
         rows_added = self.execute_query(balances_query, (accnt_name,))
@@ -208,7 +210,7 @@ class FinDB(DBConn):
             AND accnt_id = (
                 SELECT id
                 FROM data_sources
-                WHERE name=%s
+                WHERE account_name=%s
                 )
             ;
         """
@@ -254,7 +256,7 @@ class FinDB(DBConn):
             JOIN data_load_metadata AS m ON m.id = t.metadatum_id
             JOIN data_sources AS s ON s.id = m.data_source_id
             WHERE t.posted_date BETWEEN %s AND %s
-            AND s.name=%s;
+            AND s.account_name=%s;
         """
 
         return self.execute_query_w_class(query=trans_query, return_class=Transaction, vals=(date_range[0],date_range[1],accnt_name))
