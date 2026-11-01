@@ -8,11 +8,12 @@ import os, sys
 import logging
 
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT
-from fintrackr.load_data import load_data_from_CLI
+from fintrackr.load_data import DataLoader
 
-logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
+
     if len(sys.argv) > 6 or len(sys.argv) < 5:
         raise TypeError("load_data_from_CLI.py takes exactly 4 input args: (1) account name; (2) path to csv of transactions; (3) db username; (4) db pw (5) [optional] add_account flag")
 
@@ -22,6 +23,8 @@ if __name__ == "__main__":
     logging.basicConfig(level="INFO", format=DEFAULT_LOGGING_FORMAT)
 
     if len(sys.argv) == 6:
-        load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4], trans=True, add_as_new_acct=True)
+        with DataLoader(user=sys.argv[3], pw=sys.argv[4]) as dl:
+            dl.load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], trans=True, add_as_new_acct=True)
     elif len(sys.argv) == 5:
-        load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], username = sys.argv[3], pw = sys.argv[4], trans=True, add_as_new_acct=True)
+        with DataLoader(user=sys.argv[3], pw=sys.argv[4]) as dl:
+            dl.load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], trans=True, add_as_new_acct=True)
