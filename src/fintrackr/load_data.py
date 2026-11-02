@@ -131,7 +131,6 @@ class DataLoader:
 
         num_new_transactions = 0
 
-        # TODO ugh this doesn't work - TRANS_COL_DEFS needs Description ... 
         self.conn.create_staging(col_defs=TRANS_COL_DEFS)
         num_staged_transactions = self.conn.csv_to_staging(csv_path=path_to_source_file, csv_columns=TRANS_COL_DEFS)
 

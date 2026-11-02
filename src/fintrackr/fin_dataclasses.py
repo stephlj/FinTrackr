@@ -33,6 +33,7 @@ class Transaction:
     def __iter__(self):
         yield self.posted_date
         yield self.amount
+        yield self.description
 
 # Col defs for interaction with the db layer
 BAL_COL_DEFS = flat_col_defs(Balance)
