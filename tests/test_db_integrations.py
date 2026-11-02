@@ -16,7 +16,7 @@ from psycopg import errors as psql_errors
 import dbcommons.testing_utils as utils
 from fintrackr.utils import SCHEMA_PATH # We test against the real schema (but a fresh db)
 from fintrackr.fin_db import FinDB
-from fintrackr.load_data import add_balances, add_transactions, load_data_from_CLI
+from fintrackr.load_data import DataLoader
 from fintrackr.plot_accnt_balances import plot_accnt_balances
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
@@ -28,11 +28,11 @@ class TestDBIntegrations(unittest.TestCase):
         cls.params = utils.config_params(config_path=TEST_CONFIG_PATH)
         utils.set_up_test_DB(params=cls.params, path_to_schema=SCHEMA_PATH)
 
-        cls.FinDB = FinDB(user=cls.params["user"], pw=cls.params["user_pw"], db_name=cls.params["test_db_name"])
+        cls.dl = DataLoader(user=cls.params["user"], pw=cls.params["user_pw"], db_config=TEST_CONFIG_PATH)
 
     @classmethod
     def tearDownClass(cls):
-        utils.tear_down_test_DB(db_conn=cls.FinDB, params=cls.params)
+        utils.tear_down_test_DB(db_conn=cls.dl, params=cls.params)
     
     def test_load_data_add_balances(self):        
         # Use properly formatted csvs
@@ -41,32 +41,26 @@ class TestDBIntegrations(unittest.TestCase):
         name = "test_add_bals_integration"
 
         with self.assertRaises(psql_errors.NotNullViolation):
-            _ = add_balances(db_conn = self.FinDB, 
-                            accnt = name, 
-                            path_to_balances = path_to_test_bals
-                            )
-        
-        _ = self.FinDB.add_data_source(source_name = name)
-        num_balances_added = add_balances(
-                                    db_conn = self.FinDB, 
-                                    accnt = name, 
+            _ = self.dl.add_balances(accnt = name, path_to_balances = path_to_test_bals)
+
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = name)
+        num_balances_added = self.dl.add_balances(accnt = name, 
                                     path_to_balances = path_to_test_bals
                                     )
         self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
         
         # Check we can't add the same balances again:
-        num_balances_added2 = add_balances(
-                                    db_conn = self.FinDB,
-                                    accnt = name, 
+        num_balances_added2 = self.dl.add_balances(accnt = name, 
                                     path_to_balances = path_to_test_bals
                                     )
         self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
 
         # Check that we can assign balances to a different account
         new_name = "test_add_bals_integration2"
-        _ = self.FinDB.add_data_source(source_name = new_name)
-        num_balances_added3 = add_balances(
-                                    db_conn = self.FinDB,
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = new_name)
+        num_balances_added3 = self.dl.add_balances(
                                     accnt = new_name, 
                                     path_to_balances = path_to_test_bals
                                     )

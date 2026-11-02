@@ -27,7 +27,7 @@ class Balance:
 class Transaction:
     posted_date: date = field(metadata={'sql_type':'real', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
     amount: Decimal = field(metadata={'sql_type':'money', 'csv_parser': lambda s: Decimal(s)})
-    # description: str # TODO carry description text around e.g. for plotting
+    description: str = field(metadata={'sql_type':'text', 'csv_parser': lambda s: s})
     # account_name: str
 
     def __iter__(self):

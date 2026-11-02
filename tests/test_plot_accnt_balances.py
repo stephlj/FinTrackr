@@ -23,13 +23,13 @@ class TestPlotAccntBalances(unittest.TestCase):
                  Balance(balance_date=date(year=2025,month=8,day=10),amount=Decimal('25000.02'))
                  ]
 
-        cls.trans = [Transaction(posted_date=date(year=2023, month=10, day=5),amount=Decimal('-200.50')),
-                 Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal('-250.00')),
-                 Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal('50.00')),
-                 Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal('-550.05')),
-                 Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('-250.00')),
-                 Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('-250.00')),
-                 Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal('-500.00'))
+        cls.trans = [Transaction(posted_date=date(year=2023, month=10, day=5),amount=Decimal('-200.50'), description="Desc0"),
+                 Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal('-250.00'), description="Desc1"),
+                 Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal('50.00'), description="Desc2"),
+                 Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal('-550.05'), description="Desc3"),
+                 Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('-250.00'), description="Desc4"),
+                 Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('-250.00'), description="Desc5"),
+                 Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal('-500.00'), description="Desc6")
                  ]
 
     def test_relative_bal_by_date(self):
@@ -37,14 +37,14 @@ class TestPlotAccntBalances(unittest.TestCase):
         rel_bals_1 = plot.relative_bal_by_date(references=[], transactions=self.trans)
 
         self.assertEqual(rel_bals_1, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal('200.50')),
-                            Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal('0.00')), # EOD first transaction date is zero
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal('-250.00')),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(-250.00+50.00))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(-250.00+50.00-550.05))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(-250.00+50.00-550.05-250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(-250.00+50.00-550.05-250.00-250.00))),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(-250.00+50.00-550.05-250.00-250.00-500.00)))
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal('200.50'), description="Desc0"),
+                            Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal('0.00'), description="Reference"), # EOD first transaction date is zero
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal('-250.00'), description="Desc1"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(-250.00+50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(-250.00+50.00-550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(-250.00+50.00-550.05-250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(-250.00+50.00-550.05-250.00-250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(-250.00+50.00-550.05-250.00-250.00-500.00)), description="Desc6")
                             ]
                          )
         
@@ -52,68 +52,68 @@ class TestPlotAccntBalances(unittest.TestCase):
         rel_bals_2 = plot.relative_bal_by_date(references = [self.bals[-1]], transactions = self.trans)
 
         self.assertEqual(rel_bals_2, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(25000.02+200.50+250.00-50.00+550.05))),
-                            Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(25000.02+250.00-50.00+550.05))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(25000.02-50.00+550.05))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(25000.02+550.05))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal('25000.02')),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(25000.02-250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(25000.02-250.00-250.00))),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(25000.02-250.00-250.00-500.000)))
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(25000.02+200.50+250.00-50.00+550.05)), description="Desc0"),
+                            Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(25000.02+250.00-50.00+550.05)), description="Desc1"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(25000.02-50.00+550.05)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(25000.02+550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal('25000.02'), description="Reference"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(25000.02-250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(25000.02-250.00-250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(25000.02-250.00-250.00-500.000)), description="Desc6")
                             ]
                          )
 
         # Check relative to a single date at one end
         rel_bals_3 = plot.relative_bal_by_date(references=[self.bals[0]], transactions=self.trans[0:-1])
         self.assertEqual(rel_bals_3, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50))), # This is the additional element - balance at start of day 10/5/23, before first deduction
-                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00))), # After the first transaction (same day as first element)
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00')) # This is the balance after the last transaction on 9/10, by definition
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50)), description="Reference"), # This is the additional element - balance at start of day 10/5/23, before first deduction
+                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00)), description="Desc0"), # After the first transaction (same day as first element)
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00)), description="Desc1"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00)), description="Desc3"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00'), description="Desc5") # This is the balance after the last transaction on 9/10, by definition
                             ] 
                          )
         
         # Check relative to a single date later than the latest transaction
         rel_bals_4 = plot.relative_bal_by_date(references=[Balance(balance_date=date(year=2026,month=1,day=1), amount=Decimal('5000.00'))], transactions=self.trans)
         self.assertEqual(rel_bals_4, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05-50.00+250.00+200.50))),
-                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05-50.00+250.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05-50.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+500.00+250.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+500.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+500.00))),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal('5000.00'))# This is still the balance after the last transaction
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05-50.00+250.00+200.50)), description="Desc0"),
+                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05-50.00+250.00)), description="Desc1"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05-50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+500.00+250.00+250.00+550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+500.00+250.00+250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+500.00+250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+500.00)), description="Desc6"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal('5000.00'), description="Reference")# This is still the balance after the last transaction
                             ] 
                          )
         
         # Check relative to a single date at other end
         rel_bals_5 = plot.relative_bal_by_date(references=[Balance(balance_date=date(year=2023, month=10, day=5), amount=Decimal('2500.00'))], transactions=self.trans)
         self.assertEqual(rel_bals_5, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(2500.00+200.50))),
-                            Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal('2500.00')),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-250.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-250.00+50.00))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(2500.00-250.00+50.00-550.05))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-250.00+50.00-550.05-250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-250.00+50.00-550.05-250.00-250.00))),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(2500.00-250.00+50.00-550.05-250.00-250.00-500.00)))
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(2500.00+200.50)), description="Desc0"),
+                            Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal('2500.00'), description="Reference"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-250.00)), description="Desc1"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-250.00+50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(2500.00-250.00+50.00-550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-250.00+50.00-550.05-250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-250.00+50.00-550.05-250.00-250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(2500.00-250.00+50.00-550.05-250.00-250.00-500.00)), description="Desc6")
                             ]
                          )
         
         # Check relative to a single date earlier than the earliest transaction
         rel_bals_6 = plot.relative_bal_by_date(references=[Balance(balance_date=date(year=2023, month=10, day=4),amount=Decimal('2500.00'))], transactions=self.trans)
         self.assertEqual(rel_bals_6, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(2500.00-200.50))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-200.50-250.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-200.50-250.00+50.00))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05-250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05-250.00-250.00))),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05-250.00-250.00-500.00)))
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(2500.00-200.50)), description="Desc0"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-200.50-250.00)), description="Desc1"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(2500.00-200.50-250.00+50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05-250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05-250.00-250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(2500.00-200.50-250.00+50.00-550.05-250.00-250.00-500.00)), description="Desc6")
                             ]
                          )
 
@@ -121,14 +121,14 @@ class TestPlotAccntBalances(unittest.TestCase):
         rel_bals_7 = plot.relative_bal_by_date(references=self.bals,transactions=self.trans)
 
         self.assertEqual(rel_bals_7, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50))), 
-                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00))), 
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00')),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(5000.00-500.00)))
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50)), description="Desc0"), 
+                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00)), description="Desc1"), 
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00'), description="Reference"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(5000.00-500.00)), description="Desc6")
                             ] 
                          )
         
@@ -140,14 +140,14 @@ class TestPlotAccntBalances(unittest.TestCase):
     def test_plot_balances(self):
         # Just a smoke test (does it run)
 
-        calc_bals = [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50))), 
-                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00))), 
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00))),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05))),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00))),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00')),
-                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(5000.00-500.00)))
+        calc_bals = [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50)), description="Desc0"), 
+                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00)), description="Desc1"), 
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00'), description="Reference"),
+                            Transaction(posted_date=date(year=2025,month=11,day=10), amount=Decimal(str(5000.00-500.00)), description="Desc6")
                         ]
 
         plot.plot_balances(all_balances=self.bals, calculated_balances=calc_bals)

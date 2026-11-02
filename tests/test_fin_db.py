@@ -201,6 +201,8 @@ class TestFinDB(unittest.TestCase):
         trans4.sort(key=lambda t: t.posted_date)
         self.assertEqual(trans4[-1].amount, Decimal('-55.00'), "get_transactions_in_date_range did not return correct amount for unsorted date range")
 
+        #TODO Test description is carried through properly
+
         # Test non-date type fails
         with self.assertRaises(TypeError):
             _ = self.FinDB.get_transactions_in_date_range(

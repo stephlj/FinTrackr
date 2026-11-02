@@ -64,20 +64,20 @@ def relative_bal_by_date(references: List[Balance], transactions: List[Transacti
     earlier_trans = [t for t in transactions if t.posted_date<=ref.balance_date] # Balances are for end of day
     if len(earlier_trans) > 0:
         # Add the extra initial balance for the first day:
-        earlier_bals_tuple = list(zip([earlier_trans[0].posted_date]+[a.posted_date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)]))))
-        earlier_bals = [Transaction(posted_date=d, amount=a) for d, a in earlier_bals_tuple]
+        earlier_bals_tuple = list(zip([earlier_trans[0].posted_date]+[a.posted_date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)])), ["Reference"]+[c.description for c in earlier_trans]))
+        earlier_bals = [Transaction(posted_date=d, amount=a, description=c) for d, a, c in earlier_bals_tuple]
     else:
         earlier_bals = []
     
     later_trans = [t for t in transactions if t.posted_date>ref.balance_date] 
     if len(later_trans) > 0:
-        later_bals_tuple = list(zip([a.posted_date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount))
-        later_bals = [Transaction(posted_date=d, amount=a) for d, a in later_bals_tuple]
+        later_bals_tuple = list(zip([a.posted_date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount, [c.description for c in later_trans]))
+        later_bals = [Transaction(posted_date=d, amount=a, description=c) for d, a, c in later_bals_tuple]
     else:
         later_bals = []
     
     if len(earlier_trans) > 0:
-        return earlier_bals + [Transaction(posted_date=earlier_trans[-1].posted_date, amount=ref.amount)] + later_bals
+        return earlier_bals + [Transaction(posted_date=earlier_trans[-1].posted_date, amount=ref.amount, description="Reference")] + later_bals
     else:
         return earlier_bals + later_bals
 
@@ -102,7 +102,7 @@ def plot_balances(all_balances: List[Balance], calculated_balances: List[Transac
     """
     
     # Rearrange inputs into tuple of lists
-    calc_date, calc_amt = zip(*calculated_balances)
+    calc_date, calc_amt, descriptions = zip(*calculated_balances)
     calculated = (list(calc_date), list(calc_amt))
 
     input_date, input_amt = zip(*all_balances)
