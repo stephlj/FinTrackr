@@ -61,10 +61,14 @@ def relative_bal_by_date(references: List[Balance], transactions: List[Transacti
     # balances have to be cumulative relative to ref_bal, by date
     transactions.sort(key=lambda a: a.posted_date)
 
+    # We handle relative balances differently if their date is before vs after the reference date.
+    # Before the reference date (earlier_trans), the account balance increases relative to the reference for every negative (debited) transaction - 
+    # because the new balance is the result of that previous transaction.
+    # After the reference date (later_trans), the account balance decreases after each debited transaction.
     earlier_trans = [t for t in transactions if t.posted_date<=ref.balance_date] # Balances are for end of day
     if len(earlier_trans) > 0:
-        # Add the extra initial balance for the first day:
-        earlier_bals_tuple = list(zip([earlier_trans[0].posted_date]+[a.posted_date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)])), ["Reference"]+[c.description for c in earlier_trans]))
+        # Add an extra initial balance for the first day:
+        earlier_bals_tuple = list(zip([earlier_trans[0].posted_date]+[a.posted_date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)])), [c.description for c in earlier_trans]))
         earlier_bals = [Transaction(posted_date=d, amount=a, description=c) for d, a, c in earlier_bals_tuple]
     else:
         earlier_bals = []

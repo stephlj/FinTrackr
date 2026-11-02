@@ -66,13 +66,13 @@ class TestPlotAccntBalances(unittest.TestCase):
         # Check relative to a single date at one end
         rel_bals_3 = plot.relative_bal_by_date(references=[self.bals[0]], transactions=self.trans[0:-1])
         self.assertEqual(rel_bals_3, 
-                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50)), description="Reference"), # This is the additional element - balance at start of day 10/5/23, before first deduction
-                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00)), description="Desc0"), # After the first transaction (same day as first element)
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00)), description="Desc1"),
-                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05)), description="Desc2"),
-                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00)), description="Desc3"),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00)), description="Desc4"),
-                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00'), description="Desc5") # This is the balance after the last transaction on 9/10, by definition
+                        [Transaction(posted_date=date(year=2023, month=10, day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00+200.50)), description="Desc0"), # This is the additional element - balance at start of day 10/5/23, before first deduction
+                            Transaction(posted_date=date(year=2023,month=10,day=5), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00+250.00)), description="Desc1"), # After the first transaction (same day as first element)
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05-50.00)), description="Desc2"),
+                            Transaction(posted_date=date(year=2024,month=1,day=1), amount=Decimal(str(5000.00+250.00+250.00+550.05)), description="Desc3"),
+                            Transaction(posted_date=date(year=2024,month=10,day=1), amount=Decimal(str(5000.00+250.00+250.00)), description="Desc4"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal(str(5000.00+250.00)), description="Desc5"),
+                            Transaction(posted_date=date(year=2025,month=9,day=10), amount=Decimal('5000.00'), description="Reference") # This is the balance after the last transaction on 9/10, by definition
                             ] 
                          )
         
