@@ -14,9 +14,8 @@ from typing import List
 from dbcommons.dataclass_utils import csv_to_dataclass
 
 from fintrackr.fin_db import FinDB
-from fintrackr.utils import CONFIG_PATH
+from fintrackr.utils import CONFIG_PATH, wrangle_trans_csv
 from fintrackr.fin_dataclasses import Balance, Transaction, BAL_COL_DEFS, TRANS_COL_DEFS
-from fintrackr.io import check_csv_format, strip_header
 
 class DataLoader:
     def __init__(self, user: str, pw: str, db_config: str=""):
@@ -171,11 +170,12 @@ class DataLoader:
 
         return self.add_balances(accnt=account_name, bals_list=bals)
 
-    def add_transactions_from_csv(self, path_to_csv: str, account_name: str)->int:
+    def add_transactions_from_csv(self, path_to_csv: str, account_name: str, trans_aliases: dict)->int:
         # Load transactions from csv into a list of Transaction dataclasses, one dataclass per csv row; 
         # also handles input checking and formatting.
 
-        # TODO input handling here
+        # Since we don't control the transaction csv format, try to wrangle what we got into what we need:
+        reformtted_csv_path = wrangle_trans_csv(path_to_csv=path_to_csv, trans_aliases=trans_aliases)
 
         transactions = csv_to_dataclass(path_to_csv=reformtted_csv_path, cls=Transaction)
 
@@ -215,14 +215,16 @@ class DataLoader:
         -------
         None
         """
+
+        trans_aliases = {}
         
         with open(self.db_config, "r") as config_file:
             config = yaml.safe_load(config_file)
             if trans:
                 # get allowed header aliases
-                date_headers = config["transaction_headers"]["posted_date"]
-                amount_headers = config["transaction_headers"]["amount"]
-                desc_headers = config["transaction_headers"]["description"]
+                trans_aliases["date_headers"] = config["transaction_headers"]["posted_date"]
+                trans_aliases["amount_headers"] = config["transaction_headers"]["amount"]
+                trans_aliases["desc_headers"] = config["transaction_headers"]["description"]
 
         if add_as_new_acct:
             try:
@@ -243,7 +245,7 @@ class DataLoader:
                 raise ValueError(log_msg)          
         
         if trans:
-            result = self.add_transactions_from_csv(path_to_source_file = filepath, source_info = accnt_name)
+            result = self.add_transactions_from_csv(path_to_source_file = filepath, source_info = accnt_name, trans_aliases=trans_aliases)
         else:
             result = self.add_balances_from_csv(path_to_csv=filepath, account_name=accnt_name)
 

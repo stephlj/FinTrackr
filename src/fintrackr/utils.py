@@ -5,6 +5,7 @@ Copyright (c) 2026 Stephanie Johnson
 """
 
 import os
+import csv
 
 from datetime import datetime
 
@@ -16,6 +17,9 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__),"config.yml")
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__),"schema.sql")
 
 date_format = "%m/%d/%Y"
+
+def wrangle_trans_csv(path_to_csv: str, trans_aliases: dict)->str:
+    pass
 
 SQL_to_python_types = {"date" : "date",
                        "money" : "float64",
