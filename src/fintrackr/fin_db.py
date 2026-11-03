@@ -33,7 +33,7 @@ class FinDB(DBConn):
         # unpack the list of dicts into a list
         return [n['account_name'] for n in names_list]
     
-    def get_data_source_id(self, source_name: str) -> int:
+    def get_data_source_id(self, source_name: str) -> int | None:
         return self.execute_scalar("SELECT id FROM data_sources WHERE account_name=%s;", (source_name,))
     
     def add_data_source(self, source_name: str) -> int:

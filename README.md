@@ -4,7 +4,7 @@
 
 Users provide csvs of transactions (e.g. downloaded credit card statements from your bank).
 
-FinTrackr will then classify each transaction (expense or income) by category (groceries, eating out, etc) and whether the expense is recurring, and on what frequency. Initially classification will be manual, but v2 will use an ML model (classical or LLM, TBD).
+FinTrackr will then classify each transaction (expense or income) by category (groceries, eating out, etc) and whether the expense is recurring, and on what frequency. Initially classification will be manual, but v2 will use an ML model (classical or local LLM, TBD).
 
 Security: the database runs locally, nothing leaves your machine.
 
@@ -29,10 +29,9 @@ python ./src/fintrackr/load_transactions.py <account_name> <filepath> <username>
 
 where:
 - `<account_name>` is the name of an account in the db which had these transactions. 
-In the db schema, this is the `name` field of the `data_sources` table.
 
 - `<filepath>` is the full path to a csv with columns representing date, transactions amounts, and description.
-Since this csv is determined by the bank, we tolerate headers vs no header.
+Since this csv is determined by the bank, we tolerate headers vs no header, and extra columns.
 If your bank's csv has a header, specify the headers for columns represented posted date, amount, and description
 in the config. If you have data from multiple banks with different formats, you can provide a list of options for each
 column.
@@ -52,11 +51,10 @@ python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw
 
 where:
 - `<account_name>` is the name of an account in the db which had these balances. 
-In the db schema, this is the `name` field of the `data_sources` table.
 
 - `<filepath>` is the full path to a csv with columns representing date and amount. 
-Since these are user-generated (not from a bank), we insist they have a header with columns `Date` 
-and `Amount` (case insensitive).
+Since these are user-generated (not from a bank), we insist they have a header with columns `balance_date` 
+and `amount` (case insensitive).
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
@@ -72,14 +70,11 @@ python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_d
 
 where:
 - `<account_name>` is the name of an account in the db for which transactions (and, optionally, balances)
-are recorded. In the db schema, this is the `name` field of the `data_sources` table.
 
 - Account balances will be plotted between `<start_date>` and `<end_date>`. Balances logged in the db will be plotted,
 as well as balances calculated as a result of all logged transactions on that account, between the specified dates.
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
-
-- `add_account` is an optional flag: is `<account_name>` one that already exists in the db? If not, add this flag.
 
 
 ## Getting started
@@ -129,7 +124,7 @@ you already have the package (e.g. it's a package that comes with all python ins
 
 Use `pytest` to run the tests. (For quick debugging: Add `-s` or `--capture=no` to print print statements to console.)
 
-Quick manual testing/debugging setup using the tools in `testing_utils.py`:
+Quick manual testing/debugging setup using the tools in `testing_utils.py`: TODO update
 
 ```
 import fintrackr.testing_utils as utils

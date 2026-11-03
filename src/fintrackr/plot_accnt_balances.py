@@ -106,6 +106,7 @@ def plot_balances(all_balances: List[Balance], calculated_balances: List[Transac
     """
     
     # Rearrange inputs into tuple of lists
+    # TODO hover over a point and see description
     calc_date, calc_amt, descriptions = zip(*calculated_balances)
     calculated = (list(calc_date), list(calc_amt))
 
