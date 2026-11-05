@@ -15,7 +15,7 @@ from fintrackr.utils import date_format
 
 @dataclass
 class Balance:
-    balance_date: date = field(metadata={'sql_type':'real', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
+    balance_date: date = field(metadata={'sql_type':'date', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
     amount: Decimal = field(metadata={'sql_type':'money', 'csv_parser': lambda s: Decimal(s)})
     # account_name: str = field(metadata={'sql_type':'text', 'csv_parser': lambda s: s})
 
@@ -25,7 +25,7 @@ class Balance:
 
 @dataclass
 class Transaction:
-    posted_date: date = field(metadata={'sql_type':'real', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
+    posted_date: date = field(metadata={'sql_type':'date', 'csv_parser': lambda s: datetime.strptime(s, date_format)})
     amount: Decimal = field(metadata={'sql_type':'money', 'csv_parser': lambda s: Decimal(s)})
     description: str = field(metadata={'sql_type':'text', 'csv_parser': lambda s: s})
     # account_name: str

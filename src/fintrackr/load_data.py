@@ -170,12 +170,12 @@ class DataLoader:
 
         return self.add_balances(accnt=account_name, bals_list=bals)
 
-    def add_transactions_from_csv(self, path_to_csv: str, account_name: str, trans_aliases: dict)->int:
+    def add_transactions_from_csv(self, path_to_csv: str, account_name: str)->int:
         # Load transactions from csv into a list of Transaction dataclasses, one dataclass per csv row; 
         # also handles input checking and formatting.
 
         # Since we don't control the transaction csv format, try to wrangle what we got into what we need:
-        reformtted_csv_path = wrangle_trans_csv(path_to_csv=path_to_csv, trans_aliases=trans_aliases)
+        reformtted_csv_path = wrangle_trans_csv(path_to_csv=path_to_csv)
 
         transactions = csv_to_dataclass(path_to_csv=reformtted_csv_path, cls=Transaction)
 
@@ -216,16 +216,6 @@ class DataLoader:
         None
         """
 
-        trans_aliases = {}
-        
-        with open(self.db_config, "r") as config_file:
-            config = yaml.safe_load(config_file)
-            if trans:
-                # get allowed header aliases
-                trans_aliases["date_headers"] = config["transaction_headers"]["posted_date"]
-                trans_aliases["amount_headers"] = config["transaction_headers"]["amount"]
-                trans_aliases["desc_headers"] = config["transaction_headers"]["description"]
-
         if add_as_new_acct:
             try:
                 _ = self.conn.add_data_source(source_name=accnt_name)
@@ -245,7 +235,7 @@ class DataLoader:
                 raise ValueError(log_msg)          
         
         if trans:
-            result = self.add_transactions_from_csv(path_to_source_file = filepath, source_info = accnt_name, trans_aliases=trans_aliases)
+            result = self.add_transactions_from_csv(path_to_source_file = filepath, source_info = accnt_name)
         else:
             result = self.add_balances_from_csv(path_to_csv=filepath, account_name=accnt_name)
 
