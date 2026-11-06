@@ -9,7 +9,6 @@ import csv
 import yaml
 import logging
 
-from datetime import datetime
 from dataclasses import fields
 
 from dbcommons.utils import check_csv_path
@@ -22,23 +21,23 @@ DEFAULT_LOGGING_FORMAT = (
 CONFIG_PATH = os.path.join(os.path.dirname(__file__),"config.yml")
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__),"schema.sql")
 
-date_format = "%m/%d/%Y"
-
 logger = logging.getLogger(__name__)
 
-def get_trans_header_aliases()->dict:
+def get_trans_header_aliases(config_path: str=CONFIG_PATH)->dict:
     trans_aliases = {}
             
-    with open(CONFIG_PATH, "r") as config_file:
+    with open(config_path, "r") as config_file:
         config = yaml.safe_load(config_file)
         # get allowed header aliases
         for t in TRANS_COL_NAMES:
             trans_aliases[t] = config["transaction_headers"][t]
+    return trans_aliases
 
-def wrangle_trans_csv(path_to_csv: str)->str:
+def wrangle_trans_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
     # Given a path to a transactions csv, return a new path to
     # a new csv that's guaranteed to have the right format for loading.
     # Writes a new file regardless of whether the original was ok or not.
+    # We pass a config_path arg for testing.
     
     # Basic input checking
     check_csv_path(path_to_file=path_to_csv)
@@ -46,7 +45,7 @@ def wrangle_trans_csv(path_to_csv: str)->str:
     filename = os.path.splitext(os.path.split(path_to_csv)[-1])[0]
     new_csv_path = os.path.join(os.path.split(path_to_csv)[0], filename+"_REFORMAT"+".csv")
     
-    trans_aliases = get_trans_header_aliases()
+    trans_aliases = get_trans_header_aliases(config_path=config_path)
     trans_header = {}
 
     # Get the first row of the file. We use this to infer the format.

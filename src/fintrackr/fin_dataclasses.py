@@ -11,7 +11,8 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from dbcommons.dataclass_utils import flat_col_defs
-from fintrackr.utils import date_format
+
+date_format = "%m/%d/%Y"
 
 @dataclass
 class Balance:
