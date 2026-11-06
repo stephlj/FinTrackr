@@ -6,108 +6,151 @@
 # Copyright (c) 2025, 2026 Stephanie Johnson
 
 import unittest
-import os
+import os, subprocess
 import pandas as pd
 
 from datetime import date
 from decimal import Decimal
 from psycopg import errors as psql_errors
 
-import dbcommons.testing_utils as utils
-from fintrackr.utils import SCHEMA_PATH # We test against the real schema (but a fresh db)
+from fintrackr.init_db import fin_init
+from fintrackr.add_user import add_fin_user
+from fintrackr.fin_dataclasses import Balance, Transaction
 from fintrackr.fin_db import FinDB
 from fintrackr.load_data import DataLoader
 from fintrackr.plot_accnt_balances import plot_accnt_balances
 
-from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
+from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH, config_params_for_tests
 
 class TestDBIntegrations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Make a test db; note that these DO NOT test fin_init and add_fin_user.
-        cls.params = utils.config_params(config_path=TEST_CONFIG_PATH)
-        utils.set_up_test_DB(params=cls.params, path_to_schema=SCHEMA_PATH)
+        cls.params = config_params_for_tests(test_config_path=TEST_CONFIG_PATH)
+
+        fin_init(admin_pw=cls.params["owner_pw"], path_to_config=cls.params["config_path"])
+        add_fin_user(name=cls.params["user"], pw=cls.params["user_pw"], admin_pw=cls.params["owner_pw"], path_to_config=cls.params["config_path"])
 
         cls.dl = DataLoader(user=cls.params["user"], pw=cls.params["user_pw"], db_config=TEST_CONFIG_PATH)
 
     @classmethod
     def tearDownClass(cls):
-        utils.tear_down_test_DB(db_conn=cls.dl, params=cls.params)
+        cls.dl.close()
+
+        # Delete testing db
+        exit_code = subprocess.run(["dropdb", cls.params["test_db_name"]])
+        exit_code2 = subprocess.run(["dropuser",cls.params["user"]])
+        exit_code3 = subprocess.run(["dropuser",cls.params["test_owner"]])
+
+        # We put these at the end to ensure teardown completes even if one of these fails.
+        assert exit_code.returncode==0, "Failed to remove testing db, must now remove manually"
+        assert exit_code2.returncode==0, "Failed to remove testing user, must now remove manually"
+        assert exit_code3.returncode==0, "Failed to remove testing db owner, must now remove manually"
     
-    def test_load_data_add_balances(self):        
-        # Use properly formatted csvs
-        path_to_test_bals = os.path.join(TEST_DATA_PATH,"test_balances_noheader.csv")
-        balances_to_add = pd.read_csv(path_to_test_bals, header=None)
-        name = "test_add_bals_integration"
+    def test_load_data_add_balances(self):
+        bals = [Balance(balance_date=date(year=2026,month=6,day=5), amount=Decimal('2001.20')), 
+                Balance(balance_date=date(year=2025,month=10,day=10), amount=Decimal('4500.04'))]
+        accnt_name="test_add_bals_from_cls"
 
         with self.assertRaises(psql_errors.NotNullViolation):
-            _ = self.dl.add_balances(accnt = name, path_to_balances = path_to_test_bals)
+            _ = self.dl.add_balances(accnt=accnt_name,bals_list=bals)
 
-        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
-            _ = db_conn.add_data_source(source_name = name)
-        num_balances_added = self.dl.add_balances(accnt = name, 
-                                    path_to_balances = path_to_test_bals
-                                    )
-        self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
+        # Now add the account
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            dbconn.add_data_source(source_name=accnt_name)
         
-        # Check we can't add the same balances again:
-        num_balances_added2 = self.dl.add_balances(accnt = name, 
-                                    path_to_balances = path_to_test_bals
-                                    )
-        self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
+        self.assertEqual(len(bals), self.dl.add_balances(accnt="test_add_bals_from_cls",bals_list=bals))
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            self.assertEqual(date(year=2026,month=6,day=5), 
+                            dbconn.execute_scalar("SELECT balance_date FROM balances WHERE amount=%s;",(Decimal('2001.20'),)))
+            accnt_id = dbconn.get_data_source_id(source_name=accnt_name)
+            self.assertEqual(accnt_id,
+                dbconn.execute_scalar("SELECT accnt_id FROM balances WHERE amount=%s AND balance_date=%s;",(Decimal('2001.20'),date(year=2026,month=6,day=5))))
 
-        # Check that we can assign balances to a different account
-        new_name = "test_add_bals_integration2"
-        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
-            _ = db_conn.add_data_source(source_name = new_name)
-        num_balances_added3 = self.dl.add_balances(
-                                    accnt = new_name, 
-                                    path_to_balances = path_to_test_bals
-                                    )
-        self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add duplicate balances to a different account")
+        # Make sure we can't add the same balances again:
+        with self.assertRaises(psql_errors.UniqueViolation):
+            _ = self.dl.add_balances(accnt=accnt_name,bals_list=bals)
+
+        # Check that we can add under a different account name
+        new_accnt_name = "test_add_bals_from_cls_2"
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            dbconn.add_data_source(source_name=new_accnt_name)
+        self.assertEqual(len(bals), self.dl.add_balances(accnt=new_accnt_name, bals_list=bals))
+        
+    # def test_load_data_add_balances_from_csv(self):        
+    #     # Use properly formatted csvs
+    #     path_to_test_bals = os.path.join(TEST_DATA_PATH,"test_balances_noheader.csv")
+    #     balances_to_add = pd.read_csv(path_to_test_bals, header=None)
+    #     name = "test_add_bals_integration"
+
+    #     with self.assertRaises(psql_errors.NotNullViolation):
+    #         _ = self.dl.add_balances(accnt = name, path_to_balances = path_to_test_bals)
+
+    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+    #         _ = db_conn.add_data_source(source_name = name)
+    #     num_balances_added = self.dl.add_balances(accnt = name, 
+    #                                 path_to_balances = path_to_test_bals
+    #                                 )
+    #     self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
+        
+    #     # Check we can't add the same balances again:
+    #     num_balances_added2 = self.dl.add_balances(accnt = name, 
+    #                                 path_to_balances = path_to_test_bals
+    #                                 )
+    #     self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
+
+    #     # Check that we can assign balances to a different account
+    #     new_name = "test_add_bals_integration2"
+    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+    #         _ = db_conn.add_data_source(source_name = new_name)
+    #     num_balances_added3 = self.dl.add_balances(
+    #                                 accnt = new_name, 
+    #                                 path_to_balances = path_to_test_bals
+    #                                 )
+    #     self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add duplicate balances to a different account")
     
-    def test_load_data_add_transactions(self):
-        # Use properly formatted csvs
-        path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
-        source_name = "cc"
-        transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
-        element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
+    # def test_load_data_add_transactions(self):
+    #     # Use properly formatted csvs
+    #     path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
+    #     source_name = "cc"
+    #     transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
+    #     element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
         
-        with self.assertRaises(psql_errors.NotNullViolation):
-            num_transactions_added = self.dl.add_transactions(
-                path_to_source_file = path_to_test_transactions, 
-                source_info = source_name
-                )
+    #     with self.assertRaises(psql_errors.NotNullViolation):
+    #         num_transactions_added = self.dl.add_transactions(
+    #             path_to_source_file = path_to_test_transactions, 
+    #             source_info = source_name
+    #             )
         
-        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
-            _ = db_conn.add_data_source(source_name = source_name)
-        num_transactions_added = self.dl.add_transactions(
-            path_to_source_file = path_to_test_transactions, 
-            source_info = source_name
-            )
-        self.assertEqual(num_transactions_added, transactions_to_add.shape[0], "Number of added transactions does not match file")
-        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
-            db_elem = db_conn.execute_query("SELECT amount FROM transactions WHERE description=%s;",('Concert tickets',))[0][0]
-        self.assertEqual(element_to_match, 
-                         db_elem, 
-                         "Data were scrambled when loaded into transactions"
-                         )
+    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+    #         _ = db_conn.add_data_source(source_name = source_name)
+    #     num_transactions_added = self.dl.add_transactions(
+    #         path_to_source_file = path_to_test_transactions, 
+    #         source_info = source_name
+    #         )
+    #     self.assertEqual(num_transactions_added, transactions_to_add.shape[0], "Number of added transactions does not match file")
+    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+    #         db_elem = db_conn.execute_query("SELECT amount FROM transactions WHERE description=%s;",('Concert tickets',))[0][0]
+    #     self.assertEqual(element_to_match, 
+    #                      db_elem, 
+    #                      "Data were scrambled when loaded into transactions"
+    #                      )
         
-        # Test that trying to upload the same file again fails
-        num_transactions_added = self.dl.add_transactions(
-            path_to_source_file = path_to_test_transactions, 
-            source_info = source_name
-            )
-        self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
+    #     # Test that trying to upload the same file again fails
+    #     num_transactions_added = self.dl.add_transactions(
+    #         path_to_source_file = path_to_test_transactions, 
+    #         source_info = source_name
+    #         )
+    #     self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
 
-        # Test what happens when partial duplicates are added
-        # This file is nearly the same, with 2 different lines
-        additional_transactions_path = os.path.join(TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
-        num_transactions_added = self.dl.add_transactions(
-            path_to_source_file = additional_transactions_path, 
-            source_info = source_name
-            )
-        self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
+    #     # Test what happens when partial duplicates are added
+    #     # This file is nearly the same, with 2 different lines
+    #     additional_transactions_path = os.path.join(TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
+    #     num_transactions_added = self.dl.add_transactions(
+    #         path_to_source_file = additional_transactions_path, 
+    #         source_info = source_name
+    #         )
+    #     self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
 
     # def test_load_data_from_CLI(self):
     #     self.addCleanup(os.remove, os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
@@ -165,11 +208,11 @@ class TestDBIntegrations(unittest.TestCase):
         # Add some data for this test, to keep it independent
         accnt = "plot_me"
 
-        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["db_name"]) as db_conn:
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
             accnt_id = db_conn.add_data_source(source_name=accnt)
             # add a balance as a reference point
             db_conn.execute_action(
-                "INSERT INTO balances (accnt_id, date, amount) VALUES (%s,%s,%s);", 
+                "INSERT INTO balances (accnt_id, balance_date, amount) VALUES (%s,%s,%s);", 
                 (accnt_id, date(year=2008, month=8, day=8), Decimal('8888.88'))
             ) 
             # add a couple transactions

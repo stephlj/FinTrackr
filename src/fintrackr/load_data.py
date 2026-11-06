@@ -93,7 +93,7 @@ class DataLoader:
             num_new_balances = self.conn.add_balances_from_staging(accnt_name = accnt)
         except psql_errors.UniqueViolation as e:
             self._logger.info(f"Insertion into balances table under account {accnt} failed; all balances are already in the db (exception: {e})")
-            return 0
+            raise
         except psql_errors.NotNullViolation as e:
             self._logger.error(f"Insertion into balances table failed with exception {e}; check account name {accnt} exists in db")
             raise

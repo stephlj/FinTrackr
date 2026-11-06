@@ -79,7 +79,6 @@ def wrangle_trans_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
             for k in trans_header_flipped.keys():
                 new_row[trans_header_flipped[k]] = r[k]
             corrected_dict_list.append(new_row)
-        # TODO test with different column orders!
         
     else:
         logger.info(f"No header with correct aliases identified in file {path_to_csv}")
