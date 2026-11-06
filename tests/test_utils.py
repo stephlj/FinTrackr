@@ -40,5 +40,33 @@ class TestUtils(unittest.TestCase):
             self.addCleanup(os.remove, csv_out)
             self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
+        with self.subTest("Test one accepted header version"):
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols.csv")
+            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols_fixed.csv")
+            csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+            self.addCleanup(os.remove, csv_out)
+            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+
+        with self.subTest("Test a second accepted header version"):
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols2.csv")
+            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols2_fixed.csv")
+            csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+            self.addCleanup(os.remove, csv_out)
+            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+
+        with self.subTest("Test no header"):
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader.csv")
+            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader_fixed.csv")
+            csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+            self.addCleanup(os.remove, csv_out)
+            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+
+        with self.subTest("Test no header"):
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader2.csv")
+            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader2_fixed.csv")
+            csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+            self.addCleanup(os.remove, csv_out)
+            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+
             
         
