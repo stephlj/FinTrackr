@@ -31,13 +31,37 @@ where:
 - `<account_name>` is the name of an account in the db which had these transactions. 
 
 - `<filepath>` is the full path to a csv with columns representing date, transactions amounts, and description.
-Since this csv is determined by the bank, we tolerate headers vs no header, and extra columns.
+Since this csv is determined by the bank, we tolerate multiple formats (see below).
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+
 If your bank's csv has a header, specify the headers for columns represented posted date, amount, and description
 in the config. If you have data from multiple banks with different formats, you can provide a list of options for each
 column.
-If your bank's csv has no header, Fintrackr will try to infer the correct columns based on types.
 
-- `<username>` and `<pw>` to connect to the db (see below for how to set up).
+If your bank's csv has no header, Fintrackr will try to infer the correct columns based on types. In this case, there
+shouldn't be multiple columns of dates with no header explaining them, or multiple text columns. The exception is '*' - 
+some banks have columns whose values are '*', which we ignore.
+
+Examples of supported transaction csv formats:
+
+With a header: config here should include `posted_date: ['DATE']`, `amount: ['AMOUNT']`, `description: ['DESCRIPTION']`:
+```
+DATE,DESCRIPTION,AMOUNT,CHECK#,STATUS
+07/19/2026,Chevron,-50.00,,Posted
+```
+
+Another header example: config would include `posted_date: ['Post Date']`, `amount: ['Amount']`, `description: ['Description']`:
+```
+Transaction Date,Post Date,Description,Category,Type,Amount,Memo
+03/10/2026,03/12/2026,Local Coffee Bar,Food & Drink,Sale,-3.50,
+```
+
+No header, adds nothing to config:
+```
+09/10/2025,-26.57,*,,Safeway
+08/21/2025,-100.00,*,128,CHECK # 128
+```
 
 ### Log balances in the db
 
