@@ -33,12 +33,12 @@ class TestUtils(unittest.TestCase):
 
     def test_wrangle_trans_csv(self):
         
-        with self.subTest("Test a simple header"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_simple_header.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_simple_header_fixed.csv")
-            csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+        #with self.subTest("Test a simple header"):
+        csv_in = os.path.join(TEST_DATA_PATH, "test_csv_simple_header.csv")
+        csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_simple_header_fixed.csv")
+        csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+        self.addCleanup(os.remove, csv_out)
+        self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed), "Simple header failed")
 
             
         
