@@ -3,13 +3,19 @@
 # Copyright (c) 2026 Stephanie Johnson
 
 import unittest
+import os
+import csv
 
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
 from fintrackr.utils import get_trans_header_aliases, wrangle_trans_csv
 
-from utils_for_tests import TEST_CONFIG_PATH
+from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
+
+def read_csv_rows(path: str)->list[list[str]]:
+    with open(path, newline='') as f:
+        return list(csv.reader(f))
 
 class TestUtils(unittest.TestCase):
 
@@ -26,5 +32,13 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(correct_transaction_names,list(header_dict_test.keys()))
 
     def test_wrangle_trans_csv(self):
-        pass
+        
+        with self.subTest("Test a simple header"):
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_simple_header.csv")
+            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_simple_header_fixed.csv")
+            csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+            self.addCleanup(os.remove, csv_out)
+            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+
+            
         

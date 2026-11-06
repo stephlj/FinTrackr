@@ -112,7 +112,7 @@ def wrangle_trans_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
             corrected_dict_list.append(new_row)
 
     # Save corrected file
-    with open(new_csv_path, 'w') as newf:
+    with open(new_csv_path, 'w', newline='') as newf:
         writer=csv.DictWriter(newf, fieldnames=trans_header.keys())
         writer.writeheader()
         for r in corrected_dict_list:
