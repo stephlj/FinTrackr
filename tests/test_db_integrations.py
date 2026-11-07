@@ -77,37 +77,21 @@ class TestDBIntegrations(unittest.TestCase):
             dbconn.add_data_source(source_name=new_accnt_name)
         self.assertEqual(len(bals), self.dl.add_balances(accnt=new_accnt_name, bals_list=bals))
         
-    # def test_load_data_add_balances_from_csv(self):        
-    #     # Use properly formatted csvs
-    #     path_to_test_bals = os.path.join(TEST_DATA_PATH,"test_balances_noheader.csv")
-    #     balances_to_add = pd.read_csv(path_to_test_bals, header=None)
-    #     name = "test_add_bals_integration"
+    def test_load_data_add_balances_from_csv(self):        
+        path_to_csv = os.path.join(TEST_DATA_PATH,"test_balances.csv")
+        accnt_name = "test_add_bals_from_csv"
 
-    #     with self.assertRaises(psql_errors.NotNullViolation):
-    #         _ = self.dl.add_balances(accnt = name, path_to_balances = path_to_test_bals)
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = accnt_name)
+        self.assertEqual(3, self.dl.add_balances_from_csv(path_to_csv=path_to_csv, account_name=accnt_name))
 
-    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
-    #         _ = db_conn.add_data_source(source_name = name)
-    #     num_balances_added = self.dl.add_balances(accnt = name, 
-    #                                 path_to_balances = path_to_test_bals
-    #                                 )
-    #     self.assertEqual(num_balances_added, balances_to_add.shape[0], "Number of added balances does not match file")
-        
-    #     # Check we can't add the same balances again:
-    #     num_balances_added2 = self.dl.add_balances(accnt = name, 
-    #                                 path_to_balances = path_to_test_bals
-    #                                 )
-    #     self.assertEqual(num_balances_added2, 0, "Duplicate balances were added when they shouldn't be")
-
-    #     # Check that we can assign balances to a different account
-    #     new_name = "test_add_bals_integration2"
-    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
-    #         _ = db_conn.add_data_source(source_name = new_name)
-    #     num_balances_added3 = self.dl.add_balances(
-    #                                 accnt = new_name, 
-    #                                 path_to_balances = path_to_test_bals
-    #                                 )
-    #     self.assertEqual(num_balances_added3, balances_to_add.shape[0], "Could not add duplicate balances to a different account")
+        # Check that we reject malformed input
+        bad_accnt_name = "test_add_bals_from_bad_csv"
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = bad_accnt_name)
+        path_to_bad_csv = os.path.join(TEST_DATA_PATH, "test_balances_noheader.csv")
+        with self.assertRaises(ValueError):
+            _ = self.dl.add_balances_from_csv(path_to_csv=path_to_bad_csv, account_name=bad_accnt_name)
     
     # def test_load_data_add_transactions(self):
     #     # Use properly formatted csvs
