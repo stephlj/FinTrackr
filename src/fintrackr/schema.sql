@@ -14,8 +14,11 @@ CREATE TYPE recurrance AS ENUM(
 
 CREATE TABLE data_sources(
     id SERIAL PRIMARY KEY,
-    account_name text UNIQUE NOT NULL /* e.g., "credit card", "primary checking" */
+    account_name text NOT NULL /* e.g., "credit card", "primary checking" */
 );
+
+/* account names must be unique, ignoring case (no "bank" and "Bank") */
+CREATE UNIQUE INDEX unit_conversions_unit_lower_key ON data_sources (LOWER(account_name));
 
 CREATE TABLE balances(
     id SERIAL PRIMARY KEY,
