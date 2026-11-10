@@ -63,6 +63,10 @@ No header, adds nothing to config:
 08/21/2025,-100.00,*,128,CHECK # 128
 ```
 
+Duplicates: the same transaction (`posted_date`, `amount`, `description`) aren't allowed to be loaded in the db for the same
+account; they will be skipped with a logged note. This means you can download overlapping data from your bank to ensure
+you get all of it, without worrying about whether you've double-counted anything.
+
 ### Log balances in the db
 
 To log a list of account balances (amounts on dates) into the db from a csv:
@@ -77,12 +81,14 @@ where:
 - `<account_name>` is the name of an account in the db which had these balances. 
 
 - `<filepath>` is the full path to a csv with columns representing date and amount. 
-Since these are user-generated (not from a bank), we insist they have a header with columns `balance_date` 
-and `amount` (case insensitive).
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
 - `add_account` is an optional flag: is `<account_name>` one that already exists in the db? If not, add this flag.
+
+Since these are user-generated (not from a bank), we insist they have a header with columns `balance_date` 
+and `amount` (case insensitive). We also don't allow duplicates - if there are any duplicate entries with existing ones
+in the database, the whole load is blocked.
 
 ### Plot account balances
 

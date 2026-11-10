@@ -92,7 +92,7 @@ class DataLoader:
         try:
             num_new_balances = self.conn.add_balances_from_staging(accnt_name = accnt)
         except psql_errors.UniqueViolation as e:
-            self._logger.info(f"Insertion into balances table under account {accnt} failed; all balances are already in the db (exception: {e})")
+            self._logger.error(f"Insertion into balances table under account {accnt} failed; all balances are already in the db (exception: {e})")
             raise
         except psql_errors.NotNullViolation as e:
             self._logger.error(f"Insertion into balances table failed with exception {e}; check account name {accnt} exists in db")
@@ -129,31 +129,36 @@ class DataLoader:
             Number of transactions added.
         """
 
-        num_new_transactions = 0
-
         self.conn.create_staging(col_defs=TRANS_COL_DEFS)
         num_staged_transactions = self.conn.class_to_staging(insert_obj_list=trans_list)
 
         if num_staged_transactions == 0:
             msg = f"No transactions loaded from source file {path_to_source_file} to staging table; no transactions will be added"
             self._logger.error(msg)
-            return num_new_transactions
+            raise ValueError(msg)
+
+        if num_staged_transactions != len(trans_list):
+            msg = f"{num_staged_transactions} transactions were loaded into staging, but {len(trans_list)} were passed; something went wrong!"
+            self._logger.error(msg)
+            raise ValueError(msg)
             
         try:
             num_new_transactions = self.conn.add_transactions_from_staging(path_to_source_file=path_to_source_file, source_info=source_info)
         except psql_errors.NotNullViolation as e:
             self._logger.error(f"Insertion into transactions table failed with null violation (exception: {e}); check account name {source_info} exists in db")
             raise
-        #TODO is this case still live?
-        except psql_errors.UniqueViolation as e:
-            self._logger.info(f"Insertion of {path_to_source_file} data into transactions table under account {source_info} failed; file may already have been loaded (exception: {e})")
-            return 0
         except Exception as e:
             self._logger.exception(f"Insertion into transactions table failed with exception: {e}")
             raise
         
-        if num_new_transactions == 0:
-            self._logger.info("All staged transactions are already in transactions table")
+        if num_new_transactions != num_staged_transactions:
+            num_not_dups = self.conn.check_dup_transactions()
+            if num_not_dups != num_new_transactions:
+                msg = "Not all staged transactions were loaded, but not because of duplicates; something went wrong!"
+                self._logger.error(msg)
+                raise ValueError(msg)
+            num_dups = num_staged_transactions-num_not_dups
+            self._logger.info(f"{num_dups} staged transactions are already in transactions table; {num_not_dups} were added")
                 
         return num_new_transactions
 

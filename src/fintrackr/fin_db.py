@@ -153,22 +153,20 @@ class FinDB(DBConn):
         #     """
         # rows_added = self.execute_query(transactions_query, (today_date, self.user, path_to_source_file, source_info))
 
-        if len(rows_added) == 0:
-            # Check if nothing was added because everything in staging is already in db.
-            # If not, raise error.
-            check_dups = "SELECT s.* " \
-                "    FROM staging s " \
-                "    LEFT JOIN transactions t ON " \
-                "        t.posted_date = s.posted_date AND " \
-                "        t.amount = s.amount AND " \
-                "        t.description = s.description " \
-                "    WHERE t.id IS NULL;"
-            if len(self.execute_query(check_dups)) != 0:
-                log_msg = "No transactions inserted from staging, but NOT because all staged transactions were in db already"
-                logger.error(log_msg)
-                raise ValueError(log_msg)
-            
         return len(rows_added)
+
+    def check_dup_transactions(self)->int:
+        # Check how many transactions in the staging table are already in the db
+        # This returns the number that are NOT already in the db
+        
+        check_dups = "SELECT s.* " \
+            "    FROM staging s " \
+            "    LEFT JOIN transactions t ON " \
+            "        t.posted_date = s.posted_date AND " \
+            "        t.amount = s.amount AND " \
+            "        t.description = s.description " \
+            "    WHERE t.id IS NULL;"
+        return len(self.execute_query(check_dups))        
     
     def get_balances_in_date_range(self, accnt_name: str, date_range: List[date]) -> List[Balance]:
         """
@@ -190,13 +188,13 @@ class FinDB(DBConn):
 
         if len(date_range) != 2:
             log_msg = f"Date range must be list of length 2; got instead {date_range}"
-            logger.error(log_msg)
+            self._logger.error(log_msg)
             raise ValueError(log_msg)
         
         if (type(date_range[0]) != date) or (type(date_range[1]) != date):
             # date_range.sort() will do the wrong thing if this isn't date format
             log_msg = f"Date range must be in datetime.date format; got instead {date_range}"
-            logger.error(log_msg)
+            self._logger.error(log_msg)
             raise TypeError(log_msg)
         
         date_range.sort()
@@ -237,13 +235,13 @@ class FinDB(DBConn):
 
         if len(date_range) != 2:
             log_msg = f"Date range must be list of length 2; got instead {date_range}"
-            logger.error(log_msg)
+            self._logger.error(log_msg)
             raise ValueError(log_msg)
         
         if (type(date_range[0]) != date) or (type(date_range[1]) != date):
             # date_range.sort() will do the wrong thing if this isn't date format
             log_msg = f"Date range must be in datetime.date format; got instead {date_range}"
-            logger.error(log_msg)
+            self._logger.error(log_msg)
             raise TypeError(log_msg)
         
         date_range.sort()

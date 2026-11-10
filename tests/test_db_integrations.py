@@ -92,8 +92,45 @@ class TestDBIntegrations(unittest.TestCase):
         path_to_bad_csv = os.path.join(TEST_DATA_PATH, "test_balances_noheader.csv")
         with self.assertRaises(ValueError):
             _ = self.dl.add_balances_from_csv(path_to_csv=path_to_bad_csv, account_name=bad_accnt_name)
+
+    def test_load_data_add_transactions(self):
+        # add_transactions takes the path to the source csv for record-keeping, but here we'll load
+        # a list of transactions directly
+        trans = [Transaction(posted_date=date(year=2022,month=2,day=2), amount=Decimal('222.20'), description="trans0"), 
+                        Transaction(posted_date=date(year=2022,month=11,day=11), amount=Decimal('1111.22'), description="trans1")]
+        accnt_name="test_add_trams_from_cls"
+        path_to_fake_csv = "fake_csv_path"
+
+        with self.assertRaises(psql_errors.NotNullViolation):
+            _ = self.dl.add_transactions(source_info=accnt_name, trans_list=trans, path_to_source_file=path_to_fake_csv)
+
+        # Now add the account
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            dbconn.add_data_source(source_name=accnt_name)
+
+        self.assertEqual(len(trans), self.dl.add_transactions(source_info=accnt_name, trans_list=trans, path_to_source_file=path_to_fake_csv))
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            self.assertEqual(date(year=2022,month=11,day=11), 
+                            dbconn.execute_scalar("SELECT posted_date FROM transactions WHERE amount=%s;",(Decimal('1111.22'),)))
+            q="""
+                SELECT d.account_name 
+                FROM data_sources AS d 
+                INNER JOIN data_load_metadata AS m ON 
+                    m.data_source_id=d.id 
+                INNER JOIN transactions AS t ON 
+                    t.metadatum_id=m.id 
+                WHERE t.posted_date=%s;
+            """
+            self.assertEqual(accnt_name,
+                dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),)))
+
+        # Make sure we can't add duplicates
+        
+        # Check that we can add duplicates under a different account name
+
+        
     
-    # def test_load_data_add_transactions(self):
+    # def test_load_data_add_transactions_from_csv(self):
     #     # Use properly formatted csvs
     #     path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
     #     source_name = "cc"
