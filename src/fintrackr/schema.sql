@@ -18,7 +18,7 @@ CREATE TABLE data_sources(
 );
 
 /* account names must be unique, ignoring case (no "bank" and "Bank") */
-CREATE UNIQUE INDEX unit_conversions_unit_lower_key ON data_sources (LOWER(account_name));
+CREATE UNIQUE INDEX data_sources_name_lower_key ON data_sources (LOWER(account_name));
 
 CREATE TABLE balances(
     id SERIAL PRIMARY KEY,
@@ -41,9 +41,9 @@ CREATE TABLE transactions(
     id SERIAL PRIMARY KEY,
     posted_date date NOT NULL,
     amount numeric(12,2) NOT NULL,
-    description text, /* e.g merchant name on cc transaction */
+    description text NOT NULL, /* e.g merchant name on cc transaction */
     metadatum_id integer NOT NULL REFERENCES data_load_metadata(id),
-    UNIQUE (posted_date, amount, description, metadatum_id)
+    UNIQUE (posted_date, amount, description)
 );
 
 CREATE TABLE categorizations(
