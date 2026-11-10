@@ -76,6 +76,13 @@ class TestDBIntegrations(unittest.TestCase):
         with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
             dbconn.add_data_source(source_name=new_accnt_name)
         self.assertEqual(len(bals), self.dl.add_balances(accnt=new_accnt_name, bals_list=bals))
+
+        # Check that we can add under a different account name - but not if the only difference is case
+        # (this is an integration test)
+        new_accnt_name_upper = "Test_add_bals_from_cls_2"
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            with self.assertRaises(psql_errors.UniqueViolation):
+                dbconn.add_data_source(source_name=new_accnt_name_upper)
         
     def test_load_data_add_balances_from_csv(self):        
         path_to_csv = os.path.join(TEST_DATA_PATH,"test_balances.csv")
