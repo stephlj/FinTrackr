@@ -42,7 +42,8 @@ CREATE TABLE transactions(
     posted_date date NOT NULL,
     amount numeric(12,2) NOT NULL,
     description text, /* e.g merchant name on cc transaction */
-    metadatum_id integer NOT NULL REFERENCES data_load_metadata(id)
+    metadatum_id integer NOT NULL REFERENCES data_load_metadata(id),
+    UNIQUE (posted_date, amount, description, metadatum_id)
 );
 
 CREATE TABLE categorizations(

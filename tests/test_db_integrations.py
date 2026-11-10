@@ -143,9 +143,9 @@ class TestDBIntegrations(unittest.TestCase):
             self.assertEqual(accnt_name,
                 dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),)))
 
-        # Make sure we can't add duplicates
+        # Make sure we can't add duplicates, under a different account or otherwise
         
-        # Check that we can add duplicates under a different account name
+        # Allow duplicates with a different sign on amount (e.g. debit from checking account to pay cc, matched by a positive transaction on cc)
 
         
     
