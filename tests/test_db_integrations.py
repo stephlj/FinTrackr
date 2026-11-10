@@ -93,6 +93,18 @@ class TestDBIntegrations(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = self.dl.add_balances_from_csv(path_to_csv=path_to_bad_csv, account_name=bad_accnt_name)
 
+        # Check that we reject csvs with duplicate lines
+        dups_accnt_name = "test_add_bals_dups"
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = dups_accnt_name)
+        path_to_dups_csv = os.path.join(TEST_DATA_PATH, "test_balances_dups.csv")
+        with self.assertRaises(psql_errors.UniqueViolation):
+            _ = self.dl.add_balances_from_csv(path_to_csv=path_to_dups_csv, account_name=dups_accnt_name)
+        # make sure nothing got loaded
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            dups_id = db_conn.get_data_source_id(source_name=dups_accnt_name)
+            self.assertEqual(0,len(db_conn.execute_query("SELECT balance_date FROM balances WHERE accnt_id=%s;",(dups_id,))))
+                             
     def test_load_data_add_transactions(self):
         # add_transactions takes the path to the source csv for record-keeping, but here we'll load
         # a list of transactions directly
