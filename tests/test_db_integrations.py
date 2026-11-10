@@ -162,21 +162,21 @@ class TestDBIntegrations(unittest.TestCase):
             _ = self.dl.add_transactions(source_info=new_accnt_name, trans_list=trans2, path_to_source_file=path_to_fake_csv)
         path_to_fake_csv2 = "fake_csv_path2"
         self.assertEqual(1, self.dl.add_transactions(source_info=new_accnt_name, trans_list=trans2, path_to_source_file=path_to_fake_csv2))
-        # with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
-        #     self.assertEqual(date(year=2022,month=11,day=11), 
-        #         dbconn.execute_scalar("SELECT posted_date FROM transactions WHERE amount=%s;",(Decimal('-1111.22'),)))
-        #     q="""
-        #         SELECT d.account_name 
-        #         FROM data_sources AS d 
-        #         INNER JOIN data_load_metadata AS m ON 
-        #             m.data_source_id=d.id 
-        #         INNER JOIN transactions AS t ON 
-        #             t.metadatum_id=m.id 
-        #         WHERE t.posted_date=%s
-        #         AND t.amount=%s;
-        #     """
-        #     self.assertEqual(new_accnt_name,
-        #         dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),(Decimal('-1111.22')))))
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            self.assertEqual(date(year=2022,month=11,day=11), 
+                dbconn.execute_scalar("SELECT posted_date FROM transactions WHERE amount=%s;",(Decimal('-1111.22'),)))
+            q="""
+                SELECT d.account_name 
+                FROM data_sources AS d 
+                INNER JOIN data_load_metadata AS m ON 
+                    m.data_source_id=d.id 
+                INNER JOIN transactions AS t ON 
+                    t.metadatum_id=m.id 
+                WHERE t.posted_date=%s
+                AND t.amount=%s;
+            """
+            self.assertEqual(new_accnt_name,
+                dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),(Decimal('-1111.22')))))
 
     
     # def test_load_data_add_transactions_from_csv(self):
