@@ -117,7 +117,7 @@ class TestDBIntegrations(unittest.TestCase):
         # a list of transactions directly
         trans = [Transaction(posted_date=date(year=2022,month=2,day=2), amount=Decimal('222.20'), description="trans0"), 
                         Transaction(posted_date=date(year=2022,month=11,day=11), amount=Decimal('1111.22'), description="trans1")]
-        accnt_name="test_add_trams_from_cls"
+        accnt_name="test_add_trans_from_cls"
         path_to_fake_csv = "fake_csv_path"
 
         with self.assertRaises(psql_errors.NotNullViolation):
@@ -143,11 +143,41 @@ class TestDBIntegrations(unittest.TestCase):
             self.assertEqual(accnt_name,
                 dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),)))
 
-        # Make sure we can't add duplicates, under a different account or otherwise
+        # Make sure we can't add duplicates
+        with self.assertRaises(psql_errors.UniqueViolation):
+            _ = self.dl.add_transactions(source_info=accnt_name, trans_list=trans, path_to_source_file=path_to_fake_csv)
+
+        # We don't allow duplicates, even under a different account name
+        new_accnt_name = "test_add_trans_from_cls_2"
+        with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+            dbconn.add_data_source(source_name=new_accnt_name)
+        with self.assertRaises(psql_errors.UniqueViolation):
+            _ = self.dl.add_transactions(source_info=new_accnt_name, trans_list=trans, path_to_source_file=path_to_fake_csv)
         
         # Allow duplicates with a different sign on amount (e.g. debit from checking account to pay cc, matched by a positive transaction on cc)
+        # But these must have a different source file name
+        trans2 = [Transaction(posted_date=date(year=2022,month=2,day=2), amount=Decimal('222.20'), description="trans0"), 
+                    Transaction(posted_date=date(year=2022,month=11,day=11), amount=Decimal('-1111.22'), description="trans1")]
+        with self.assertRaises(psql_errors.UniqueViolation):
+            _ = self.dl.add_transactions(source_info=new_accnt_name, trans_list=trans2, path_to_source_file=path_to_fake_csv)
+        path_to_fake_csv2 = "fake_csv_path2"
+        self.assertEqual(1, self.dl.add_transactions(source_info=new_accnt_name, trans_list=trans2, path_to_source_file=path_to_fake_csv2))
+        # with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
+        #     self.assertEqual(date(year=2022,month=11,day=11), 
+        #         dbconn.execute_scalar("SELECT posted_date FROM transactions WHERE amount=%s;",(Decimal('-1111.22'),)))
+        #     q="""
+        #         SELECT d.account_name 
+        #         FROM data_sources AS d 
+        #         INNER JOIN data_load_metadata AS m ON 
+        #             m.data_source_id=d.id 
+        #         INNER JOIN transactions AS t ON 
+        #             t.metadatum_id=m.id 
+        #         WHERE t.posted_date=%s
+        #         AND t.amount=%s;
+        #     """
+        #     self.assertEqual(new_accnt_name,
+        #         dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),(Decimal('-1111.22')))))
 
-        
     
     # def test_load_data_add_transactions_from_csv(self):
     #     # Use properly formatted csvs

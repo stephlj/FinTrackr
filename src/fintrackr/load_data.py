@@ -141,6 +141,9 @@ class DataLoader:
             msg = f"{num_staged_transactions} transactions were loaded into staging, but {len(trans_list)} were passed; something went wrong!"
             self._logger.error(msg)
             raise ValueError(msg)
+
+        # We silently skip duplicates. Check how many there are first.
+        num_not_dups = self.conn.check_dup_transactions()
             
         try:
             num_new_transactions = self.conn.add_transactions_from_staging(path_to_source_file=path_to_source_file, source_info=source_info)
@@ -152,7 +155,6 @@ class DataLoader:
             raise
         
         if num_new_transactions != num_staged_transactions:
-            num_not_dups = self.conn.check_dup_transactions()
             if num_not_dups != num_new_transactions:
                 msg = "Not all staged transactions were loaded, but not because of duplicates; something went wrong!"
                 self._logger.error(msg)
