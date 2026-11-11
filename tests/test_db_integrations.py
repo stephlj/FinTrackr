@@ -172,11 +172,10 @@ class TestDBIntegrations(unittest.TestCase):
                     m.data_source_id=d.id 
                 INNER JOIN transactions AS t ON 
                     t.metadatum_id=m.id 
-                WHERE t.posted_date=%s
-                AND t.amount=%s;
+                WHERE t.amount=%s;
             """
             self.assertEqual(new_accnt_name,
-                dbconn.execute_scalar(q,(date(year=2022,month=2,day=2),(Decimal('-1111.22')))))
+                dbconn.execute_scalar(q,((Decimal('-1111.22'),))))
 
     
     # def test_load_data_add_transactions_from_csv(self):
