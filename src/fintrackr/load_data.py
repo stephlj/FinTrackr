@@ -177,12 +177,12 @@ class DataLoader:
 
         return self.add_balances(accnt=account_name, bals_list=bals)
 
-    def add_transactions_from_csv(self, path_to_csv: str, account_name: str)->int:
+    def add_transactions_from_csv(self, path_to_csv: str, account_name: str, config_path: str=CONFIG_PATH)->int:
         # Load transactions from csv into a list of Transaction dataclasses, one dataclass per csv row; 
         # also handles input checking and formatting.
 
         # Since we don't control the transaction csv format, try to wrangle what we got into what we need:
-        reformtted_csv_path = wrangle_trans_csv(path_to_csv=path_to_csv)
+        reformtted_csv_path = wrangle_trans_csv(path_to_csv=path_to_csv, config_path=config_path)
 
         transactions = csv_to_dataclass(path_to_csv=reformtted_csv_path, cls=Transaction)
 
@@ -197,7 +197,8 @@ class DataLoader:
                            accnt_name: str, 
                            filepath: str, 
                            trans: bool, 
-                           add_as_new_acct = False, 
+                           add_as_new_acct: bool = False, 
+                           config_path: str=CONFIG_PATH
                         ) -> None:
         """
         

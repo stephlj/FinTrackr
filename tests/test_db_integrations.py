@@ -178,48 +178,26 @@ class TestDBIntegrations(unittest.TestCase):
                 dbconn.execute_scalar(q,((Decimal('-1111.22'),))))
 
     
-    # def test_load_data_add_transactions_from_csv(self):
-    #     # Use properly formatted csvs
-    #     path_to_test_transactions = os.path.join(TEST_DATA_PATH, "test_data_cc.csv")
-    #     source_name = "cc"
-    #     transactions_to_add = pd.read_csv(path_to_test_transactions, header=None)
-    #     element_to_match = Decimal(str(transactions_to_add.iloc[0,1])).quantize(Decimal('0.01'))
-        
-    #     with self.assertRaises(psql_errors.NotNullViolation):
-    #         num_transactions_added = self.dl.add_transactions(
-    #             path_to_source_file = path_to_test_transactions, 
-    #             source_info = source_name
-    #             )
-        
-    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
-    #         _ = db_conn.add_data_source(source_name = source_name)
-    #     num_transactions_added = self.dl.add_transactions(
-    #         path_to_source_file = path_to_test_transactions, 
-    #         source_info = source_name
-    #         )
-    #     self.assertEqual(num_transactions_added, transactions_to_add.shape[0], "Number of added transactions does not match file")
-    #     with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
-    #         db_elem = db_conn.execute_query("SELECT amount FROM transactions WHERE description=%s;",('Concert tickets',))[0][0]
-    #     self.assertEqual(element_to_match, 
-    #                      db_elem, 
-    #                      "Data were scrambled when loaded into transactions"
-    #                      )
-        
-    #     # Test that trying to upload the same file again fails
-    #     num_transactions_added = self.dl.add_transactions(
-    #         path_to_source_file = path_to_test_transactions, 
-    #         source_info = source_name
-    #         )
-    #     self.assertEqual(num_transactions_added, 0, "Duplicates should not have been successfully loaded")
+    def test_load_data_add_transactions_from_csv(self):
+        # Start with a simple case
+        # Note we DON'T use the "_fixed.csv" versions because that's the output of wrangle_trans_csv - 
+        # but not an acceptable input (won't match config!)
+        path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_simple_header.csv")
+        accnt_name = "test_add_trans_from_csv"
 
-    #     # Test what happens when partial duplicates are added
-    #     # This file is nearly the same, with 2 different lines
-    #     additional_transactions_path = os.path.join(TEST_DATA_PATH,"test_csv_wrongtype_fixed.csv")
-    #     num_transactions_added = self.dl.add_transactions(
-    #         path_to_source_file = additional_transactions_path, 
-    #         source_info = source_name
-    #         )
-    #     self.assertEqual(num_transactions_added, 2, "Only two non-duplicate transactions should have been loaded")
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = accnt_name)
+        self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))
+        
+        # Check that various acceptable formats work. This is the primary integration test with wrangle_trans_csv
+        
+        # Check that we reject malformed input 
+        bad_accnt_name = "test_add_trans_from_bad_csv"
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = bad_accnt_name)
+        path_to_bad_csv = os.path.join(TEST_DATA_PATH, "test_csv_wrongheader.csv")
+        with self.assertRaises(ValueError):
+            _ = self.dl.add_transactions_from_csv(path_to_csv=path_to_bad_csv, account_name=bad_accnt_name, config_path=TEST_CONFIG_PATH)
 
     # def test_load_data_from_CLI(self):
     #     self.addCleanup(os.remove, os.path.join(TEST_DATA_PATH, "test_balances_REFORMAT.csv"))
