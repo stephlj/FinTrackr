@@ -183,13 +183,32 @@ class TestDBIntegrations(unittest.TestCase):
         # Note we DON'T use the "_fixed.csv" versions because that's the output of wrangle_trans_csv - 
         # but not an acceptable input (won't match config!)
         path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_simple_header.csv")
+        csv_out = os.path.join(TEST_DATA_PATH,"test_csv_simple_header_REFORMAT.csv")
         accnt_name = "test_add_trans_from_csv"
 
         with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
             _ = db_conn.add_data_source(source_name = accnt_name)
         self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))
+        self.addCleanup(os.remove, csv_out)
         
         # Check that various acceptable formats work. This is the primary integration test with wrangle_trans_csv
+        # Extra columns and also weird characters in description:
+        path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_header_extracols.csv")
+        csv_out = os.path.join(TEST_DATA_PATH,"test_csv_header_extracols_REFORMAT.csv")
+        accnt_name = "test_add_trans_from_csv2"
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = accnt_name)
+        self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))
+        self.addCleanup(os.remove, csv_out)
+        # TODO check some of the weird character description lines, spot check some amounts etc
+
+        path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_noheader2.csv")
+        csv_out = os.path.join(TEST_DATA_PATH,"test_csv_noheader2_REFORMAT.csv")
+        accnt_name = "test_add_trans_from_csv3"
+        with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
+            _ = db_conn.add_data_source(source_name = accnt_name)
+        self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))
+        self.addCleanup(os.remove, csv_out)
         
         # Check that we reject malformed input 
         bad_accnt_name = "test_add_trans_from_bad_csv"
