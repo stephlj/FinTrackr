@@ -175,6 +175,8 @@ class DataLoader:
             self._logger.error(msg)
             raise ValueError(msg)
 
+        self._logger.info(f"Successfully logged data from file {path_to_csv} under account {account_name}")
+
         return self.add_balances(accnt=account_name, bals_list=bals)
 
     def add_transactions_from_csv(self, path_to_csv: str, account_name: str, config_path: str=CONFIG_PATH)->int:
@@ -191,63 +193,6 @@ class DataLoader:
             self._logger.error(msg)
             raise ValueError(msg)
 
+        self._logger.info(f"Successfully logged data from file {path_to_csv} under account {account_name}")
+
         return self.add_transactions(source_info=account_name, trans_list = transactions, path_to_source_file=path_to_csv)
-    
-    def load_data_from_CLI(self,
-                           accnt_name: str, 
-                           filepath: str, 
-                           trans: bool, 
-                           add_as_new_acct: bool = False, 
-                           config_path: str=CONFIG_PATH
-                        ) -> None:
-        """
-        
-        Load transactions or balances from csv file into db.
-
-
-        Parameters
-        ----------
-        accnt_name : str
-            Which account are these balances or transactions for?
-            Equivalent to name column in data_sources
-        filepath : str
-            Path to a csv file to load.
-        trans : bool, default False
-            If true, these are transactions. If false, they are balances.
-        add_as_new_acct : bool
-            If add_as_new_acct is True, it will add accnt_name to data_sources.
-            If accnt_name doesn't exist and add_as_new_acct is False, it will error out.
-            If accnt_name DOES exist and add_as_new_acct is True, it will error out.
-
-        Returns
-        -------
-        None
-        """
-
-        if add_as_new_acct:
-            try:
-                _ = self.conn.add_data_source(source_name=accnt_name)
-                self._logger.info(f"Added account name {accnt_name} as new data source")
-            except psql_errors.UniqueViolation as e:
-                log_msg = f"Account name {accnt_name} already exists!"
-                self._logger.error(log_msg)
-                raise ValueError(log_msg)
-        else:
-            # Check account exists
-            source_id = self.conn.get_data_source_id(source_name=accnt_name)
-            if source_id is None:
-                # User didn't want to add a new account, but this one doesn't exist
-                existing_sources = self.conn.get_all_data_sources()
-                log_msg = f"Account name {accnt_name} doesn't exist; did you mean one of {existing_sources} instead?"
-                self._logger.error(log_msg)
-                raise ValueError(log_msg)          
-        
-        if trans:
-            result = self.add_transactions_from_csv(path_to_source_file = filepath, source_info = accnt_name)
-        else:
-            result = self.add_balances_from_csv(path_to_csv=filepath, account_name=accnt_name)
-
-        if result >= 1:
-            self._logger.info(f"Successfully logged data from file {filepath} in {self.db_name} under account {accnt_name}")
-        else:
-            self._logger.info(f"Unsuccessful attempt to log data from file {filepath} in {self.db_name} under account {accnt_name}")

@@ -15,7 +15,21 @@ Currently the only interface is running scripts in a terminal.
 Dates are always assumed to be in format `%m/%d/%Y`, as in `10/3/2026`.
 
 If your transcation csvs have headers, specify in the config file how the posted date, amount, and transaction description are represented in the header, under the `input_files` section. Multiple possibilities are allowed
-(e.g., "Post Date" and "Date" can both be listed as options under `date_header`.)
+(e.g., "Post Date" and "Date" can both be listed as options under `date_header`.) See below for details.
+
+### Add accounts
+
+Balances and transactions are logged for particular accounts (e.g., "primary credit card", "primary savings").
+
+To add an account, in the terminal, run:
+```
+python ./src/fintrackr/add_account.py <account_name> <username> <pw>
+```
+
+where:
+- `<account_name>` is the name of the account to add (case-insensitive - you can't have two accounts of the same name but different case)
+
+- `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
 ### Log transactions in the db
 
@@ -63,9 +77,11 @@ No header, adds nothing to config:
 08/21/2025,-100.00,*,128,CHECK # 128
 ```
 
-Duplicates: the same transaction (`posted_date`, `amount`, `description`) aren't allowed to be loaded in the db for the same
-account; they will be skipped with a logged note. This means you can download overlapping data from your bank to ensure
-you get all of it, without worrying about whether you've double-counted anything.
+Duplicates: the same transaction (`posted_date`, `amount`, `description`) aren't allowed to be loaded in the db, for the same
+account OR different accounts; they will be skipped with a logged note. This means you can download overlapping data from your bank to ensure
+you get all of it, without worrying about whether you've double-counted anything. Transactions are signed, meaning if you have a debited transaction
+in one account that matches a credited transaction on another account (e.g. a credit card paid out of a checking account), these will not be considered
+duplicate transaction (the sign is different on the amount).
 
 ### Log balances in the db
 
@@ -74,7 +90,7 @@ To log a list of account balances (amounts on dates) into the db from a csv:
 in the terminal, run
 
 ``` 
-python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw> add_account
+python ./src/fintrackr/load_balances.py <account_name> <filepath> <username> <pw>
 ```
 
 where:
@@ -84,18 +100,16 @@ where:
 
 - `<username>` and `<pw>` to connect to the db (see below for how to set up).
 
-- `add_account` is an optional flag: is `<account_name>` one that already exists in the db? If not, add this flag.
-
 Since these are user-generated (not from a bank), we insist they have a header with columns `balance_date` 
 and `amount` (case insensitive). We also don't allow duplicates - if there are any duplicate entries with existing ones
-in the database, the whole load is blocked.
+in the database (or duplicates in the file itself), the whole load is blocked.
 
 ### Plot account balances
 
 In the terminal, run
 
 ``` 
-python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_date> <username> <pw> add_account
+python ./src/fintrackr/plot_accnt_balances.py <account_name> <start_date> <end_date> <username> <pw>
 ```
 
 where:
@@ -171,6 +185,8 @@ tear_down_test_DB(db_conn = FinDB, params = params)
 To regenerate the schema diagram, run `python src/fintrackr/SQL_to_EDL.py src/fintrackr/schema.sql`. A file `schema_EDL.txt` will appear in `src/fintrackr`.
 
 ## TODO 
+- Enforce passwords
+- Possibly change permissions so that two users can see the same accounts/tables
 - Automatically infer transactions to ignore (e.g. credit card payments from checking account, if have both lists of transactions and can compare)?
 - Infer, or at least check, recurring charges and their frequencies
 - Have a "MANUAL" category that requires manual intervention - e.g. Amazon transactions can't be categorized just from credit card data.
