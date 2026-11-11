@@ -13,15 +13,11 @@ from fintrackr.load_data import DataLoader
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
-    if len(sys.argv) > 6 or len(sys.argv) < 5:
-        raise TypeError("load_data_from_CLI.py takes 4 or 5 input args: (1) account name; (2) path to csv of transactions; (3) db username; (4) db pw (5) [optional] add_account flag")
+    if len(sys.argv) != 5:
+        raise TypeError("load_balances takes 4 input args: (1) account name; (2) path to csv of transactions; (3) db username; (4) db pw")
     
     filepath_base = os.path.split(sys.argv[2])[0]
     logging.basicConfig(filename = os.path.join(filepath_base,"load_balances_log.log"), level="INFO", format=DEFAULT_LOGGING_FORMAT)
     
-    if len(sys.argv) == 6:
-        with DataLoader(user=sys.argv[3], pw = sys.argv[4]) as dl:
-            dl.load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], trans=False, add_as_new_acct=True)
-    elif len(sys.argv) == 5:
-        with DataLoader(user=sys.argv[3], pw = sys.argv[4]) as dl:
-            dl.load_data_from_CLI(accnt_name = sys.argv[1], filepath=sys.argv[2], trans=False, add_as_new_acct=True)
+    with DataLoader(user=sys.argv[3], pw = sys.argv[4]) as dl:
+        dl.add_balances_from_csv(path_to_csv=sys.argv[2], account_name= sys.argv[1])
