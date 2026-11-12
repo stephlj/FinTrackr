@@ -166,7 +166,7 @@ No solution found when resolving dependencies:
 ```
 you already have the package (e.g. it's a package that comes with all python installs). I love `uv` but its error messages can be quite unhelpful.
 
-Use `pytest` to run the tests. (For quick debugging: Add `-s` or `--capture=no` to print print statements to console.)
+Tests use `unittest` and are run with `pytest`. (For quick debugging: Add `-s` or `--capture=no` to print print statements to console.)
 
 Quick manual testing/debugging setup using the tools in `testing_utils.py`: TODO update
 
