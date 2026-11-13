@@ -186,7 +186,8 @@ To regenerate the schema diagram, run `python src/fintrackr/SQL_to_EDL.py src/fi
 
 ## TODO 
 - Enforce passwords
-- Possibly change permissions so that two users can see the same accounts/tables
+- Improve password handling - see TODO in DBCommons, also: Passwords passed as command-line arguments end up in your shell history. Read them from an environment variable or prompt with getpass.
+- Possibly need to change permissions so that two users can see the same accounts/tables
 - Automatically infer transactions to ignore (e.g. credit card payments from checking account, if have both lists of transactions and can compare)?
 - Infer, or at least check, recurring charges and their frequencies
 - Have a "MANUAL" category that requires manual intervention - e.g. Amazon transactions can't be categorized just from credit card data.
