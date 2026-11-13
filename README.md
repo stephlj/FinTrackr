@@ -185,6 +185,8 @@ tear_down_test_DB(db_conn = FinDB, params = params)
 To regenerate the schema diagram, run `python src/fintrackr/SQL_to_EDL.py src/fintrackr/schema.sql`. A file `schema_EDL.txt` will appear in `src/fintrackr`.
 
 ## TODO 
+- Finish addressing Claude's review comments (see `/private/tmp/claude-501/-Users-steph-Documents-Code-FinTrackr/20487543-81f0-4b6b-957d-9eb2345d1c9b/scratchpad/review_SwitchToDBCommons.md`)
+- Upgrade to pytest 9 to support subtest
 - Enforce passwords
 - Improve password handling - see TODO in DBCommons, also: Passwords passed as command-line arguments end up in your shell history. Read them from an environment variable or prompt with getpass.
 - Possibly need to change permissions so that two users can see the same accounts/tables

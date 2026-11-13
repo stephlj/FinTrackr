@@ -222,7 +222,7 @@ class TestDBIntegrations(unittest.TestCase):
         path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_noheader3.csv")
         csv_out = os.path.join(TEST_DATA_PATH,"test_csv_noheader3_REFORMAT.csv")
         self.addCleanup(os.remove, csv_out)
-        accnt_name = "test_add_trans_from_csv3"
+        accnt_name = "test_add_trans_from_csv4"
         with FinDB(user=self.params["user"], pw=self.params["user_pw"], db_name=self.params["test_db_name"]) as db_conn:
             _ = db_conn.add_data_source(source_name = accnt_name)
         self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))

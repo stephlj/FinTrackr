@@ -74,13 +74,13 @@ class TestUtils(unittest.TestCase):
             self.addCleanup(os.remove, csv_out)
             self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
+        # Test cases covering bugs caught by Claude during code review:
         with self.subTest("Test no header starting with two check rows"):
             csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader3.csv")
             csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader3_fixed.csv")
             csv_out = wrangle_trans_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
             self.addCleanup(os.remove, csv_out)
             self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
-
         with self.subTest("Test no header with a trailing empty column"):
             csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader4.csv")
             csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader4_fixed.csv")
