@@ -3,7 +3,19 @@
 ## About this project
 
 - FinTrackr is a personal project for learning (e.g. relational databases, which I'm new to) and for keeping my coding skills fresh.
-- Make reviews educational: explain *why* something should change, not just *what*.
+- Make reviews educational: explain *why* something should change, not just *what*. Add one-line explanations wherever a
+  concept may be new to me, for example:
+  - what a SQL feature does (`ROW_NUMBER() OVER (PARTITION BY …)` numbers each copy of a row within a group)
+  - why a design is safe (with autocommit each statement commits on its own, so one statement = all or nothing)
+  - database behavior that isn't obvious (every part of a single statement reads the same snapshot, taken before it started)
+  - Python behavior that isn't obvious (`decimal.InvalidOperation` is an `ArithmeticError`, not a `ValueError`, so `except ValueError` misses it)
+  - why a common pattern is risky (floats can't represent most cents exactly: `25000.02 + 200.50 + …` can give `25950.570000000003`)
+- It doesn't need production-level performance, security or scalability. Still flag those issues so I can learn, but say
+  whether each one matters *here*, and what you'd do differently in production. For example:
+  - "This query scans the whole table: fine for one person's transactions, slow at millions of rows. In production you'd add an index on X."
+  - "With one user loading files, a shared `staging` table is fine. On a server with several simultaneous logins, two loads
+    would collide; you'd use a `TEMP` table, which is private to each connection."
+  - Mark these as **Learning note** (not Blocking or Should fix) unless they also cause a bug here.
 - I write all the code here myself. Never offer to make edits. Example code and suggested edits are welcome; I'll implement them.
 
 ## Review style
@@ -11,6 +23,10 @@
 - Clear, but as concise as possible. I want to know what should change, why, and how you'd implement it.
 - Prefer bullet points and numbered lists over paragraphs.
 - Use as few words as possible. Don't repeat yourself.
+- Fewer words must still be precise: name the concrete input and the concrete outcome, not a category. For example:
+  - Vague: "header-less CSV guessing silently loads wrong amounts"
+  - Precise: "header-less CSV guessing loads the check number as the amount when the first row has one (a README example),
+    and blank descriptions when rows end in a trailing comma"
 
 ## Request
 
@@ -101,4 +117,5 @@ Structure the file as:
    - **Blocking**: must fix before merging (bugs, data loss or corruption, security problems)
    - **Should fix**: real problems that aren't urgent (missing tests, out-of-date docs, poor error handling, readability)
    - **Nit**: minor style or preference
+   - **Learning notes**: performance, security or scalability points that are fine here but would matter in production
 3. **Future suggestions** (optional, brief): related features or enhancements.
