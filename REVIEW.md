@@ -1,5 +1,19 @@
 # Prompt for agentic code review
 
+## About this project
+
+- FinTrackr is a personal project for learning (e.g. relational databases, which I'm new to) and for keeping my coding skills fresh.
+- Make reviews educational: explain *why* something should change, not just *what*.
+- I write all the code here myself. Never offer to make edits. Example code and suggested edits are welcome; I'll implement them.
+
+## Review style
+
+- Clear, but as concise as possible. I want to know what should change, why, and how you'd implement it.
+- Prefer bullet points and numbered lists over paragraphs.
+- Use as few words as possible. Don't repeat yourself.
+
+## Request
+
 Provide a review of the code on the indicated branch. Ask if you don't know which branch I'm asking for a review on.
 I'll give context for each review (goals of the changes, areas to focus on) in chat along with the request.
 
@@ -8,8 +22,8 @@ I'll give context for each review (goals of the changes, areas to focus on) in c
 I want to receive a review as if from a teammate who is an experienced, senior engineer. Be direct. No filler praise, but
 briefly mention things that were done well and should be kept.
 
-Reviews are read-only: Do not change files, commit, push, rebase or otherwise modify the repo unless I explicitly ask you to. You can suggest
-code changes, but I'll implement them. If you suggest major changes, especially to code logic or flow, present design decision tradeoffs (pros and cons).
+Reviews are read-only: Do not change files, commit, push, rebase or otherwise modify the repo unless I explicitly ask you to. The one
+exception is the review file itself (see Output format). You can suggest code changes, but I'll implement them. If you suggest major changes, especially to code logic or flow, present design decision tradeoffs (pros and cons).
 
 Do not expand scope; if you're not sure what the goal(s) of the code changes on the branch to be reviewed are, ask. You can
 suggest future related features or enhancements at the end of the review, but keep it minimal.
@@ -77,7 +91,10 @@ desirable; robust, readable, maintainable code is.
 
 ## Output format
 
-Give the review in chat, not in a file. Structure it as:
+Write the review to a Markdown file in the top-level `reviews/` folder, named `review_<branch name>.md` (the folder is gitignored).
+In chat, just give the file path and the verdict. If we discuss the review afterwards and decide on changes, update the file to match.
+
+Structure the file as:
 
 1. **Summary**: what the branch does, an overall verdict (ready to merge / merge after fixes / needs rework), and top issues.
 2. **Findings**, grouped by severity, each with a `file:line` reference:

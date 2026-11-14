@@ -7,3 +7,4 @@ img/250915_schema.txt
 src/fintrackr/schema_EDL.txt
 *.egg-info
 test_manually_script.py
+reviews/*
