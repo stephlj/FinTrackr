@@ -14,7 +14,7 @@ from typing import List
 from dbcommons.dataclass_utils import csv_to_dataclass
 
 from fintrackr.fin_db import FinDB
-from fintrackr.utils import CONFIG_PATH, wrangle_trans_csv
+from fintrackr.utils import CONFIG_PATH, reformat_csv
 from fintrackr.fin_dataclasses import Balance, Transaction, BAL_COL_DEFS, TRANS_COL_DEFS
 
 class DataLoader:
@@ -184,7 +184,7 @@ class DataLoader:
         # also handles input checking and formatting.
 
         # Since we don't control the transaction csv format, try to wrangle what we got into what we need:
-        reformtted_csv_path = wrangle_trans_csv(path_to_csv=path_to_csv, config_path=config_path)
+        reformtted_csv_path = reformat_csv(path_to_csv=path_to_csv, config_path=config_path)
 
         transactions = csv_to_dataclass(path_to_csv=reformtted_csv_path, cls=Transaction)
 

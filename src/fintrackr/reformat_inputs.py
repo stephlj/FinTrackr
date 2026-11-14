@@ -1,0 +1,132 @@
+"""
+Since we don't control the format of bank-provided inputs, and accept several
+formats, wrangle them into a standardized input for FinTrackr here.
+
+Main entry is reformat_csv. A new version of each input is saved for manual checking
+and logging.
+
+Copyright (c) 2026 Stephanie Johnson
+"""
+
+import os
+import csv
+import yaml
+import logging
+
+from dataclasses import fields
+
+from dbcommons.utils import check_csv_path
+from fintrackr.fin_dataclasses import TRANS_COL_NAMES, Transaction
+from fintrackr.utils import CONFIG_PATH
+
+logger = logging.getLogger(__name__)
+
+def read_rows(path: str)->list[list[str]]:
+    # TODO see nice to haves in review - add encoding and so forth
+    with open(path, mode='r') as f:
+        # Strip spaces around entries on load (particularly important if there's a header row)
+        return [[cell.strip() for cell in row] for row in csv.reader(f)]
+
+def get_trans_header_aliases(config_path: str=CONFIG_PATH)->dict:
+    trans_aliases = {}
+            
+    with open(config_path, "r") as config_file:
+        config = yaml.safe_load(config_file)
+        # get allowed header aliases
+        for t in TRANS_COL_NAMES:
+            trans_aliases[t] = config["transaction_headers"][t]
+    return trans_aliases
+
+def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[str, int] | None:
+    # If possible, we infer header from the first row
+
+def guess_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
+    pass
+
+def write_reformatted(path_to_output: str, data_rows: list[list[str]], columns: dict[str, int]) -> str:
+    pass
+
+def reformat_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
+    # Given a path to a transactions csv, return a new path to
+    # a new csv that's guaranteed to have the right format for loading.
+    # Writes a new file regardless of whether the original was ok or not.
+    # We pass a config_path arg for testing.
+    
+    # Basic input checking
+    check_csv_path(path_to_file=path_to_csv)
+
+    filename = os.path.splitext(os.path.split(path_to_csv)[-1])[0]
+    new_csv_path = os.path.join(os.path.split(path_to_csv)[0], filename+"_REFORMAT"+".csv")
+
+    rows = read_rows(path=path_to_csv)
+    if len(rows)==0:
+        msg = f"No rows read from {path_to_csv}"
+        logger.error(msg)
+        raise ValueError(msg)
+    
+    trans_aliases = get_trans_header_aliases(config_path=config_path)
+    trans_header = {}
+
+    # First question: Is there a header of a format we accept?
+    # Look at the first row (the csv module also has a Sniffer class that
+    # can try to determine this, but here we write our own version)
+    for k in trans_aliases.keys():
+        for c in first_row:
+            if c in trans_aliases[k]:
+                trans_header[k]=c
+    if len(trans_header) == len(trans_aliases):
+        logger.info(f"File {path_to_csv} has a recognizable header")
+        # Switch to a DictReader, since we know we have a header:
+        with open(path_to_csv, mode='r') as f:
+            dict_reader = csv.DictReader(f)
+            new_file_dict_list = [row for row in dict_reader]
+        # Convert header into the one we recognize, save a new file:
+        # First: flip key-value pairs in trans_header
+        trans_header_flipped = {val: key for key, val in trans_header.items()}
+        # Then replace elements of first row (header row) with our preferred header:
+        # new_first_row = [trans_header_flipped.get(item, item) for item in first_row]
+        # Keep only the columns we want, and change their keys:
+        corrected_dict_list = []
+        for r in new_file_dict_list:
+            new_row = {}
+            for k in trans_header_flipped.keys():
+                new_row[trans_header_flipped[k]] = r[k]
+            corrected_dict_list.append(new_row)
+        
+    else:
+        logger.info(f"No header with correct aliases identified in file {path_to_csv}")
+        trans_header = {k:k for k in trans_aliases.keys()} # No header, so we define one
+        col_equivs = {}
+        for c in range(0,len(first_row)): # We may have more columns than we need. See if we can pick out the ones we want
+            for f in fields(Transaction):
+                try:
+                    result = f.metadata['csv_parser'](first_row[c]) # Can we parse this column per Transaction field specifications
+                    #SPECIAL CASE: Some bank's transaction csvs have columns of all *'s. They parse as strings. We don't want those.
+                    if type(result)==str and result.strip()=='*':
+                        break
+                    col_equivs[f.name]=c
+                    break # if we succeed, stop trying
+                except:
+                    pass # If we couldn't convert this column type, try next loop iteration
+        if len(col_equivs) != len(trans_header):
+            msg = f"Unable to parse format of transaction csv {path_to_csv}"
+            logger.error(msg)
+            raise ValueError(msg)
+        # Pull out just the columns we want
+        with open(path_to_csv, mode='r') as f:
+            reader = csv.reader(f) # We know there's no header, so no DictReader
+            new_file_list = [row for row in reader]
+        corrected_dict_list = []
+        for r in new_file_list:
+            new_row = {}
+            for k in trans_header.keys():
+                new_row[trans_header[k]] = r[col_equivs[k]]
+            corrected_dict_list.append(new_row)
+
+    # Save corrected file
+    with open(new_csv_path, 'w', newline='') as newf:
+        writer=csv.DictWriter(newf, fieldnames=trans_header.keys())
+        writer.writeheader()
+        for r in corrected_dict_list:
+            writer.writerow(r)
+    return new_csv_path

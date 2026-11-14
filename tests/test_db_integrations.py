@@ -180,7 +180,7 @@ class TestDBIntegrations(unittest.TestCase):
     
     def test_load_data_add_transactions_from_csv(self):
         # Start with a simple case
-        # Note we DON'T use the "_fixed.csv" versions because that's the output of wrangle_trans_csv - 
+        # Note we DON'T use the "_fixed.csv" versions because that's the output of reformat_csv - 
         # but not an acceptable input (won't match config!)
         path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_simple_header.csv")
         csv_out = os.path.join(TEST_DATA_PATH,"test_csv_simple_header_REFORMAT.csv")
@@ -191,7 +191,7 @@ class TestDBIntegrations(unittest.TestCase):
             _ = db_conn.add_data_source(source_name = accnt_name)
         self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))
         
-        # Check that various acceptable formats work. This is the primary integration test with wrangle_trans_csv
+        # Check that various acceptable formats work. This is the primary integration test with reformat_csv
         # Extra columns and also weird characters in description:
         path_to_csv = os.path.join(TEST_DATA_PATH,"test_csv_header_extracols.csv")
         csv_out = os.path.join(TEST_DATA_PATH,"test_csv_header_extracols_REFORMAT.csv")

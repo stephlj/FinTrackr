@@ -16,6 +16,8 @@
   - "With one user loading files, a shared `staging` table is fine. On a server with several simultaneous logins, two loads
     would collide; you'd use a `TEMP` table, which is private to each connection."
   - Mark these as **Learning note** (not Blocking or Should fix) unless they also cause a bug here.
+- Prioritize what's actually broken: behavior the README documents, real input, and existing tests. List hypothetical
+  robustness issues (unusual input I haven't seen, code paths the CLI can't reach) separately as **Nice to have**.
 - I write all the code here myself. Never offer to make edits. Example code and suggested edits are welcome; I'll implement them.
 
 ## Review style
@@ -23,6 +25,7 @@
 - Clear, but as concise as possible. I want to know what should change, why, and how you'd implement it.
 - Prefer bullet points and numbered lists over paragraphs.
 - Use as few words as possible. Don't repeat yourself.
+- Concise never means unexplained: spell out abbreviations and explain technical terms the first time they appear.
 - Fewer words must still be precise: name the concrete input and the concrete outcome, not a category. For example:
   - Vague: "header-less CSV guessing silently loads wrong amounts"
   - Precise: "header-less CSV guessing loads the check number as the amount when the first row has one (a README example),
@@ -118,4 +121,5 @@ Structure the file as:
    - **Should fix**: real problems that aren't urgent (missing tests, out-of-date docs, poor error handling, readability)
    - **Nit**: minor style or preference
    - **Learning notes**: performance, security or scalability points that are fine here but would matter in production
+   - **Nice to have**: hypothetical robustness issues (see "About this project")
 3. **Future suggestions** (optional, brief): related features or enhancements.
