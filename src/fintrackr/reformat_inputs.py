@@ -12,12 +12,20 @@ import os
 import csv
 import yaml
 import logging
+import re
 
-from dataclasses import fields
+from dataclasses import fields, dataclass
 
 from dbcommons.utils import check_csv_path
 from fintrackr.fin_dataclasses import TRANS_COL_NAMES, Transaction
 from fintrackr.utils import CONFIG_PATH
+
+not_money = r"^\d+$"
+
+@dataclass
+class ColMatch:
+    col_header: str
+    col_type: str
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +45,95 @@ def get_trans_header_aliases(config_path: str=CONFIG_PATH)->dict:
             trans_aliases[t] = config["transaction_headers"][t]
     return trans_aliases
 
+def parse_cell_type(datum: str) -> list[ColMatch]:
+    # For one cell in one row, return a list of possible header options it might match
+
+    possible_matches = []
+
+    # Special case columns we want to ignore and not try to parse:
+    # 1. Some bank's transaction csvs have columns of all *'s
+    # 2. Handle empty cells (including from a trailing comma at end of row)
+    # 3. Some banks have separate "check number" columns (but also have "check number" in the description)
+    if not len(datum)==0 and not (type(datum)==str and datum.strip()=='*') and len(re.findall(not_money, datum))==0:
+        for f in fields(Transaction):
+            try:
+                _ = f.metadata['csv_parser'](datum) # Can we parse this column per Transaction field specifications
+                possible_matches.append(ColMatch(col_header=f.name, col_type=f.metadata['sql_type']))
+            except:
+                pass # If we couldn't convert this column type, try next loop iteration
+    return possible_matches
+
 def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[str, int] | None:
-    # If possible, we infer header from the first row
+    # If possible, we infer header from the first row, based on header aliases provided in the csv
+    
+    trans_header = {}
 
-def guess_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
-    pass
+    for k in aliases.keys():
+        for c in first_row:
+            if c in aliases[k]:
+                trans_header[k]=c
+    if len(trans_header) == len(aliases):
+        # we have a header we recognize; convert to a useable form for creating a new file
+        return {val: key for key, val in trans_header.items()}
+    else:
+        return None
 
-def write_reformatted(path_to_output: str, data_rows: list[list[str]], columns: dict[str, int]) -> str:
-    pass
+def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
+    # See if we can infer which columns are which based on file contents and types
+    # If anything is ambiguous, we abort - no guessing
+    prev_col_equivs = {}
+    num_input_cols = len(data_rows[0])
+    for r in data_rows:
+        col_equivs = {}
+        for c in range(0,num_input_cols): # We may have more columns than we need. See if we can pick out the ones we want
+            
+            possible_matches = parse_cell_type(datum=r[c])
+
+            if len(possible_matches)>1:
+                # We should have >1 possible match for some columns 
+                # (since everything should at least parse as a string)
+                # Pick the other one (there should be only one)
+                if len(possible_matches) != 2:
+                    msg = "Too many possible matches for this row, can't disambiguate"
+                    logger.error(msg)
+                    raise ValueError(msg)
+                col_equivs[c] = possible_matches[0].col_header if possible_matches[0].col_type != 'text' else possible_matches[1].col_header
+            elif len(possible_matches)>0:
+                col_equivs[c] = possible_matches[0].col_header
+        
+        # Abort if we don't have at least as many possible header matches as Transaction fields
+        if len(col_equivs)<len(TRANS_COL_NAMES):
+            msg = "Could not parse enough cells; header inference failed"
+            logger.error(msg)
+            raise ValueError(msg)
+        
+        # Finally, check against previous rows - again we insist they all parse the same. Abort as soon as we fail.
+        if len(prev_col_equivs)>0 and prev_col_equivs != col_equivs:
+            msg = "Rows parsed differently, header inference failed"
+            logger.error(msg)
+            raise ValueError(msg)
+        else:
+            prev_col_equivs=col_equivs
+    return {val: key for key, val in col_equivs.items()}
+
+def write_reformatted(path_to_output: str, data_rows: list[list[str]], header_col_dict: dict[str, int]) -> str:
+    # Returns the path it wrote to for confirmation of success
+
+    # Create corrected rows to write
+    corrected_dict_list = []
+    for r in data_rows:
+        new_row = {}
+        for k in header_col_dict.keys():
+            new_row[header_col_dict[k]] = r[k]
+        corrected_dict_list.append(new_row)
+
+    with open(path_to_output, 'w', newline='') as newf:
+        writer=csv.DictWriter(newf, fieldnames=header_col_dict.keys())
+        writer.writeheader()
+        for r in corrected_dict_list:
+            writer.writerow(r)
+    return path_to_output
+    
 
 def reformat_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
     # Given a path to a transactions csv, return a new path to
@@ -65,68 +154,14 @@ def reformat_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
         raise ValueError(msg)
     
     trans_aliases = get_trans_header_aliases(config_path=config_path)
-    trans_header = {}
-
-    # First question: Is there a header of a format we accept?
-    # Look at the first row (the csv module also has a Sniffer class that
-    # can try to determine this, but here we write our own version)
-    for k in trans_aliases.keys():
-        for c in first_row:
-            if c in trans_aliases[k]:
-                trans_header[k]=c
-    if len(trans_header) == len(trans_aliases):
+    
+    header_dict = id_header_cols(first_row=rows[0], aliases=trans_aliases)
+    if header_dict is not None:
         logger.info(f"File {path_to_csv} has a recognizable header")
-        # Switch to a DictReader, since we know we have a header:
-        with open(path_to_csv, mode='r') as f:
-            dict_reader = csv.DictReader(f)
-            new_file_dict_list = [row for row in dict_reader]
-        # Convert header into the one we recognize, save a new file:
-        # First: flip key-value pairs in trans_header
-        trans_header_flipped = {val: key for key, val in trans_header.items()}
-        # Then replace elements of first row (header row) with our preferred header:
-        # new_first_row = [trans_header_flipped.get(item, item) for item in first_row]
-        # Keep only the columns we want, and change their keys:
-        corrected_dict_list = []
-        for r in new_file_dict_list:
-            new_row = {}
-            for k in trans_header_flipped.keys():
-                new_row[trans_header_flipped[k]] = r[k]
-            corrected_dict_list.append(new_row)
-        
+        return write_reformatted(path_to_output=new_csv_path, data_rows=rows[1:], header_col_dict=header_dict)
     else:
         logger.info(f"No header with correct aliases identified in file {path_to_csv}")
-        trans_header = {k:k for k in trans_aliases.keys()} # No header, so we define one
-        col_equivs = {}
-        for c in range(0,len(first_row)): # We may have more columns than we need. See if we can pick out the ones we want
-            for f in fields(Transaction):
-                try:
-                    result = f.metadata['csv_parser'](first_row[c]) # Can we parse this column per Transaction field specifications
-                    #SPECIAL CASE: Some bank's transaction csvs have columns of all *'s. They parse as strings. We don't want those.
-                    if type(result)==str and result.strip()=='*':
-                        break
-                    col_equivs[f.name]=c
-                    break # if we succeed, stop trying
-                except:
-                    pass # If we couldn't convert this column type, try next loop iteration
-        if len(col_equivs) != len(trans_header):
-            msg = f"Unable to parse format of transaction csv {path_to_csv}"
-            logger.error(msg)
-            raise ValueError(msg)
-        # Pull out just the columns we want
-        with open(path_to_csv, mode='r') as f:
-            reader = csv.reader(f) # We know there's no header, so no DictReader
-            new_file_list = [row for row in reader]
-        corrected_dict_list = []
-        for r in new_file_list:
-            new_row = {}
-            for k in trans_header.keys():
-                new_row[trans_header[k]] = r[col_equivs[k]]
-            corrected_dict_list.append(new_row)
+        header_dict = infer_header_cols(data_rows=rows, header={k:k for k in trans_aliases.keys()})
+        return write_reformatted(path_to_output=new_csv_path, data_rows=rows, header_col_dict=header_dict)
 
-    # Save corrected file
-    with open(new_csv_path, 'w', newline='') as newf:
-        writer=csv.DictWriter(newf, fieldnames=trans_header.keys())
-        writer.writeheader()
-        for r in corrected_dict_list:
-            writer.writerow(r)
-    return new_csv_path
+    
