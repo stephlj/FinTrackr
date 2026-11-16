@@ -14,7 +14,8 @@ import yaml
 import logging
 import re
 
-from dataclasses import fields, dataclass
+from dataclasses import fields
+from typing import NamedTuple
 
 from dbcommons.utils import check_csv_path
 from fintrackr.fin_dataclasses import TRANS_COL_NAMES, Transaction
@@ -22,8 +23,7 @@ from fintrackr.utils import CONFIG_PATH
 
 not_money = r"^\d+$"
 
-@dataclass
-class ColMatch:
+class ColMatch(NamedTuple):
     col_header: str
     col_type: str
 

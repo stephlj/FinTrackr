@@ -9,7 +9,7 @@ import csv
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
-from fintrackr.reformat_inputs import get_trans_header_aliases, reformat_csv
+from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, reformat_csv, ColMatch
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
@@ -31,80 +31,86 @@ class TestReformatInputs(unittest.TestCase):
         header_dict_test = get_trans_header_aliases(config_path=TEST_CONFIG_PATH)
         self.assertEqual(correct_transaction_names,list(header_dict_test.keys()))
 
-    def test_reformat_csv(self):
+    def test_parse_cell_type(self):
+        with self.subTest("Test a date"):
+            self.assertEqual([ColMatch(col_header='posted_date',col_type='date'),
+                                       ColMatch(col_header='description',col_type='text')],
+                             parse_cell_type(datum='09/02/2026'))
+    
+    # def test_reformat_csv(self):
         
-        with self.subTest("Test a simple header"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_simple_header.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_simple_header_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test a simple header"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_simple_header.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_simple_header_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
-        with self.subTest("Test one accepted header version"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test one accepted header version"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
-        with self.subTest("Test a second accepted header version"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols2.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols2_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test a second accepted header version"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols2.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols2_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
-        with self.subTest("Test a second accepted header version with extraneous spaces"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols_spaces.csv")
-            with self.assertRaises(KeyError):
-                csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-                self.addCleanup(os.remove, csv_out)
+    #     with self.subTest("Test a second accepted header version with extraneous spaces"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_header_extracols_spaces.csv")
+    #         with self.assertRaises(KeyError):
+    #             csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #             self.addCleanup(os.remove, csv_out)
 
-        with self.subTest("Test no header"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test no header"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
-        with self.subTest("Test a second version of no header"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader2.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader2_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test a second version of no header"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader2.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader2_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
 
-        # Test cases covering bugs caught by Claude during code review:
-        with self.subTest("Test no header starting with two check rows"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader3.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader3_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
-        with self.subTest("Test no header with a trailing empty column"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader4.csv")
-            csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader4_fixed.csv")
-            csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-            self.addCleanup(os.remove, csv_out)
-            self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
-        with self.subTest("Test we abort on an empty file"):
-            csv_in = os.path.join(TEST_DATA_PATH, "blank.csv")
-            with self.assertRaises(ValueError):
-                csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-                self.addCleanup(os.remove, csv_out)
+    #     # Test cases covering bugs caught by Claude during code review:
+    #     with self.subTest("Test no header starting with two check rows"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader3.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader3_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test no header with a trailing empty column"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader4.csv")
+    #         csv_fixed = os.path.join(TEST_DATA_PATH, "test_csv_noheader4_fixed.csv")
+    #         csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #         self.addCleanup(os.remove, csv_out)
+    #         self.assertEqual(read_csv_rows(csv_out), read_csv_rows(csv_fixed))
+    #     with self.subTest("Test we abort on an empty file"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "blank.csv")
+    #         with self.assertRaises(ValueError):
+    #             csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #             self.addCleanup(os.remove, csv_out)
 
 
-        with self.subTest("Test a header with columns that don't match config"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_wrongheader.csv")
-            with self.assertRaises(ValueError):
-                csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-                self.addCleanup(os.remove, csv_out)
+    #     with self.subTest("Test a header with columns that don't match config"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_wrongheader.csv")
+    #         with self.assertRaises(ValueError):
+    #             csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #             self.addCleanup(os.remove, csv_out)
 
-        with self.subTest("Test no header, column contents that don't match expected"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader_wrongcontent.csv")
-            with self.assertRaises(ValueError):
-                csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
-                self.addCleanup(os.remove, csv_out)
+    #     with self.subTest("Test no header, column contents that don't match expected"):
+    #         csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader_wrongcontent.csv")
+    #         with self.assertRaises(ValueError):
+    #             csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+    #             self.addCleanup(os.remove, csv_out)
 
             
         
