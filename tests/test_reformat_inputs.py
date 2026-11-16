@@ -36,6 +36,44 @@ class TestReformatInputs(unittest.TestCase):
             self.assertEqual([ColMatch(col_header='posted_date',col_type='date'),
                                        ColMatch(col_header='description',col_type='text')],
                              parse_cell_type(datum='09/02/2026'))
+
+        with self.subTest("Test an amount"):
+            self.assertEqual([ColMatch(col_header='amount',col_type='numeric(12,2)'),
+                                        ColMatch(col_header='description',col_type='text')],
+                                parse_cell_type(datum='200.00'))
+
+        with self.subTest("Test a negative amount"):
+            self.assertEqual([ColMatch(col_header='amount',col_type='numeric(12,2)'),
+                                        ColMatch(col_header='description',col_type='text')],
+                                parse_cell_type(datum='-43.12'))
+
+        with self.subTest("Test we do NOT catch non-money and non-integer amounts"):
+            # This test logs unideal but expected behavior
+            self.assertEqual([ColMatch(col_header='amount',col_type='numeric(12,2)'),
+                                       ColMatch(col_header='description',col_type='text')],
+                            parse_cell_type(datum='-43.1'))
+
+        with self.subTest("Test unambiguous text"):
+            self.assertEqual([ColMatch(col_header='description',col_type='text')],
+                                parse_cell_type(datum='A description'))
+
+        with self.subTest("Test ambiguity between numbers and text"):
+            self.assertEqual([], parse_cell_type(datum='200'))
+
+        with self.subTest("Test special column types - asterisks"):
+            self.assertEqual([], parse_cell_type(datum='*'))
+
+        with self.subTest("Test special column types - empty"):
+            self.assertEqual([], parse_cell_type(datum=''))
+
+        with self.subTest("Test text with special characters"):
+            self.assertEqual([ColMatch(col_header='description',col_type='text')], parse_cell_type(datum='123 gas station'))
+
+        with self.subTest("Test text with special characters"):
+            self.assertEqual([ColMatch(col_header='description',col_type='text')], parse_cell_type(datum='*Safeway'))
+
+        with self.subTest("Test text with special characters"):
+            self.assertEqual([ColMatch(col_header='description',col_type='text')], parse_cell_type(datum='Check # 100'))
     
     # def test_reformat_csv(self):
         
