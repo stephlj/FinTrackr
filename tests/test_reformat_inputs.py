@@ -9,7 +9,7 @@ import csv
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
-from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, reformat_csv, ColMatch
+from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, reformat_csv, ColMatch
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
@@ -74,6 +74,21 @@ class TestReformatInputs(unittest.TestCase):
 
         with self.subTest("Test text with special characters"):
             self.assertEqual([ColMatch(col_header='description',col_type='text')], parse_cell_type(datum='Check # 100'))
+    
+    def test_id_header_cols(self):
+        aliases = {'posted_date': ["Post Date", "DATE"], 
+                   'amount': ["Amount", "AMOUNT"], 
+                   'description': ["Description","DESCRIPTION"]}
+
+        with self.subTest('Input with header matching extacols_v2'):
+            first_row = ['DATE','DESCRIPTION','AMOUNT','CHECK #', 'STATUS']
+            self.assertEqual(id_header_cols(first_row=first_row,aliases=aliases),
+                             {'posted_date':0,'amount':2,'description':1})
+
+        with self.subTest('Input with header matching extacols'):
+            first_row = ['Transaction Date','Post Date','Description','Category', 'Type', 'Amount', 'Memo']
+            self.assertEqual(id_header_cols(first_row=first_row,aliases=aliases),
+                                {'posted_date':1,'amount':5,'description':2})
     
     # def test_reformat_csv(self):
         

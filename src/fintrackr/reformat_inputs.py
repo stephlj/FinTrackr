@@ -64,17 +64,16 @@ def parse_cell_type(datum: str) -> list[ColMatch]:
     return possible_matches
 
 def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[str, int] | None:
-    # If possible, we infer header from the first row, based on header aliases provided in the csv
+    # If possible, we infer header from the first row, based on header aliases provided in the config file
     
     trans_header = {}
 
-    for k in aliases.keys():
-        for c in first_row:
-            if c in aliases[k]:
-                trans_header[k]=c
+    for a in aliases.keys():
+        for c in range(0,len(first_row)-1):
+            if first_row[c] in aliases[a]:
+                trans_header[a]=c
     if len(trans_header) == len(aliases):
-        # we have a header we recognize; convert to a useable form for creating a new file
-        return {val: key for key, val in trans_header.items()}
+        return trans_header
     else:
         return None
 
@@ -119,12 +118,12 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
 def write_reformatted(path_to_output: str, data_rows: list[list[str]], header_col_dict: dict[str, int]) -> str:
     # Returns the path it wrote to for confirmation of success
 
-    # Create corrected rows to write
+    # Create corrected rows to write - keep just the columns we want
     corrected_dict_list = []
     for r in data_rows:
         new_row = {}
         for k in header_col_dict.keys():
-            new_row[header_col_dict[k]] = r[k]
+            new_row[k] = r[header_col_dict[k]]
         corrected_dict_list.append(new_row)
 
     with open(path_to_output, 'w', newline='') as newf:
@@ -161,7 +160,7 @@ def reformat_csv(path_to_csv: str, config_path: str=CONFIG_PATH)->str:
         return write_reformatted(path_to_output=new_csv_path, data_rows=rows[1:], header_col_dict=header_dict)
     else:
         logger.info(f"No header with correct aliases identified in file {path_to_csv}")
-        header_dict = infer_header_cols(data_rows=rows, header={k:k for k in trans_aliases.keys()})
+        header_dict = infer_header_cols(data_rows=rows)
         return write_reformatted(path_to_output=new_csv_path, data_rows=rows, header_col_dict=header_dict)
 
     
