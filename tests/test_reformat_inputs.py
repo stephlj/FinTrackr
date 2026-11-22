@@ -166,6 +166,12 @@ class TestReformatInputs(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _ = infer_header_cols(data_rows=data_rows)
 
+        with self.subTest("Test noheader_twodatecols"):
+            # Future proofing, caught by Claude: what if we lose the header for an input that has Transaction Date and Post Date
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader_twodates.csv"))
+            with self.assertRaises(ValueError):
+                _ = infer_header_cols(data_rows=data_rows)
+
     
     def test_reformat_csv(self):
         
