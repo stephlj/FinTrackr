@@ -80,6 +80,11 @@ class TestReformatInputs(unittest.TestCase):
                    'amount': ["Amount", "AMOUNT"], 
                    'description': ["Description","DESCRIPTION"]}
 
+        with self.subTest('Input with simple header'):
+            first_row = ['DATE','DESCRIPTION','AMOUNT']
+            self.assertEqual({'posted_date':0,'amount':2,'description':1},
+                                id_header_cols(first_row=first_row,aliases=aliases))
+        
         with self.subTest('Input with header matching extacols_v2'):
             first_row = ['DATE','DESCRIPTION','AMOUNT','CHECK #', 'STATUS']
             self.assertEqual({'posted_date':0,'amount':2,'description':1},
