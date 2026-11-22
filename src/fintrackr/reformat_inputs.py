@@ -90,8 +90,12 @@ def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[
 
     for a in aliases.keys():
         for c in range(0,len(first_row)):
-            if first_row[c] in aliases[a]:
+            if first_row[c] in aliases[a] and a not in trans_header.keys():
                 trans_header[a]=c
+            elif first_row[c] in aliases[a]:
+                msg = f"Header {first_row} has multiple options that match expected columns; cannot parse file"
+                logger.error(msg)
+                raise ValueError(msg)
     if Counter(trans_header.keys()) == Counter(TRANS_COL_NAMES):
         return trans_header
     else:

@@ -112,6 +112,12 @@ class TestReformatInputs(unittest.TestCase):
             first_row = ['09/10/2025','26.57','*','','Safeway']
             self.assertIsNone(id_header_cols(first_row=first_row,aliases=aliases))
 
+        with self.subTest('Input with multiple columns matching possible header'):
+            # not likely to happen, but just in case
+            first_row = ['DATE','Post Date','Description','Category', 'Type', 'Amount', 'Memo']
+            with self.assertRaises(ValueError):
+                _ = id_header_cols(first_row=first_row,aliases=aliases)
+
     def test_disambiguate_col(self):
         # Almost everything should parse as text - 
         # we're disambiguating text from something that could also be a date or numeric
