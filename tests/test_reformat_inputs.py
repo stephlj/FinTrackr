@@ -82,13 +82,21 @@ class TestReformatInputs(unittest.TestCase):
 
         with self.subTest('Input with header matching extacols_v2'):
             first_row = ['DATE','DESCRIPTION','AMOUNT','CHECK #', 'STATUS']
-            self.assertEqual(id_header_cols(first_row=first_row,aliases=aliases),
-                             {'posted_date':0,'amount':2,'description':1})
+            self.assertEqual({'posted_date':0,'amount':2,'description':1},
+                             id_header_cols(first_row=first_row,aliases=aliases))
 
         with self.subTest('Input with header matching extacols'):
             first_row = ['Transaction Date','Post Date','Description','Category', 'Type', 'Amount', 'Memo']
-            self.assertEqual(id_header_cols(first_row=first_row,aliases=aliases),
-                                {'posted_date':1,'amount':5,'description':2})
+            self.assertEqual({'posted_date':1,'amount':5,'description':2},
+                             id_header_cols(first_row=first_row,aliases=aliases))
+
+        with self.subTest('Input with header matching wrongheader.csv'):
+            first_row = ['DATE','WRONGTHING','AMOUNT','CHECK#','STATUS']
+            self.assertIsNone(id_header_cols(first_row=first_row,aliases=aliases))
+
+        with self.subTest('Input with no header'):
+            first_row = ['09/10/2025','26.57','*','','Safeway']
+            self.assertIsNone(id_header_cols(first_row=first_row,aliases=aliases))
 
     def test_disambiguate_cols(self):
         # Almost everything should parse as text - 
@@ -117,6 +125,14 @@ class TestReformatInputs(unittest.TestCase):
 
         with self.subTest("Test no_header2 file contents"):
             data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader2.csv"))
+            self.assertEqual({'posted_date':0,'amount':1, 'description':4}, infer_header_cols(data_rows=data_rows))
+
+        with self.subTest("Test no_header3 file contents"):
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader3.csv"))
+            self.assertEqual({'posted_date':0,'amount':1, 'description':4}, infer_header_cols(data_rows=data_rows))
+
+        with self.subTest("Test no_header4 file contents"):
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader4.csv"))
             self.assertEqual({'posted_date':0,'amount':1, 'description':4}, infer_header_cols(data_rows=data_rows))
     
     # def test_reformat_csv(self):
