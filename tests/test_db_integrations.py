@@ -228,7 +228,7 @@ class TestDBIntegrations(unittest.TestCase):
         self.assertEqual(10, self.dl.add_transactions_from_csv(path_to_csv=path_to_csv, account_name=accnt_name, config_path=TEST_CONFIG_PATH))
         with FinDB(user=self.params["user"],pw=self.params["user_pw"],db_name=self.params["test_db_name"]) as dbconn:
             self.assertEqual(Decimal('-43.82'), # not the check number
-                dbconn.execute_scalar("SELECT amount FROM transactions WHERE posted_date=%s;",(date(year=2026,month=1,day=1),)))
+                dbconn.execute_scalar("SELECT amount FROM transactions WHERE posted_date=%s;",(date(year=1991,month=1,day=1),)))
         
         # Check that we reject malformed input 
         bad_accnt_name = "test_add_trans_from_bad_csv"
