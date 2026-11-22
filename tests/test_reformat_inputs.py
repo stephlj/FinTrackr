@@ -160,6 +160,12 @@ class TestReformatInputs(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _ = infer_header_cols(data_rows=data_rows)
 
+        with self.subTest("Test noheader_twoamountcols"):
+            # Future proofing, caught by Claude: what if we get a bank input that has a balance column for each transaction
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader_twoamounts.csv"))
+            with self.assertRaises(ValueError):
+                _ = infer_header_cols(data_rows=data_rows)
+
     
     def test_reformat_csv(self):
         
@@ -224,7 +230,7 @@ class TestReformatInputs(unittest.TestCase):
                 csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
                 self.addCleanup(os.remove, csv_out)
         with self.subTest("Test we abort if not all rows parse the same"):
-            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader_differentrow_parse.csv")
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader_differentrowparse.csv")
             with self.assertRaises(ValueError):
                 csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
                 self.addCleanup(os.remove, csv_out)

@@ -16,7 +16,7 @@ import re
 
 from dataclasses import fields
 from typing import NamedTuple
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from dbcommons.utils import check_csv_path
 from fintrackr.fin_dataclasses import TRANS_COL_NAMES, Transaction
@@ -104,7 +104,7 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
     prev_col_equivs = {}
     num_input_cols = len(data_rows[0])
     for r in data_rows:
-        col_equivs = defaultdict(str)
+        col_equivs = defaultdict(int) # keys are col indexes that matches a TRANS_COL_NAME
         for c in range(0,num_input_cols): # We may have more columns than we need. See if we can pick out the ones we want
             
             possible_matches = parse_cell_type(datum=r[c])
@@ -116,9 +116,10 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
                 except:
                     raise
         
-        # Abort if we don't have at least as many possible header matches as Transaction fields
-        if len(col_equivs)<len(TRANS_COL_NAMES) or set(TRANS_COL_NAMES) != set([col_equivs[k] for k in col_equivs.keys()]):
-            msg = f"Could not parse enough cells (only got {col_equivs} on row {r}); header inference failed"
+        # Abort if we haven't matched one and only one of each expected column
+        # Use Counter to ignore order
+        if Counter([col_equivs[k] for k in col_equivs.keys()]) != Counter(TRANS_COL_NAMES):
+            msg = f"Could not parse the right number of cells (got {col_equivs} on row {r}); header inference failed"
             logger.error(msg)
             raise ValueError(msg)
         
