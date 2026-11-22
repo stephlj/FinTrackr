@@ -22,4 +22,4 @@ if __name__ == "__main__":
     
     add_fin_user(name=sys.argv[1], pw=sys.argv[2], admin_pw=sys.argv[3])
 
-    logger.info(f"Added new user with username {sys.arvg[1]}")
+    logger.info(f"Added new user with username {sys.argv[1]}")

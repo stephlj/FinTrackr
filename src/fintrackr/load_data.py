@@ -14,7 +14,8 @@ from typing import List
 from dbcommons.dataclass_utils import csv_to_dataclass
 
 from fintrackr.fin_db import FinDB
-from fintrackr.utils import CONFIG_PATH, reformat_csv
+from fintrackr.utils import CONFIG_PATH
+from fintrackr.reformat_inputs import reformat_csv
 from fintrackr.fin_dataclasses import Balance, Transaction, BAL_COL_DEFS, TRANS_COL_DEFS
 
 class DataLoader:

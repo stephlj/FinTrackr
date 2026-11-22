@@ -223,6 +223,11 @@ class TestReformatInputs(unittest.TestCase):
             with self.assertRaises(ValueError):
                 csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
                 self.addCleanup(os.remove, csv_out)
+        with self.subTest("Test we abort if not all rows parse the same"):
+            csv_in = os.path.join(TEST_DATA_PATH, "test_csv_noheader_differentrow_parse.csv")
+            with self.assertRaises(ValueError):
+                csv_out = reformat_csv(path_to_csv=csv_in, config_path=TEST_CONFIG_PATH)
+                self.addCleanup(os.remove, csv_out)
 
 
         with self.subTest("Test a header with columns that don't match config"):
