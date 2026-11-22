@@ -140,7 +140,7 @@ def write_reformatted(path_to_output: str, data_rows: list[list[str]], header_co
     corrected_dict_list = []
     for r in data_rows:
         new_row = {}
-        for k in header_col_dict.keys():
+        for k in TRANS_COL_NAMES:
             new_row[k] = r[header_col_dict[k]]
         corrected_dict_list.append(new_row)
 
