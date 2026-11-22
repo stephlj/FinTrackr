@@ -9,7 +9,7 @@ import csv
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
-from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, disambiguate_cols, reformat_csv, ColMatch
+from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, disambiguate_cols, infer_header_cols, reformat_csv, ColMatch
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
@@ -109,6 +109,15 @@ class TestReformatInputs(unittest.TestCase):
             self.assertEqual('description',disambiguate_cols(possible_matches))
 
         # Calling function has an if to catch empty lists so we don't test that here
+    
+    def test_infer_header_cols(self):
+        with self.subTest("Test no_header file contents"):
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader.csv"))
+            self.assertEqual({'posted_date':0,'amount':1, 'description':4}, infer_header_cols(data_rows=data_rows))
+
+        with self.subTest("Test no_header2 file contents"):
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader2.csv"))
+            self.assertEqual({'posted_date':0,'amount':1, 'description':4}, infer_header_cols(data_rows=data_rows))
     
     # def test_reformat_csv(self):
         

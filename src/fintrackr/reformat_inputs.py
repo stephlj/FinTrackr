@@ -112,7 +112,7 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
         
         # Abort if we don't have at least as many possible header matches as Transaction fields
         if len(col_equivs)<len(TRANS_COL_NAMES):
-            msg = "Could not parse enough cells; header inference failed"
+            msg = f"Could not parse enough cells (only got {col_equivs} on row {r}); header inference failed"
             logger.error(msg)
             raise ValueError(msg)
         
