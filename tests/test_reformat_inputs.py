@@ -61,6 +61,9 @@ class TestReformatInputs(unittest.TestCase):
             self.assertEqual([ColMatch(col_header='amount',col_type='numeric(12,2)'),
                                        ColMatch(col_header='description',col_type='text')],
                             parse_cell_type(datum='-43.1'))
+        with self.subTest("Test we do NOT catch negative non-decimal amounts"):
+            # This test logs expected behavior
+            self.assertEqual([], parse_cell_type(datum='-100'))
 
         with self.subTest("Test unambiguous text"):
             self.assertEqual([ColMatch(col_header='description',col_type='text')],

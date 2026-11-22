@@ -22,7 +22,7 @@ from dbcommons.utils import check_csv_path
 from fintrackr.fin_dataclasses import TRANS_COL_NAMES, Transaction
 from fintrackr.utils import CONFIG_PATH
 
-not_money = r"^\d+$"
+not_money = r"^-?\d+$"
 
 class ColMatch(NamedTuple):
     col_header: str
