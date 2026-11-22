@@ -16,7 +16,7 @@ import re
 
 from dataclasses import fields
 from typing import NamedTuple
-from collections import defaultdict, Counter
+from collections import Counter
 
 from dbcommons.utils import check_csv_path
 from fintrackr.fin_dataclasses import TRANS_COL_NAMES, Transaction
@@ -86,13 +86,13 @@ def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[
     # If possible, we infer header from the first row, based on header aliases provided in the config file
     # Return is a dict of keys=standard header (TRANS_COL_NAMES), vals=column index that matched
     
-    trans_header = defaultdict(str)
+    trans_header = {}
 
     for a in aliases.keys():
         for c in range(0,len(first_row)):
             if first_row[c] in aliases[a]:
                 trans_header[a]=c
-    if len(trans_header) == len(aliases):
+    if Counter(trans_header.keys()) == Counter(TRANS_COL_NAMES):
         return trans_header
     else:
         return None
@@ -104,7 +104,7 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
     prev_col_equivs = {}
     num_input_cols = len(data_rows[0])
     for r in data_rows:
-        col_equivs = defaultdict(int) # keys are col indexes that matches a TRANS_COL_NAME
+        col_equivs = {} # keys are col indexes that matches a TRANS_COL_NAME
         for c in range(0,num_input_cols): # We may have more columns than we need. See if we can pick out the ones we want
             
             possible_matches = parse_cell_type(datum=r[c])
@@ -125,7 +125,7 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
         
         # Finally, check against previous rows - again we insist they all parse the same. Abort as soon as we fail.
         if len(prev_col_equivs)>0 and prev_col_equivs != col_equivs:
-            msg = "Rows parsed differently, header inference failed"
+            msg = f"Row {r} parsed differently than previous, header inference failed"
             logger.error(msg)
             raise ValueError(msg)
         else:

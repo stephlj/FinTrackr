@@ -9,7 +9,16 @@ import csv
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
-from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, disambiguate_col, infer_header_cols, reformat_csv, ColMatch
+from fintrackr.reformat_inputs import (
+    get_trans_header_aliases, 
+    parse_cell_type, 
+    id_header_cols, 
+    disambiguate_col, 
+    infer_header_cols, 
+    write_reformatted,
+    reformat_csv, 
+    ColMatch
+)
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
@@ -172,6 +181,9 @@ class TestReformatInputs(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _ = infer_header_cols(data_rows=data_rows)
 
+    def test_write_reformatted(self):
+        # TODO
+        pass
     
     def test_reformat_csv(self):
         
