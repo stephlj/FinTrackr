@@ -63,7 +63,7 @@ def parse_cell_type(datum: str) -> list[ColMatch]:
                 pass # If we couldn't convert this column type, try next loop iteration
     return possible_matches
 
-def disambiguate_cols(matches: list[ColMatch]) -> str:
+def disambiguate_col(matches: list[ColMatch]) -> str:
 
     if len(matches)>1:
         # We should have >1 possible match for some columns 
@@ -71,6 +71,11 @@ def disambiguate_cols(matches: list[ColMatch]) -> str:
         # Pick the other one (there should be only one)
         if len(matches) != 2:
             msg = "Too many possible matches for this row, can't disambiguate"
+            logger.error(msg)
+            raise ValueError(msg)
+        if matches[0] == matches[1]:
+            # I don't think this can happen but just in case:
+            msg = "Duplicate column matches, aborting"
             logger.error(msg)
             raise ValueError(msg)
         return matches[0].col_header if matches[0].col_type != 'text' else matches[1].col_header
@@ -106,12 +111,12 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
             if len(possible_matches) > 0:
                 try:
                     # will raise an error if it can't disambiguate
-                    col_equivs[c] = disambiguate_cols(matches = possible_matches)
+                    col_equivs[c] = disambiguate_col(matches = possible_matches)
                 except:
                     raise
         
         # Abort if we don't have at least as many possible header matches as Transaction fields
-        if len(col_equivs)<len(TRANS_COL_NAMES):
+        if len(col_equivs)<len(TRANS_COL_NAMES) or set(TRANS_COL_NAMES) != set([col_equivs[k] for k in col_equivs.keys()]):
             msg = f"Could not parse enough cells (only got {col_equivs} on row {r}); header inference failed"
             logger.error(msg)
             raise ValueError(msg)

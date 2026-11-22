@@ -9,7 +9,7 @@ import csv
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
-from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, disambiguate_cols, infer_header_cols, reformat_csv, ColMatch
+from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, disambiguate_col, infer_header_cols, reformat_csv, ColMatch
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
@@ -98,23 +98,38 @@ class TestReformatInputs(unittest.TestCase):
             first_row = ['09/10/2025','26.57','*','','Safeway']
             self.assertIsNone(id_header_cols(first_row=first_row,aliases=aliases))
 
-    def test_disambiguate_cols(self):
+    def test_disambiguate_col(self):
         # Almost everything should parse as text - 
         # we're disambiguating text from something that could also be a date or numeric
 
         with self.subTest("Test a date"):
             possible_matches = [ColMatch(col_header='posted_date',col_type='date'),
                                 ColMatch(col_header='description',col_type='text')]
-            self.assertEqual('posted_date', disambiguate_cols(possible_matches))
+            self.assertEqual('posted_date', disambiguate_col(possible_matches))
         
         with self.subTest("Test an amount"):
             possible_matches=[ColMatch(col_header='amount',col_type='numeric(12,2)'),
                                 ColMatch(col_header='description',col_type='text')]
-            self.assertEqual('amount',disambiguate_cols(possible_matches))
+            self.assertEqual('amount',disambiguate_col(possible_matches))
 
         with self.subTest("Test unambiguous text"):
             possible_matches=[ColMatch(col_header='description',col_type='text')]
-            self.assertEqual('description',disambiguate_cols(possible_matches))
+            self.assertEqual('description',disambiguate_col(possible_matches))
+
+        with self.subTest("Test too many possible matches"):
+            # I don't think this could actually happen
+            possible_matches=[ColMatch(col_header='posted_date',col_type='date'),
+                              ColMatch(col_header='amount',col_type='numeric(12,2)'),
+                              ColMatch(col_header='description',col_type='text')]
+            with self.assertRaises(ValueError):
+                _ = disambiguate_col(possible_matches)
+
+        with self.subTest("Test duplicate matches"):
+            # I don't think this could actually happen
+            possible_matches=[ColMatch(col_header='description',col_type='text'),
+                                ColMatch(col_header='description',col_type='text')]
+            with self.assertRaises(ValueError):
+                _ = disambiguate_col(possible_matches)
 
         # Calling function has an if to catch empty lists so we don't test that here
     
@@ -134,6 +149,12 @@ class TestReformatInputs(unittest.TestCase):
         with self.subTest("Test no_header4 file contents"):
             data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader4.csv"))
             self.assertEqual({'posted_date':0,'amount':1, 'description':4}, infer_header_cols(data_rows=data_rows))
+
+        with self.subTest("Test noheader_wrongcontent"):
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader_wrongcontent.csv"))
+            with self.assertRaises(ValueError):
+                _ = infer_header_cols(data_rows=data_rows)
+
     
     # def test_reformat_csv(self):
         
