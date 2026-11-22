@@ -9,7 +9,7 @@ import csv
 from dataclasses import fields
 
 from fintrackr.fin_dataclasses import Transaction
-from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, reformat_csv, ColMatch
+from fintrackr.reformat_inputs import get_trans_header_aliases, parse_cell_type, id_header_cols, disambiguate_cols, reformat_csv, ColMatch
 
 from utils_for_tests import TEST_CONFIG_PATH, TEST_DATA_PATH
 
@@ -89,6 +89,26 @@ class TestReformatInputs(unittest.TestCase):
             first_row = ['Transaction Date','Post Date','Description','Category', 'Type', 'Amount', 'Memo']
             self.assertEqual(id_header_cols(first_row=first_row,aliases=aliases),
                                 {'posted_date':1,'amount':5,'description':2})
+
+    def test_disambiguate_cols(self):
+        # Almost everything should parse as text - 
+        # we're disambiguating text from something that could also be a date or numeric
+
+        with self.subTest("Test a date"):
+            possible_matches = [ColMatch(col_header='posted_date',col_type='date'),
+                                ColMatch(col_header='description',col_type='text')]
+            self.assertEqual('posted_date', disambiguate_cols(possible_matches))
+        
+        with self.subTest("Test an amount"):
+            possible_matches=[ColMatch(col_header='amount',col_type='numeric(12,2)'),
+                                ColMatch(col_header='description',col_type='text')]
+            self.assertEqual('amount',disambiguate_cols(possible_matches))
+
+        with self.subTest("Test unambiguous text"):
+            possible_matches=[ColMatch(col_header='description',col_type='text')]
+            self.assertEqual('description',disambiguate_cols(possible_matches))
+
+        # Calling function has an if to catch empty lists so we don't test that here
     
     # def test_reformat_csv(self):
         

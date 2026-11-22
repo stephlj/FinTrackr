@@ -63,8 +63,22 @@ def parse_cell_type(datum: str) -> list[ColMatch]:
                 pass # If we couldn't convert this column type, try next loop iteration
     return possible_matches
 
+def disambiguate_cols(matches: list[ColMatch]) -> str:
+
+    if len(matches)>1:
+        # We should have >1 possible match for some columns 
+        # (since everything should at least parse as a string)
+        # Pick the other one (there should be only one)
+        if len(matches) != 2:
+            msg = "Too many possible matches for this row, can't disambiguate"
+            logger.error(msg)
+            raise ValueError(msg)
+        return matches[0].col_header if matches[0].col_type != 'text' else matches[1].col_header
+    return matches[0].col_header
+
 def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[str, int] | None:
     # If possible, we infer header from the first row, based on header aliases provided in the config file
+    # Return is a dict of keys=standard header (TRANS_COL_NAMES), vals=column index that matched
     
     trans_header = {}
 
@@ -80,6 +94,7 @@ def id_header_cols(first_row: list[str], aliases: dict[str, list[str]]) -> dict[
 def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
     # See if we can infer which columns are which based on file contents and types
     # If anything is ambiguous, we abort - no guessing
+    # Return is a dict of keys=standard header (TRANS_COL_NAMES), vals=column index that matched
     prev_col_equivs = {}
     num_input_cols = len(data_rows[0])
     for r in data_rows:
@@ -88,17 +103,12 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
             
             possible_matches = parse_cell_type(datum=r[c])
 
-            if len(possible_matches)>1:
-                # We should have >1 possible match for some columns 
-                # (since everything should at least parse as a string)
-                # Pick the other one (there should be only one)
-                if len(possible_matches) != 2:
-                    msg = "Too many possible matches for this row, can't disambiguate"
-                    logger.error(msg)
-                    raise ValueError(msg)
-                col_equivs[c] = possible_matches[0].col_header if possible_matches[0].col_type != 'text' else possible_matches[1].col_header
-            elif len(possible_matches)>0:
-                col_equivs[c] = possible_matches[0].col_header
+            if len(possible_matches) > 0:
+                try:
+                    # will raise an error if it can't disambiguate
+                    col_equivs[c] = disambiguate_cols(matches = possible_matches)
+                except:
+                    raise
         
         # Abort if we don't have at least as many possible header matches as Transaction fields
         if len(col_equivs)<len(TRANS_COL_NAMES):
@@ -117,6 +127,7 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
 
 def write_reformatted(path_to_output: str, data_rows: list[list[str]], header_col_dict: dict[str, int]) -> str:
     # Returns the path it wrote to for confirmation of success
+    # header_col_dict is TRANS_COL_NAME:col_idx that matched
 
     # Create corrected rows to write - keep just the columns we want
     corrected_dict_list = []
