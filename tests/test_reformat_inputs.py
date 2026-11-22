@@ -189,6 +189,11 @@ class TestReformatInputs(unittest.TestCase):
             data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader_twodates.csv"))
             with self.assertRaises(ValueError):
                 _ = infer_header_cols(data_rows=data_rows)
+        with self.subTest("Test noheader_multipletextcols"):
+            # Future proofing, caught by Claude: what if we lose the header for an input that has multiple text cols
+            data_rows = read_csv_rows(os.path.join(TEST_DATA_PATH,"test_csv_noheader_twotextcols.csv"))
+            with self.assertRaises(ValueError):
+                _ = infer_header_cols(data_rows=data_rows)
 
     def test_write_reformatted(self):
         # TODO

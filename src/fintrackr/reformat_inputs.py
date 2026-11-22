@@ -60,7 +60,7 @@ def parse_cell_type(datum: str) -> list[ColMatch]:
             try:
                 _ = f.metadata['csv_parser'](datum) # Can we parse this column per Transaction field specifications
                 possible_matches.append(ColMatch(col_header=f.name, col_type=f.metadata['sql_type']))
-            except:
+            except (ValueError, ArithmeticError):
                 pass # If we couldn't convert this column type, try next loop iteration
     return possible_matches
 
@@ -114,11 +114,7 @@ def infer_header_cols(data_rows: list[list[str]]) -> dict[str, int]:
             possible_matches = parse_cell_type(datum=r[c])
 
             if len(possible_matches) > 0:
-                try:
-                    # will raise an error if it can't disambiguate
-                    col_equivs[c] = disambiguate_col(matches = possible_matches)
-                except:
-                    raise
+                col_equivs[c] = disambiguate_col(matches = possible_matches)
         
         # Abort if we haven't matched one and only one of each expected column
         # Use Counter to ignore order
