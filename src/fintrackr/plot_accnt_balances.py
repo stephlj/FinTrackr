@@ -14,8 +14,8 @@ from typing import List
 from datetime import date
 from decimal import Decimal
 
-import fintrackr.fin_db
-from fintrackr.dataclasses import Transaction, Balance
+from fintrackr.fin_db import FinDB
+from fintrackr.fin_dataclasses import Transaction, Balance
 from fintrackr.utils import DEFAULT_LOGGING_FORMAT, CONFIG_PATH
 
 logger = logging.getLogger(__name__)
@@ -54,30 +54,34 @@ def relative_bal_by_date(references: List[Balance], transactions: List[Transacti
     
     # Set a single absolute account balance on a date, which all subsequent balances will be relative to
     if len(references) >= 1:
-        ref = sorted(references, key=lambda r: r.date)[-1] # [date, amount] of chronologically most recent account balance
+        ref = sorted(references, key=lambda r: r.balance_date)[-1] # [date, amount] of chronologically most recent account balance
     else:
-        ref = Balance(date = sorted(transactions, key=lambda t: t.date)[0].date, amount = Decimal('0.00')) # Set balance for first transaction date to zero
+        ref = Balance(balance_date=sorted(transactions, key=lambda t: t.posted_date)[0].posted_date, amount = Decimal('0.00')) # Set balance for first transaction date to zero
 
     # balances have to be cumulative relative to ref_bal, by date
-    transactions.sort(key=lambda a: a.date)
+    transactions.sort(key=lambda a: a.posted_date)
 
-    earlier_trans = [t for t in transactions if t.date<=ref.date] # Balances are for end of day
+    # We handle relative balances differently if their date is before vs after the reference date.
+    # Before the reference date (earlier_trans), the account balance increases relative to the reference for every negative (debited) transaction - 
+    # because the new balance is the result of that previous transaction.
+    # After the reference date (later_trans), the account balance decreases after each debited transaction.
+    earlier_trans = [t for t in transactions if t.posted_date<=ref.balance_date] # Balances are for end of day
     if len(earlier_trans) > 0:
-        # Add the extra initial balance for the first day:
-        earlier_bals_tuple = list(zip([earlier_trans[0].date]+[a.date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)]))))
-        earlier_bals = [Transaction(date=d, amount=a) for d, a in earlier_bals_tuple]
+        # Add an extra initial balance for the first day:
+        earlier_bals_tuple = list(zip([earlier_trans[0].posted_date]+[a.posted_date for a in earlier_trans[:-1]], reversed(ref.amount-np.cumsum([a.amount for a in reversed(earlier_trans)])), [c.description for c in earlier_trans]))
+        earlier_bals = [Transaction(posted_date=d, amount=a, description=c) for d, a, c in earlier_bals_tuple]
     else:
         earlier_bals = []
     
-    later_trans = [t for t in transactions if t.date>ref.date] 
+    later_trans = [t for t in transactions if t.posted_date>ref.balance_date] 
     if len(later_trans) > 0:
-        later_bals_tuple = list(zip([a.date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount))
-        later_bals = [Transaction(date=d, amount=a) for d, a in later_bals_tuple]
+        later_bals_tuple = list(zip([a.posted_date for a in later_trans], np.cumsum([a.amount for a in later_trans])+ref.amount, [c.description for c in later_trans]))
+        later_bals = [Transaction(posted_date=d, amount=a, description=c) for d, a, c in later_bals_tuple]
     else:
         later_bals = []
     
     if len(earlier_trans) > 0:
-        return earlier_bals + [Transaction(date=earlier_trans[-1].date, amount=ref.amount)] + later_bals
+        return earlier_bals + [Transaction(posted_date=earlier_trans[-1].posted_date, amount=ref.amount, description="Reference")] + later_bals
     else:
         return earlier_bals + later_bals
 
@@ -102,7 +106,8 @@ def plot_balances(all_balances: List[Balance], calculated_balances: List[Transac
     """
     
     # Rearrange inputs into tuple of lists
-    calc_date, calc_amt = zip(*calculated_balances)
+    # TODO hover over a point and see description
+    calc_date, calc_amt, descriptions = zip(*calculated_balances)
     calculated = (list(calc_date), list(calc_amt))
 
     input_date, input_amt = zip(*all_balances)
@@ -154,13 +159,9 @@ def plot_accnt_balances(accnt_name: str, date_range: List[date], username: str, 
         config = yaml.safe_load(config_file)
         db_name = config["db"]["db_name"]
 
-    FinDB = fintrackr.fin_db.FinDB(user=username, pw=pw, db_name=db_name)
-
-    balances = FinDB.get_balances_in_date_range(accnt_name=accnt_name, date_range=date_range)
-    
-    transactions = FinDB.get_transactions_in_date_range(accnt_name=accnt_name, date_range=date_range)
-
-    FinDB.close()
+    with FinDB(user=username, pw=pw, db_name=db_name) as db_conn:
+        balances = db_conn.get_balances_in_date_range(accnt_name=accnt_name, date_range=date_range)  
+        transactions = db_conn.get_transactions_in_date_range(accnt_name=accnt_name, date_range=date_range)
 
     abs_trans = relative_bal_by_date(references = balances, transactions = transactions)
 

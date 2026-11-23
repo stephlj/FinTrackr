@@ -7,6 +7,6 @@ db:
   admin_name: fintrackr_admin
 
 transaction_headers:
-  posted_date: ["Post Date", "Date"]
-  amount: ["Amount"]
-  description: ["Description"]
+  posted_date: ["Post Date", "DATE"]
+  amount: ["Amount", "AMOUNT"]
+  description: ["Description","DESCRIPTION"]
