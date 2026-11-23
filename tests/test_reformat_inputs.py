@@ -249,6 +249,15 @@ class TestReformatInputs(unittest.TestCase):
                             ['09/09/2024','-85.00','Concert* tickets'],
                             ['08/20/2024','-536.59','Alaska airlines REF # 123-456']]
             self.assertEqual([TRANS_COL_NAMES] + corrected_cols, read_csv_rows(written_csv))
+
+        with self.subTest("Test the unlikely case of no data rows to write"):
+            data_rows = []
+            header_col_dict = {'posted_date':0, 'amount':1, 'description':2}
+            out_path = os.path.join(TEST_DATA_PATH,"test_nooutput.csv")
+            written_csv = write_reformatted(path_to_output=out_path,data_rows=data_rows,header_col_dict=header_col_dict)
+            if os.path.exists(out_path):
+                self.addCleanup(os.remove, out_path)
+            self.assertFalse(os.path.exists(out_path))
     
     def test_reformat_csv(self):
         

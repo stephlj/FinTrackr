@@ -136,6 +136,11 @@ def write_reformatted(path_to_output: str, data_rows: list[list[str]], header_co
     # Returns the path it wrote to for confirmation of success
     # header_col_dict is TRANS_COL_NAME:col_idx that matched
 
+    # Unlikely we'll ever hit this case, but just in case:
+    if len(data_rows)==0:
+        logger.info(f"No data rows to write; file {path_to_output} will not be written")
+        return ""
+
     # Create corrected rows to write - keep just the columns we want
     corrected_dict_list = []
     for r in data_rows:
