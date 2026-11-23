@@ -199,33 +199,28 @@ class TestReformatInputs(unittest.TestCase):
         with self.subTest("Test no extra columns, correct order"):
             data_rows = [['09/09/2025','-26.57','Safeway'],
                          ['09/09/2024','-85.00','Concert* tickets'],
-                         ['08/20/2024','-536.59','Alaska airlines REF # 123-456']]
+                         ['08/20/2024','-536.59','Alaska, airlines REF # 123-456']]
             header_col_dict = {'posted_date':0, 'amount':1, 'description':2}
             out_path = os.path.join(TEST_DATA_PATH,"test_standardized_input.csv")
             self.addCleanup(os.remove, out_path)
             written_csv = write_reformatted(path_to_output=out_path,data_rows=data_rows,header_col_dict=header_col_dict)
             self.assertTrue(os.path.exists(out_path))
             written_rows = read_csv_rows(path=written_csv)
-            self.assertEqual(written_rows[0],TRANS_COL_NAMES)
-            for r_idx in range(1,len(written_rows)):
-                self.assertEqual(data_rows[r_idx-1],written_rows[r_idx]) # Order matters in list equality
+            self.assertEqual([TRANS_COL_NAMES] + data_rows, read_csv_rows(written_csv))
 
         with self.subTest("Test no extra columns, incorrect order"):
             data_rows = [['-26.57','09/09/2025','Safeway'],
                             ['-85.00','09/09/2024','Concert* tickets'],
-                            ['-536.59','08/20/2024','Alaska airlines REF # 123-456']]
-            header_col_dict = {'posted_date':1, 'amount':0, 'description':2}
+                            ['-536.59','08/20/2024','"Alaska airlines" REF # 123-456']]
+            header_col_dict = {'amount':0, 'posted_date':1, 'description':2}
             out_path = os.path.join(TEST_DATA_PATH,"test_wrongorder.csv")
             self.addCleanup(os.remove, out_path)
             written_csv = write_reformatted(path_to_output=out_path,data_rows=data_rows,header_col_dict=header_col_dict)
             self.assertTrue(os.path.exists(out_path))
-            written_rows = read_csv_rows(path=written_csv)
-            self.assertEqual(written_rows[0],TRANS_COL_NAMES)
             corrected_order = [['09/09/2025','-26.57','Safeway'],
                                 ['09/09/2024','-85.00','Concert* tickets'],
-                                ['08/20/2024','-536.59','Alaska airlines REF # 123-456']]
-            for r_idx in range(1,len(written_rows)):
-                self.assertEqual(corrected_order[r_idx-1],written_rows[r_idx]) # Order matters in list equality
+                                ['08/20/2024','-536.59','"Alaska airlines" REF # 123-456']]
+            self.assertEqual([TRANS_COL_NAMES] + corrected_order, read_csv_rows(written_csv))
 
         with self.subTest("Test extra columns, incorrect order"):
             data_rows = [['09/09/2024','09/09/2024','Safeway','Food & Drink','Sale','-26.57',''],
@@ -236,13 +231,24 @@ class TestReformatInputs(unittest.TestCase):
             self.addCleanup(os.remove, out_path)
             written_csv = write_reformatted(path_to_output=out_path,data_rows=data_rows,header_col_dict=header_col_dict)
             self.assertTrue(os.path.exists(out_path))
-            written_rows = read_csv_rows(path=written_csv)
-            self.assertEqual(written_rows[0],TRANS_COL_NAMES)
             corrected_cols = [['09/09/2024','-26.57','Safeway'],
                             ['09/09/2024','-85.00','Concert* tickets'],
                             ['08/20/2024','-536.59','Alaska airlines REF # 123-456']]
-            for r_idx in range(1,len(written_rows)):
-                self.assertEqual(corrected_cols[r_idx-1],written_rows[r_idx]) # Order matters in list equality
+            self.assertEqual([TRANS_COL_NAMES] + corrected_cols, read_csv_rows(written_csv))
+
+        with self.subTest("Test extra columns, incorrect order, header_col_dict incorrect order"):
+            data_rows = [['09/09/2024','09/09/2024','Safeway','Food & Drink','Sale','-26.57',''],
+                            ['09/08/2024','09/09/2024','Concert* tickets','Professional Services','Sale','-85.00',''],
+                            ['08/15/2024','08/20/2024','Alaska airlines REF # 123-456','Travel','Sale','-536.59','']]
+            header_col_dict = {'description':2, 'posted_date':1, 'amount':5}
+            out_path = os.path.join(TEST_DATA_PATH,"test_extracols_reorder.csv")
+            self.addCleanup(os.remove, out_path)
+            written_csv = write_reformatted(path_to_output=out_path,data_rows=data_rows,header_col_dict=header_col_dict)
+            self.assertTrue(os.path.exists(out_path))
+            corrected_cols = [['09/09/2024','-26.57','Safeway'],
+                            ['09/09/2024','-85.00','Concert* tickets'],
+                            ['08/20/2024','-536.59','Alaska airlines REF # 123-456']]
+            self.assertEqual([TRANS_COL_NAMES] + corrected_cols, read_csv_rows(written_csv))
     
     def test_reformat_csv(self):
         

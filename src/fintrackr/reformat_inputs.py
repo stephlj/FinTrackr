@@ -145,7 +145,7 @@ def write_reformatted(path_to_output: str, data_rows: list[list[str]], header_co
         corrected_dict_list.append(new_row)
 
     with open(path_to_output, 'w', newline='') as newf:
-        writer=csv.DictWriter(newf, fieldnames=header_col_dict.keys())
+        writer=csv.DictWriter(newf, fieldnames=TRANS_COL_NAMES)
         writer.writeheader()
         for r in corrected_dict_list:
             writer.writerow(r)
